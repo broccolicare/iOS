@@ -6,8 +6,21 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5381EE232E955FC90096B7DF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */; };
+		5381EE262E9562660096B7DF /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5381EE252E9562660096B7DF /* FirebaseCore */; };
+		5381EE282E9562660096B7DF /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 5381EE272E9562660096B7DF /* FirebaseCrashlytics */; };
+		5381EE2A2E9562660096B7DF /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 5381EE292E9562660096B7DF /* FirebaseMessaging */; };
+		53A210902E9564A800586875 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 53A2108F2E9564A800586875 /* GoogleSignIn */; };
+		53A210922E9564A800586875 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210912E9564A800586875 /* GoogleSignInSwift */; };
+		53A210952E95664300586875 /* FacebookCore in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210942E95664300586875 /* FacebookCore */; };
+		53A210972E95664300586875 /* FacebookLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210962E95664300586875 /* FacebookLogin */; };
+		53A2109A2E9566FD00586875 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210992E9566FD00586875 /* KeychainAccess */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		535BAF5D2E95347A00C4A634 /* Broccoli.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Broccoli.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +36,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				53A210922E9564A800586875 /* GoogleSignInSwift in Frameworks */,
+				53A210952E95664300586875 /* FacebookCore in Frameworks */,
+				5381EE2A2E9562660096B7DF /* FirebaseMessaging in Frameworks */,
+				53A210902E9564A800586875 /* GoogleSignIn in Frameworks */,
+				53A2109A2E9566FD00586875 /* KeychainAccess in Frameworks */,
+				5381EE262E9562660096B7DF /* FirebaseCore in Frameworks */,
+				53A210972E95664300586875 /* FacebookLogin in Frameworks */,
+				5381EE282E9562660096B7DF /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -32,6 +53,7 @@
 		535BAF542E95347A00C4A634 = {
 			isa = PBXGroup;
 			children = (
+				5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */,
 				535BAF5F2E95347A00C4A634 /* Broccoli */,
 				535BAF5E2E95347A00C4A634 /* Products */,
 			);
@@ -65,6 +87,14 @@
 			);
 			name = Broccoli;
 			packageProductDependencies = (
+				5381EE252E9562660096B7DF /* FirebaseCore */,
+				5381EE272E9562660096B7DF /* FirebaseCrashlytics */,
+				5381EE292E9562660096B7DF /* FirebaseMessaging */,
+				53A2108F2E9564A800586875 /* GoogleSignIn */,
+				53A210912E9564A800586875 /* GoogleSignInSwift */,
+				53A210942E95664300586875 /* FacebookCore */,
+				53A210962E95664300586875 /* FacebookLogin */,
+				53A210992E9566FD00586875 /* KeychainAccess */,
 			);
 			productName = Broccoli;
 			productReference = 535BAF5D2E95347A00C4A634 /* Broccoli.app */;
@@ -94,6 +124,12 @@
 			);
 			mainGroup = 535BAF542E95347A00C4A634;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5381EE242E9562660096B7DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				53A2108E2E9564A800586875 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				53A210932E95664300586875 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */,
+				53A210982E9566FD00586875 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 535BAF5E2E95347A00C4A634 /* Products */;
 			projectDirPath = "";
@@ -109,6 +145,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5381EE232E955FC90096B7DF /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -244,23 +281,26 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIAppFonts = "Figtree-Regular.ttf Figtree-Medium.ttf Figtree-SemiBold.ttf Figtree-Bold.ttf Figtree-ExtraBold.ttf Figtree-Black.ttf Figtree-Light.ttf Figtree-Italic.ttf Figtree-MediumItalic.ttf Figtree-SemiBoldItalic.ttf Figtree-BoldItalic.ttf Figtree-ExtraBoldItalic.ttf Figtree-BlackItalic.ttf Figtree-LightItalic.ttf";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -270,13 +310,14 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = 1;
 				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
@@ -286,6 +327,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
@@ -298,11 +340,12 @@
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -312,13 +355,14 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = 1;
 				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
@@ -345,6 +389,84 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5381EE242E9562660096B7DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.3.0;
+			};
+		};
+		53A2108E2E9564A800586875 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+		53A210932E95664300586875 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/facebook-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 14.1.0;
+			};
+		};
+		53A210982E9566FD00586875 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5381EE252E9562660096B7DF /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5381EE242E9562660096B7DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		5381EE272E9562660096B7DF /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5381EE242E9562660096B7DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		5381EE292E9562660096B7DF /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5381EE242E9562660096B7DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		53A2108F2E9564A800586875 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53A2108E2E9564A800586875 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		53A210912E9564A800586875 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53A2108E2E9564A800586875 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		53A210942E95664300586875 /* FacebookCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53A210932E95664300586875 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */;
+			productName = FacebookCore;
+		};
+		53A210962E95664300586875 /* FacebookLogin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53A210932E95664300586875 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */;
+			productName = FacebookLogin;
+		};
+		53A210992E9566FD00586875 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53A210982E9566FD00586875 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 535BAF552E95347A00C4A634 /* Project object */;
 }
