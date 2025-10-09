@@ -1,5 +1,15 @@
 import SwiftUI
 
+extension Font {
+    static public func safeCustom(_ name: String, size: CGFloat) -> Font {
+        if UIFont(name: name, size: size) == nil {
+            print("⚠️ Font '\(name)' not found — falling back to system font")
+            return .system(size: size)
+        }
+        return .custom(name, size: size)
+    }
+}
+
 public struct AppColors: ThemeColors {
     public let primary: Color
     public let secondary: Color
@@ -47,13 +57,13 @@ public struct AppTypography: ThemeTypography {
     public let button: Font
 
     public init(
-        titleXL: Font = Font.custom("Figtree-Bold", size: 34),
+        titleXL: Font = Font.safeCustom("Figtree-Bold", size: 34),
         title: Font = Font.custom("Figtree-SemiBold", size: 28),
         subtitle: Font = Font.custom("Figtree-Medium", size: 20),
         body: Font = Font.custom("Figtree-Regular", size: 16),
         callout: Font = Font.custom("Figtree-Regular", size: 15),
         caption: Font = Font.custom("Figtree-Regular", size: 13),
-        button: Font = Font.custom("Figtree-SemiBold", size: 16)
+        button: Font = Font.custom("Figtree-Bold", size: 16)
     ) {
         self.titleXL = titleXL
         self.title = title

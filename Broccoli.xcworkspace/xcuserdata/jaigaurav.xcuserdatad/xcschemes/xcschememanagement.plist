@@ -4,18 +4,10 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>Broccoli.xcscheme_^#shared#^_</key>
+		<key>Promises (Playground).xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
-		</dict>
-	</dict>
-	<key>SuppressBuildableAutocreation</key>
-	<dict>
-		<key>535BAF5C2E95347A00C4A634</key>
-		<dict>
-			<key>primary</key>
-			<true/>
+			<integer>3</integer>
 		</dict>
 	</dict>
 </dict>

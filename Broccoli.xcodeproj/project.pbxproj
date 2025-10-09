@@ -23,9 +23,22 @@
 		5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		539E14532E9777F400FE4F67 /* Exceptions for "Broccoli" folder in "Broccoli" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 535BAF5C2E95347A00C4A634 /* Broccoli */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		535BAF5F2E95347A00C4A634 /* Broccoli */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				539E14532E9777F400FE4F67 /* Exceptions for "Broccoli" folder in "Broccoli" target */,
+			);
 			path = Broccoli;
 			sourceTree = "<group>";
 		};
@@ -288,6 +301,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Broccoli/Info.plist;
 				INFOPLIST_KEY_UIAppFonts = "Figtree-Regular.ttf Figtree-Medium.ttf Figtree-SemiBold.ttf Figtree-Bold.ttf Figtree-ExtraBold.ttf Figtree-Black.ttf Figtree-Light.ttf Figtree-Italic.ttf Figtree-MediumItalic.ttf Figtree-SemiBoldItalic.ttf Figtree-BoldItalic.ttf Figtree-ExtraBoldItalic.ttf Figtree-BlackItalic.ttf Figtree-LightItalic.ttf";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -334,6 +348,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Broccoli/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
