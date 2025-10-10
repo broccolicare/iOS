@@ -1,8 +1,11 @@
 import SwiftUI
+import AlertToast
 
 struct LoginView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject private var router: Router
+    
     @StateObject private var authService = AuthService(
         httpClient: HTTPClient(),
         secureStore: SecureStore()
@@ -10,148 +13,133 @@ struct LoginView: View {
     
     @State private var email = ""
     @State private var password = ""
+    @State private var keepLoggedIn = true
     @State private var isLoading = false
     @State private var showError = false
     @State private var errorMessage = ""
     
     var body: some View {
-        VStack(spacing: theme.spacing.xl) {
-            // Header
-            VStack(spacing: theme.spacing.md) {
-                Text("Welcome Back")
-                    .font(theme.typography.titleXL)
-                    .foregroundStyle(theme.colors.textPrimary)
+        VStack(spacing: 0) {
+            // Top logo + spacing
+            VStack(alignment: .leading, spacing: theme.spacing.md) {
+                Image("Logo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 118, height: 83)
+                    .padding(.top, 40)
                 
-                Text("Sign in to your account")
-                    .font(theme.typography.body)
-                    .foregroundStyle(theme.colors.textSecondary)
+                // Title
+                Text("Login to your account")
+                    .font(theme.typography.title)
+                    .foregroundStyle(theme.colors.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
             }
-            .padding(.top, theme.spacing.xxl)
+            .padding(.bottom, theme.spacing.xl)
             
-            // Login Form
+            // Form container
+            
             VStack(spacing: theme.spacing.lg) {
                 VStack(spacing: theme.spacing.md) {
-                    // Email Field
-                    VStack(alignment: .leading, spacing: theme.spacing.xs) {
-                        Text("Email")
-                            .font(theme.typography.callout)
-                            .foregroundStyle(theme.colors.textPrimary)
-                        
-                        TextField("Enter your email", text: $email)
-                            .textFieldStyle(CustomTextFieldStyle(theme: theme))
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                    }
+                    // Username / Email
+                    TextField("Username/Email Address", text: $email)
+                        .textFieldStyle(CustomTextFieldStyle(theme: theme))
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
                     
-                    // Password Field
-                    VStack(alignment: .leading, spacing: theme.spacing.xs) {
-                        Text("Password")
-                            .font(theme.typography.callout)
-                            .foregroundStyle(theme.colors.textPrimary)
-                        
-                        SecureField("Enter your password", text: $password)
-                            .textFieldStyle(CustomTextFieldStyle(theme: theme))
-                    }
+                    // Password
+                    SecureField("Password", text: $password)
+                        .textFieldStyle(CustomTextFieldStyle(theme: theme))
                 }
                 
-                // Forgot Password Link
+                // Keep me login + Forgot
                 HStack {
+                    CheckboxToggle(isOn: $keepLoggedIn, label: "Keep me login")
                     Spacer()
                     NavigationLink(destination: ForgotPasswordView()) {
-                        Text("Forgot Password?")
+                        Text("Forgot Password")
                             .font(theme.typography.callout)
                             .foregroundStyle(theme.colors.primary)
                     }
                 }
+                .padding(.horizontal, 2)
                 
-                // Login Button
-                Button(action: login) {
+                // Login button
+                PrimaryButton(action: login) {
                     if isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
                         Text("Login")
-                            .font(theme.typography.button)
-                            .foregroundStyle(.white)
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(theme.colors.primary)
-                .cornerRadius(theme.cornerRadius)
                 .disabled(isLoading || email.isEmpty || password.isEmpty)
+                .padding(.top, theme.spacing.sm)
                 
-                // Social Login
-                VStack(spacing: theme.spacing.md) {
-                    Text("Or continue with")
-                        .font(theme.typography.callout)
-                        .foregroundStyle(theme.colors.textSecondary)
-                    
-                    HStack(spacing: theme.spacing.md) {
-                        // Google Sign In
-                        Button(action: googleSignIn) {
-                            HStack {
-                                Image(systemName: "globe")
-                                Text("Google")
-                            }
-                            .font(theme.typography.callout)
-                            .foregroundStyle(theme.colors.textPrimary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(theme.colors.surface)
-                            .cornerRadius(theme.cornerRadius)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: theme.cornerRadius)
-                                    .stroke(theme.colors.border, lineWidth: 1)
-                            )
-                        }
-                        
-                        // Apple Sign In
-                        Button(action: appleSignIn) {
-                            HStack {
-                                Image(systemName: "apple.logo")
-                                Text("Apple")
-                            }
-                            .font(theme.typography.callout)
-                            .foregroundStyle(theme.colors.textPrimary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(theme.colors.surface)
-                            .cornerRadius(theme.cornerRadius)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: theme.cornerRadius)
-                                    .stroke(theme.colors.border, lineWidth: 1)
-                            )
-                        }
-                    }
-                }
-            }
-            
-            Spacer()
-            
-            // Sign Up Link
-            HStack {
-                Text("Don't have an account?")
+                // "Or login with" text
+                Text("Or login with")
                     .font(theme.typography.callout)
                     .foregroundStyle(theme.colors.textSecondary)
+                    .padding(.top, theme.spacing.md)
                 
-                NavigationLink(destination: SignUpView()) {
-                    Text("Sign Up")
-                        .font(theme.typography.callout)
-                        .foregroundStyle(theme.colors.primary)
+                // Social buttons (Google / Facebook) horizontally then Apple full width
+                HStack(spacing: theme.spacing.md) {
+                    SocialButton(
+                        title: "Google",
+                        systemImageName: "google_icon",
+                        background: theme.colors.surface,
+                        foreground: theme.colors.textPrimary,
+                        action: googleSignIn
+                    )
+                    
+                    SocialButton(
+                        title: "Facebook",
+                        systemImageName: "facebook_icon",
+                        background: Color(#colorLiteral(red: 0.176, green: 0.447, blue: 0.886, alpha: 1)), // facebook-blue
+                        foreground: .white,
+                        action: facebookSignIn
+                    )
                 }
+                .frame(height: 48)
+                
+                SocialButton(
+                    title: "Sign in with Apple",
+                    systemImageName: "apple_icon",
+                    background: .black,
+                    foreground: .white,
+                    action: appleSignIn
+                )
+                .frame(height: 48)
+                
+                // Bottom signup chips
+                HStack(spacing: theme.spacing.md) {
+                    Button {
+                        Router.shared.push(.signup(origin: .login))
+                    } label: {
+                        GrayOutlineButtonView(title:"Signup as User")
+                    }.buttonStyle(PlainButtonStyle())
+                    
+                    Button {
+                        Router.shared.push(.signup(origin: .login))
+                    } label: {
+                        GrayOutlineButtonView(title: "Signup as Doctor")
+                    }.buttonStyle(PlainButtonStyle())
+                }
+                    .padding(.bottom, bottomSafeAreaInset() + 10)
+                .padding(.top, 100)
             }
+            .padding(.top, theme.spacing.md)
         }
-        .padding(.horizontal, theme.spacing.lg)
-        .background(theme.colors.background)
-        .navigationTitle("Login")
+        .padding(.horizontal, theme.spacing.xl)
+        .background(theme.colors.background.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(errorMessage)
+        .navigationBarHidden(true)
+        .toast(isPresenting: $showError) {
+            AlertToast(displayMode: .hud, type: .error(theme.colors.error), title: "Error!", subTitle:errorMessage)
         }
     }
+    
+    // MARK: - Actions
     
     private func login() {
         isLoading = true
@@ -161,7 +149,7 @@ struct LoginView: View {
                 try await authService.signIn(email: email, password: password)
                 await MainActor.run {
                     isLoading = false
-                    // Navigation will be handled by the main app based on auth state
+                    // Navigation handled by auth state in app
                 }
             } catch {
                 await MainActor.run {
@@ -186,6 +174,20 @@ struct LoginView: View {
         }
     }
     
+    private func facebookSignIn() {
+        // implement facebook flow or call authService
+        Task {
+            do {
+                try await authService.signInWithFacebook()
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    showError = true
+                }
+            }
+        }
+    }
+    
     private func appleSignIn() {
         Task {
             do {
@@ -198,20 +200,22 @@ struct LoginView: View {
             }
         }
     }
-}
-
-struct CustomTextFieldStyle: TextFieldStyle {
-    let theme: AppThemeProtocol
     
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .padding()
-            .background(theme.colors.surface)
-            .cornerRadius(theme.cornerRadius)
-            .overlay(
-                RoundedRectangle(cornerRadius: theme.cornerRadius)
-                    .stroke(theme.colors.border, lineWidth: 1)
-            )
+    // Safe area helpers
+    private func topSafeAreaInset() -> CGFloat {
+        let window = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        return window?.safeAreaInsets.top ?? 20
+    }
+    
+    private func bottomSafeAreaInset() -> CGFloat {
+        let window = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+        return window?.safeAreaInsets.bottom ?? 0
     }
 }
 

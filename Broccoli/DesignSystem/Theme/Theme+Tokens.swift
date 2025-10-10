@@ -58,7 +58,7 @@ public struct AppTypography: ThemeTypography {
 
     public init(
         titleXL: Font = Font.safeCustom("Figtree-Bold", size: 34),
-        title: Font = Font.custom("Figtree-SemiBold", size: 28),
+        title: Font = Font.custom("Figtree-Medium", size: 30),
         subtitle: Font = Font.custom("Figtree-Medium", size: 20),
         body: Font = Font.custom("Figtree-Regular", size: 16),
         callout: Font = Font.custom("Figtree-Regular", size: 15),

@@ -19,5 +19,16 @@
 		<string>Figtree-SemiBold.ttf</string>
 		<string>Figtree-SemiBoldItalic.ttf</string>
 	</array>
+    <key>GIDClientID</key>
+    <string>771175078095-ufeguqsd10jjban23t5hjln6nclt39ur.apps.googleusercontent.com</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.771175078095-ufeguqsd10jjban23t5hjln6nclt39ur</string>
+        </array>
+      </dict>
+    </array>
 </dict>
 </plist>

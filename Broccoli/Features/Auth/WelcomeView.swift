@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WelcomeView: View {
     @Environment(\.appTheme) private var theme
+    @EnvironmentObject private var router: Router
     
     var body: some View {
         NavigationView {
@@ -57,27 +58,29 @@ struct WelcomeView: View {
                         
                         // Buttons
                         VStack(spacing: theme.spacing.md) {
-                            NavigationLink(destination: LoginView()) {
-                                PrimaryButton(action: {}, label: {
-                                    Text("Login")
-                                })
+                            NavigationLink(value: Route.login) {
+                                PrimaryButtonView(title:"Login")
                             }
                             .buttonStyle(PlainButtonStyle())
                             
                             HStack(spacing: theme.spacing.md) {
-                                NavigationLink(destination: SignUpView()) {
-                                    GrayOutlineButton(title:"Signup as User")
-                                    
-                                }
-                                NavigationLink(destination: SignUpView()) {
-                                    GrayOutlineButton(title:"Signup as Doctor")
-                                }
+                                Button {
+                                    Router.shared.push(.signup(origin: .welcome))
+                                } label: {
+                                    GrayOutlineButtonView(title:"Signup as User")
+                                }.buttonStyle(PlainButtonStyle())
+
+                                Button {
+                                    Router.shared.push(.signup(origin: .welcome))
+                                } label: {
+                                    GrayOutlineButtonView(title:"Signup as Doctor")
+                                }.buttonStyle(PlainButtonStyle())
                             }
                         }
                     }
                     .padding(.horizontal, theme.spacing.xl)
                     .padding(.vertical, theme.spacing.lg)
-                    .background(theme.colors.surface.opacity(0.9)) // optional slight transparency
+                    .background(theme.colors.surface.opacity(0.1)) // optional slight transparency
                     .cornerRadius(20)
                     .shadow(color: Color.black.opacity(0.08), radius: theme.shadowRadius, x: 0, y: 6)
                     .offset(y: -40)

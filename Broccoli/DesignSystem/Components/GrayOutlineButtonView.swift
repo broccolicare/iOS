@@ -1,12 +1,12 @@
 //
-//  GrayOutlineButton.swift
+//  GrayOutlineButtonView.swift
 //  Broccoli
 //
 //  Created by Gaurav Jaiswal on 09/10/25.
 //
 import SwiftUI
 
-struct GrayOutlineButton: View {
+struct GrayOutlineButtonView: View {
     @Environment(\.appTheme) private var theme
     let title: String
     

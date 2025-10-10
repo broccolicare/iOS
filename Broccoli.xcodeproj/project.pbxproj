@@ -16,6 +16,8 @@
 		53A210952E95664300586875 /* FacebookCore in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210942E95664300586875 /* FacebookCore */; };
 		53A210972E95664300586875 /* FacebookLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210962E95664300586875 /* FacebookLogin */; };
 		53A2109A2E9566FD00586875 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210992E9566FD00586875 /* KeychainAccess */; };
+		53FC16B72E98D05C004CA9CE /* AlertToast in Frameworks */ = {isa = PBXBuildFile; productRef = 53FC16B62E98D05C004CA9CE /* AlertToast */; };
+		53FC16BE2E98D5A7004CA9CE /* Toasts in Frameworks */ = {isa = PBXBuildFile; productRef = 53FC16BD2E98D5A7004CA9CE /* Toasts */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,9 +51,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				53FC16BE2E98D5A7004CA9CE /* Toasts in Frameworks */,
 				53A210922E9564A800586875 /* GoogleSignInSwift in Frameworks */,
 				53A210952E95664300586875 /* FacebookCore in Frameworks */,
 				5381EE2A2E9562660096B7DF /* FirebaseMessaging in Frameworks */,
+				53FC16B72E98D05C004CA9CE /* AlertToast in Frameworks */,
 				53A210902E9564A800586875 /* GoogleSignIn in Frameworks */,
 				53A2109A2E9566FD00586875 /* KeychainAccess in Frameworks */,
 				5381EE262E9562660096B7DF /* FirebaseCore in Frameworks */,
@@ -108,6 +112,8 @@
 				53A210942E95664300586875 /* FacebookCore */,
 				53A210962E95664300586875 /* FacebookLogin */,
 				53A210992E9566FD00586875 /* KeychainAccess */,
+				53FC16B62E98D05C004CA9CE /* AlertToast */,
+				53FC16BD2E98D5A7004CA9CE /* Toasts */,
 			);
 			productName = Broccoli;
 			productReference = 535BAF5D2E95347A00C4A634 /* Broccoli.app */;
@@ -142,6 +148,8 @@
 				53A2108E2E9564A800586875 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				53A210932E95664300586875 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */,
 				53A210982E9566FD00586875 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				53FC16B52E98D05C004CA9CE /* XCRemoteSwiftPackageReference "AlertToast" */,
+				53FC16BC2E98D5A7004CA9CE /* XCRemoteSwiftPackageReference "swiftui-toasts" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 535BAF5E2E95347A00C4A634 /* Products */;
@@ -297,6 +305,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 66L2U4GSCW;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -319,7 +328,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.abhiorder.broccoli.Broccoli;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abhiorder.broccoli;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -344,6 +353,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 66L2U4GSCW;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -365,7 +375,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.abhiorder.broccoli.Broccoli;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abhiorder.broccoli;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -438,6 +448,22 @@
 				kind = branch;
 			};
 		};
+		53FC16B52E98D05C004CA9CE /* XCRemoteSwiftPackageReference "AlertToast" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/elai950/AlertToast.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.9;
+			};
+		};
+		53FC16BC2E98D5A7004CA9CE /* XCRemoteSwiftPackageReference "swiftui-toasts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sunghyun-k/swiftui-toasts.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -480,6 +506,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 53A210982E9566FD00586875 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
 			productName = KeychainAccess;
+		};
+		53FC16B62E98D05C004CA9CE /* AlertToast */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53FC16B52E98D05C004CA9CE /* XCRemoteSwiftPackageReference "AlertToast" */;
+			productName = AlertToast;
+		};
+		53FC16BD2E98D5A7004CA9CE /* Toasts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53FC16BC2E98D5A7004CA9CE /* XCRemoteSwiftPackageReference "swiftui-toasts" */;
+			productName = Toasts;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
