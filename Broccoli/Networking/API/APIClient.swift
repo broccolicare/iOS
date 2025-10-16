@@ -10,9 +10,15 @@ import Foundation
 public protocol APIClientProtocol {
     func login(email: String, password: String) async throws -> AuthResponse
     func socialLogin(provider: String, token: String) async throws -> AuthResponse
-    func register(email: String, password: String, userType: UserType) async throws -> AuthResponse
+    func register(request: SignUpRequest) async throws -> SignupResponse
     func getUserProfile() async throws -> User
     func updateUserProfile(_ profile: UserProfile) async throws -> User
+}
+
+public enum APIClientError: Error {
+    case missingAccessToken
+    case missingRefreshToken
+    case missingUserID
 }
 
 public class APIClient: APIClientProtocol {
@@ -27,20 +33,20 @@ public class APIClient: APIClientProtocol {
     public func login(email: String, password: String) async throws -> AuthResponse {
         let endpoint = AuthEndpoint.login(email: email, password: password)
         let response: AuthResponse = try await httpClient.request(endpoint)
-        try await storeAuthTokens(response)
+//        try await storeAuthTokens(response)
         return response
     }
     
     public func socialLogin(provider: String, token: String) async throws -> AuthResponse {
         let endpoint = AuthEndpoint.socialLogin(provider: provider, token: token)
         let response: AuthResponse = try await httpClient.request(endpoint)
-        try await storeAuthTokens(response)
+//        try await storeAuthTokens(response)
         return response
     }
     
-    public func register(email: String, password: String, userType: UserType) async throws -> AuthResponse {
-        let endpoint = AuthEndpoint.register(email: email, password: password, userType: userType.rawValue)
-        let response: AuthResponse = try await httpClient.request(endpoint)
+    public func register(request: SignUpRequest) async throws -> SignupResponse {
+        let endpoint = AuthEndpoint.register(request: request)
+        let response: SignupResponse = try await httpClient.request(endpoint)
         try await storeAuthTokens(response)
         return response
     }
@@ -60,9 +66,18 @@ public class APIClient: APIClientProtocol {
         return try await httpClient.request(endpoint)
     }
     
-    private func storeAuthTokens(_ response: AuthResponse) async throws {
-        try secureStore.store(response.accessToken, for: SecureStore.Keys.accessToken)
-        try secureStore.store(response.refreshToken, for: SecureStore.Keys.refreshToken)
-        try secureStore.store(response.user.id, for: SecureStore.Keys.userID)
+    private func storeAuthTokens(_ response: SignupResponse) async throws {
+        guard let accessToken = response.token, !accessToken.isEmpty else {
+            throw APIClientError.missingAccessToken
+        }
+        
+        guard let userID = response.user?.id else {
+            throw APIClientError.missingUserID
+        }
+
+        try secureStore.store(accessToken, for: SecureStore.Keys.accessToken)
+//        try secureStore.store(refreshToken, for: SecureStore.Keys.refreshToken)
+        try secureStore.store("\(userID)", for: SecureStore.Keys.userID)
     }
 }
+

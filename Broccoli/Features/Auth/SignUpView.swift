@@ -1,61 +1,96 @@
 import SwiftUI
 import AlertToast
 
-enum SignUpOrigin {
-    case welcome
-    case login
-}
-
 struct SignUpView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
+    
+    @StateObject private var vm: SignupViewModel
     let origin: SignUpOrigin
+    let selectedUserType: UserType
     
-    @StateObject private var authService = AuthService(
-        httpClient: HTTPClient(),
-        secureStore: SecureStore()
-    )
+    private let availableSpecializations = [
+        "General Physician", "Cardiology", "Dermatology", "Pediatrics",
+        "Orthopedics", "Gynecology", "Psychiatry", "Neurology", "Other"
+    ]
+    private let countryCodes = ["+1", "+44", "+91", "+353", "+61", "+971", "+86"]
     
-    // form state
-    @State private var username = ""
-    @State private var email = ""
-    @State private var gender: String = "Male"
-    @State private var countryCode = "+353"
-    @State private var phone = ""
-    @State private var password = ""
-    @State private var confirmPassword = ""
-    @State private var agreeToTerms = false
-    @State private var isLoading = false
-    
-    // country picker sheet
-    @State private var showCountryPicker = false
-    
-    // AlertToast states
-    @State private var showError = false
-    @State private var errorMessage = ""
-    
-    // convenience
-    private var isValid: Bool {
-        !username.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !email.isEmpty &&
-        !phone.isEmpty &&
-        password.count >= 6 &&
-        password == confirmPassword &&
-        agreeToTerms
+    init(origin: SignUpOrigin, selectedUserType: UserType) {
+        self.origin = origin
+        self.selectedUserType = selectedUserType
+        _vm = StateObject(wrappedValue: SignupViewModel())
     }
     
     var body: some View {
         ScrollView {
-            VStack(spacing: theme.spacing.xl) {
+            VStack(spacing: theme.spacing.lg) {
                 header()
+                
+                // Name
+                TextInputField(
+                    placeholder: "Enter Name",
+                    text: $vm.name,
+                    keyboardType: .default,
+                    errorText: vm.fieldErrors[.name]
+                )
+                
+                //Username
+                TextInputField(
+                    placeholder: "Enter username",
+                    text: $vm.username,
+                    keyboardType: .default,
+                    errorText: vm.fieldErrors[.username]
+                )
+                
+                // Email
+                TextInputField(
+                    placeholder: "Enter Email",
+                    text: $vm.email,
+                    keyboardType: .emailAddress,
+                    errorText: vm.fieldErrors[.email]
+                )
+                
+                // Gender segmented
+                VStack(alignment: .leading, spacing: theme.spacing.xs) {
+                    GenderSegment(selected: $vm.gender, left: "Male", right: "Female")
+                }
+                
+                CountryPhoneField(
+                    countryCode: $vm.countryCode,
+                    phone: $vm.phone,
+                    countryCodes: countryCodes,
+                    errorText: vm.fieldErrors[.phone]
+                )
+                
+                if selectedUserType == .doctor {
+                    // Medical License
+                    TextInputField(
+                        placeholder: "Medical License No",
+                        text: $vm.medicalLicense,
+                        keyboardType: .default,
+                        errorText: vm.fieldErrors[.medicalLicense]
+                    )
+                    
+                    StringDropdownField(
+                        selectedValues: Binding(get: { vm.specializations ?? [] }, set: { vm.specializations = $0 }),
+                        items: availableSpecializations,
+                        placeholder: "Specialization",
+                        title: nil,
+                        allowsSearch: true,
+                        errorText: vm.fieldErrors[.specializations],
+                    )
+                }
                 
                 VStack(spacing: theme.spacing.lg) {
                     formFields()
                 }
                 .padding(.horizontal, 0)
                 
-                socialSection()
+                if selectedUserType == .patient {
+                    socialSection()
+                }
                 
                 footer()
                 
@@ -63,22 +98,28 @@ struct SignUpView: View {
             .padding(.horizontal, theme.spacing.lg)
             
         }
+        .onChange(of: authVM.showOTP) { _, newValue in
+            // When viewModel sets showOTP = true, push to OTP screen
+            if newValue {
+                let phone = authVM.otpPhoneDisplay ?? ""
+                router.push(.otp(phoneDisplay: phone))
+                // Optionally reset the flag if you don't want it re-triggered
+                authVM.showOTP = false
+            }
+        }
         .background(theme.colors.background.ignoresSafeArea())
         .navigationBarHidden(true)
-        .sheet(isPresented: $showCountryPicker) {
-            CountryPickerView(selectedCode: $countryCode)
+        .onAppear{
+            vm.userType = selectedUserType
         }
         .toast(
-            isPresenting: $showError,
-            duration: 4.0,
-            tapToDismiss: true,
-            offsetY: -UIScreen.main.bounds.height / 3,
+            isPresenting: $authVM.showErrorToast,
             alert: {
                 AlertToast(
                     displayMode: .hud,
                     type: .error(theme.colors.error),
-                    title: "",
-                    subTitle: errorMessage
+                    title: "Error!",
+                    subTitle: authVM.errorMessage
                 )
             }
         )
@@ -105,48 +146,23 @@ struct SignUpView: View {
     @ViewBuilder
     private func formFields() -> some View {
         Group {
-            // Username
-            TextField("Username", text: $username)
-                .textFieldStyle(CustomTextFieldStyle(theme: theme))
-            
-            // Email
-            TextField("Email address", text: $email)
-                .textFieldStyle(CustomTextFieldStyle(theme: theme))
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-            
-            // Gender segmented
-            VStack(alignment: .leading, spacing: theme.spacing.xs) {
-                GenderSegment(selected: $gender, left: "Male", right: "Female")
-            }
-            
-            // Phone (country code + number)
-            HStack(spacing: theme.spacing.md) {
-                Button(action: { showCountryPicker.toggle() }) {
-                    HStack {
-                        Text(countryCode)
-                            .font(theme.typography.callout)
-                        Image(systemName: "chevron.down")
-                            .imageScale(.small)
-                    }
-                    .padding(.vertical, 18)
-                    .padding(.horizontal, 10)
-                    .background(theme.colors.surface)
-                    .overlay(RoundedRectangle(cornerRadius: theme.cornerRadius).stroke(theme.colors.border, lineWidth: 1))
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                TextField("Enter mobile no.", text: $phone)
-                    .keyboardType(.phonePad)
-                    .textFieldStyle(CustomTextFieldStyle(theme: theme))
-            }
-            
+
             // Passwords
-            SecureField("Password", text: $password)
-                .textFieldStyle(CustomTextFieldStyle(theme: theme))
+            TextInputField(
+                placeholder: "Password",
+                text: $vm.password,
+                keyboardType: .default,
+                isSecure: true,
+                errorText: vm.fieldErrors[.password]
+            )
             
-            SecureField("Confirm Password", text: $confirmPassword)
-                .textFieldStyle(CustomTextFieldStyle(theme: theme))
+            TextInputField(
+                placeholder: "Confirm Password",
+                text: $vm.confirmPassword,
+                keyboardType: .default,
+                isSecure: true,
+                errorText: vm.fieldErrors[.confirmPassword]
+            )
             
             // Terms (split into smaller expression to help compiler)
             HStack(alignment: .top, spacing: 2) {
@@ -175,14 +191,14 @@ struct SignUpView: View {
             
             // Primary Sign Up Button
             PrimaryButton(action: signUp) {
-                if isLoading {
+                if authVM.isLoading {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
                     Text("Create new account")
                 }
             }
-            .disabled(!isValid || isLoading)
+            .disabled(authVM.isLoading)
         }
     }
     
@@ -253,70 +269,43 @@ struct SignUpView: View {
     // MARK: - Actions
     
     private func signUp() {
-        guard isValid else {
-            errorMessage = "Please fill all fields correctly, ensure password is at least 6 characters and passwords match, and accept TnC."
-            showError = true
-            return
-        }
         
-        isLoading = true
+        guard vm.validateSignupFields() else { return }
+        
         Task {
-            do {
-                try await authService.signUp(email: email, password: password, userType: userType(from: gender))
-                await MainActor.run {
-                    isLoading = false
-                    // handle post-signup navigation (e.g., show verification)
-                }
-            } catch {
-                await MainActor.run {
-                    isLoading = false
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
-            }
+            let request = SignUpRequest(
+                name: vm.name,
+                username: vm.username,
+                email: vm.email,
+                gender: vm.gender,
+                countryCode: vm.countryCode,
+                phoneNumber: vm.phone,
+                medicalLicenseNumber: vm.medicalLicense,
+                specializations: vm.specializations,
+                description: vm.description,
+                password: vm.password,
+                confirmPassword: vm.confirmPassword,
+                userType: vm.userType
+            )
+            
+            await authVM.signUp(request: request)
         }
     }
     
     private func googleSignUp() {
         Task {
-            do {
-                try await authService.signInWithGoogle()
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
-            }
+            await authVM.signInWithGoogle()
         }
     }
     private func facebookSignUp() {
         Task {
-            do {
-                try await authService.signInWithFacebook()
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
-            }
+            await authVM.signInWithFacebook()
         }
     }
     private func appleSignUp() {
         Task {
-            do {
-                try await authService.signInWithApple()
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
-            }
+            //await authVM.signInWithApple()
         }
-    }
-    
-    // helpers
-    private func userType(from gender: String) -> UserType {
-        return gender == "Male" ? .patient : .patient // adjust your logic
     }
     
     private func safeTop() -> CGFloat {
@@ -335,9 +324,10 @@ struct SignUpView: View {
     }
 }
 
-#Preview {
-    NavigationView {
-        SignUpView(origin: .welcome)
-    }
-    .appTheme(AppTheme.default)
-}
+//#Preview {
+//    NavigationView {
+//        SignUpView(origin: .welcome, selectedUserType: .doctor)
+//    }
+//    .environmentObject(Router.shared)
+//    .appTheme(AppTheme.default)
+//}

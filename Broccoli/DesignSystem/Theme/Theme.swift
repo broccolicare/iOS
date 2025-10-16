@@ -18,6 +18,8 @@ public protocol ThemeColors {
     var warning: Color { get }
     var error: Color { get }
     var border: Color { get }
+    var otpInputBox: Color { get }
+    var lightGreen: Color { get }
 }
 
 public protocol ThemeTypography {

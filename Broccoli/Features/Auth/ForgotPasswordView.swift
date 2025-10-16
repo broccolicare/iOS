@@ -3,10 +3,7 @@ import SwiftUI
 struct ForgotPasswordView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.presentationMode) var presentationMode
-    @StateObject private var authService = AuthService(
-        httpClient: HTTPClient(),
-        secureStore: SecureStore()
-    )
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
     
     @State private var email = ""
     @State private var isLoading = false

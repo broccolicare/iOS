@@ -2,10 +2,8 @@ import SwiftUI
 
 struct PatientHomeView: View {
     @Environment(\.appTheme) private var theme
-    @StateObject private var authService = AuthService(
-        httpClient: HTTPClient(),
-        secureStore: SecureStore()
-    )
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
+
     
     var body: some View {
         NavigationView {
@@ -18,8 +16,8 @@ struct PatientHomeView: View {
                                 .font(theme.typography.body)
                                 .foregroundStyle(theme.colors.textSecondary)
                             
-                            if let user = authService.currentUser {
-                                Text("\(user.firstName) \(user.lastName)")
+                            if let user = authVM.currentUser {
+                                Text("\(user.name)")
                                     .font(theme.typography.title)
                                     .foregroundStyle(theme.colors.textPrimary)
                             }
@@ -123,7 +121,7 @@ struct PatientHomeView: View {
     
     private func signOut() {
         Task {
-            try? await authService.signOut()
+            await authVM.signOut()
         }
     }
 }

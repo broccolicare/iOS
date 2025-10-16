@@ -23,19 +23,19 @@ public struct AppEnvironment {
     }
     
     public static let development = AppEnvironment(
-        apiBaseURL: "https://api-dev.broccoli.com",
+        apiBaseURL: "https://admin.broccolicare.ie/api",
         isDebug: true,
         enableLogging: true
     )
     
     public static let staging = AppEnvironment(
-        apiBaseURL: "https://api-staging.broccoli.com",
+        apiBaseURL: "https://admin.broccolicare.ie/api",
         isDebug: false,
         enableLogging: true
     )
     
     public static let production = AppEnvironment(
-        apiBaseURL: "https://api.broccoli.com",
+        apiBaseURL: "https://admin.broccolicare.ie/api",
         isDebug: false,
         enableLogging: false
     )

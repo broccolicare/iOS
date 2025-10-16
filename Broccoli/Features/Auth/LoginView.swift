@@ -5,18 +5,12 @@ struct LoginView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var router: Router
-    
-    @StateObject private var authService = AuthService(
-        httpClient: HTTPClient(),
-        secureStore: SecureStore()
-    )
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
     
     @State private var email = ""
     @State private var password = ""
     @State private var keepLoggedIn = true
-    @State private var isLoading = false
     @State private var showError = false
-    @State private var errorMessage = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -66,14 +60,14 @@ struct LoginView: View {
                 
                 // Login button
                 PrimaryButton(action: login) {
-                    if isLoading {
+                    if authVM.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
                         Text("Login")
                     }
                 }
-                .disabled(isLoading || email.isEmpty || password.isEmpty)
+                .disabled(authVM.isLoading || email.isEmpty || password.isEmpty)
                 .padding(.top, theme.spacing.sm)
                 
                 // "Or login with" text
@@ -114,18 +108,18 @@ struct LoginView: View {
                 // Bottom signup chips
                 HStack(spacing: theme.spacing.md) {
                     Button {
-                        Router.shared.push(.signup(origin: .login))
+                        Router.shared.push(.signup(origin: .login, userType: .patient))
                     } label: {
                         GrayOutlineButtonView(title:"Signup as User")
                     }.buttonStyle(PlainButtonStyle())
                     
                     Button {
-                        Router.shared.push(.signup(origin: .login))
+                        Router.shared.push(.signup(origin: .login, userType: .doctor))
                     } label: {
                         GrayOutlineButtonView(title: "Signup as Doctor")
                     }.buttonStyle(PlainButtonStyle())
                 }
-                    .padding(.bottom, bottomSafeAreaInset() + 10)
+                .padding(.bottom, bottomSafeAreaInset() + 10)
                 .padding(.top, 100)
             }
             .padding(.top, theme.spacing.md)
@@ -135,69 +129,34 @@ struct LoginView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(true)
         .toast(isPresenting: $showError) {
-            AlertToast(displayMode: .hud, type: .error(theme.colors.error), title: "Error!", subTitle:errorMessage)
+            AlertToast(displayMode: .hud, type: .error(theme.colors.error), title: "Error!", subTitle:authVM.errorMessage)
         }
     }
     
     // MARK: - Actions
     
     private func login() {
-        isLoading = true
-        
         Task {
-            do {
-                try await authService.signIn(email: email, password: password)
-                await MainActor.run {
-                    isLoading = false
-                    // Navigation handled by auth state in app
-                }
-            } catch {
-                await MainActor.run {
-                    isLoading = false
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
-            }
+            await authVM.signIn(email: email, password: password)
         }
     }
     
     private func googleSignIn() {
         Task {
-            do {
-                try await authService.signInWithGoogle()
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
-            }
+            await authVM.signInWithGoogle()
         }
     }
     
     private func facebookSignIn() {
         // implement facebook flow or call authService
         Task {
-            do {
-                try await authService.signInWithFacebook()
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
-            }
+            await authVM.signInWithFacebook()
         }
     }
     
     private func appleSignIn() {
         Task {
-            do {
-                try await authService.signInWithApple()
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
-            }
+            //await authVM.signInWithApple()
         }
     }
     

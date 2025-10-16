@@ -7,6 +7,51 @@
 
 import Foundation
 
+
+// MARK - Enums
+public enum SignUpOrigin {
+    case welcome
+    case login
+}
+
+public enum UserType: String, CaseIterable, Codable {
+    case patient = "patient"
+    case doctor = "doctor"
+}
+
+public enum StaticPageType: String {
+    case terms        = "terms"
+    case privacy      = "privacy"
+    case about        = "about"
+    // add other pages as needed
+
+    var title: String {
+        switch self {
+        case .terms: return "Terms & Conditions"
+        case .privacy: return "Privacy Policy"
+        case .about: return "About"
+        }
+    }
+}
+
+public enum AuthError: Error {
+    case noViewController
+    case invalidToken
+    case noRefreshToken
+    case notImplemented
+}
+
+// MARK: - API Models
+public struct AuthResponse: Codable {
+    public let accessToken: String?
+    public let refreshToken: String?
+    public let user: User?
+}
+
+public struct EmptyResponse: Codable {}
+
+
+
 // MARK: - Core Models
 public struct Appointment: Codable, Identifiable {
     public let id: String
@@ -93,4 +138,19 @@ public struct Message: Codable, Identifiable {
         case image = "image"
         case file = "file"
     }
+}
+
+public struct User: Codable {
+    public let id: Int
+    public let email: String
+    public let name: String
+    public let role: UserType
+    public let phone: String
+}
+
+public struct UserProfile: Codable {
+    public let firstName: String?
+    public let lastName: String?
+    public let avatar: String?
+    public let phoneNumber: String?
 }

@@ -11,6 +11,8 @@ extension Font {
 }
 
 public struct AppColors: ThemeColors {
+    public var otpInputBox: Color
+    
     public let primary: Color
     public let secondary: Color
     public let background: Color
@@ -21,6 +23,7 @@ public struct AppColors: ThemeColors {
     public let warning: Color
     public let error: Color
     public let border: Color
+    public let lightGreen: Color
 
     public init(
         primary: Color = Color("Primary"),
@@ -32,7 +35,9 @@ public struct AppColors: ThemeColors {
         success: Color = Color("Success"),
         warning: Color = Color("Warning"),
         error: Color = Color("Error"),
-        border: Color = Color("Border")
+        border: Color = Color("Border"),
+        otpInputBox: Color = Color("OtpInputBox"),
+        lightGreen: Color = Color("LightGreen")
     ) {
         self.primary = primary
         self.secondary = secondary
@@ -44,6 +49,8 @@ public struct AppColors: ThemeColors {
         self.warning = warning
         self.error = error
         self.border = border
+        self.otpInputBox = otpInputBox
+        self.lightGreen = lightGreen
     }
 }
 
@@ -61,8 +68,8 @@ public struct AppTypography: ThemeTypography {
         title: Font = Font.custom("Figtree-Medium", size: 30),
         subtitle: Font = Font.custom("Figtree-Medium", size: 20),
         body: Font = Font.custom("Figtree-Regular", size: 16),
-        callout: Font = Font.custom("Figtree-Regular", size: 15),
-        caption: Font = Font.custom("Figtree-Regular", size: 13),
+        callout: Font = Font.custom("Figtree-Regular", size: 14),
+        caption: Font = Font.custom("Figtree-Regular", size: 12),
         button: Font = Font.custom("Figtree-Bold", size: 16)
     ) {
         self.titleXL = titleXL

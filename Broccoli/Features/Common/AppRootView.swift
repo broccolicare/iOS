@@ -11,18 +11,15 @@ import AuthenticationServices
 import SwiftUI
 
 struct AppRootView: View {
-    @StateObject private var authService = AuthService(
-        httpClient: HTTPClient(),
-        secureStore: SecureStore()
-    )
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
     @Environment(\.appTheme) private var theme
     
     var body: some View {
         Group {
-            if authService.isAuthenticated {
+            if authVM.isAuthenticated {
                 // User is logged in - show appropriate home screen based on user type
-                if let user = authService.currentUser {
-                    switch user.userType {
+                if let user = authVM.currentUser {
+                    switch user.role {
                     case .patient:
                         PatientHomeView()
                     case .doctor:
@@ -37,11 +34,11 @@ struct AppRootView: View {
                 WelcomeView()
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: authService.isAuthenticated)
+        .animation(.easeInOut(duration: 0.3), value: authVM.isAuthenticated)
         .onAppear {
             // Check authentication status when app appears
             Task {
-                await authService.checkAuthenticationStatus()
+                await authVM.checkAuthenticationStatus()
             }
         }
     }

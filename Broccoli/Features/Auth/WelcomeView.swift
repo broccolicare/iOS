@@ -65,13 +65,13 @@ struct WelcomeView: View {
                             
                             HStack(spacing: theme.spacing.md) {
                                 Button {
-                                    Router.shared.push(.signup(origin: .welcome))
+                                    Router.shared.push(.signup(origin: .welcome, userType: .patient))
                                 } label: {
                                     GrayOutlineButtonView(title:"Signup as User")
                                 }.buttonStyle(PlainButtonStyle())
 
                                 Button {
-                                    Router.shared.push(.signup(origin: .welcome))
+                                    Router.shared.push(.signup(origin: .welcome, userType: .doctor))
                                 } label: {
                                     GrayOutlineButtonView(title:"Signup as Doctor")
                                 }.buttonStyle(PlainButtonStyle())
