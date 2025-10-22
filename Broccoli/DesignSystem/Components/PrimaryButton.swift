@@ -23,9 +23,9 @@ struct PrimaryButton<Content: View>: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
+                .background(theme.colors.primary)
+                .cornerRadius(theme.cornerRadius)
         }
-        .background(theme.colors.primary)
-        .cornerRadius(theme.cornerRadius)
         .buttonStyle(PlainButtonStyle())
     }
 }

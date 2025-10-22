@@ -8,11 +8,9 @@
 import Foundation
 
 public protocol AppServiceProtocol {
-    /// Fetch HTML content for static pages (terms/privacy/about).
-    /// Returns raw HTML string (may contain <style> tags).
     func fetchStaticPage(_ page: StaticPageType) async throws -> String
-
-    // Add other app-wide API functions here later.
+    func fetchCountryCodes() async throws -> [CountryCode]
+    func fetchSpecializations() async throws -> [Specialization]
 }
 
 public final class AppService: BaseService, AppServiceProtocol {
@@ -25,6 +23,20 @@ public final class AppService: BaseService, AppServiceProtocol {
     public func fetchStaticPage(_ page: StaticPageType) async throws -> String {
         return try await handleServiceError {
             let endpoint = AppEndpoint.staticPages(page: page)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func fetchCountryCodes() async throws -> [CountryCode] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.countrys
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func fetchSpecializations() async throws -> [Specialization] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.specializations
             return try await httpClient.request(endpoint)
         }
     }

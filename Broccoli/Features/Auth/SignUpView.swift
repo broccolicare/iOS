@@ -6,16 +6,12 @@ struct SignUpView: View {
     @EnvironmentObject private var router: Router
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var authVM: AuthGlobalViewModel
+    @EnvironmentObject private var appVM: AppGlobalViewModel
     
     @StateObject private var vm: SignupViewModel
+    
     let origin: SignUpOrigin
     let selectedUserType: UserType
-    
-    private let availableSpecializations = [
-        "General Physician", "Cardiology", "Dermatology", "Pediatrics",
-        "Orthopedics", "Gynecology", "Psychiatry", "Neurology", "Other"
-    ]
-    private let countryCodes = ["+1", "+44", "+91", "+353", "+61", "+971", "+86"]
     
     init(origin: SignUpOrigin, selectedUserType: UserType) {
         self.origin = origin
@@ -60,7 +56,7 @@ struct SignUpView: View {
                 CountryPhoneField(
                     countryCode: $vm.countryCode,
                     phone: $vm.phone,
-                    countryCodes: countryCodes,
+                    countryCodes: appVM.phoneCodesOnly,
                     errorText: vm.fieldErrors[.phone]
                 )
                 
@@ -73,13 +69,13 @@ struct SignUpView: View {
                         errorText: vm.fieldErrors[.medicalLicense]
                     )
                     
-                    StringDropdownField(
+                    DropdownField(
                         selectedValues: Binding(get: { vm.specializations ?? [] }, set: { vm.specializations = $0 }),
-                        items: availableSpecializations,
+                        items: appVM.specializations,
                         placeholder: "Specialization",
                         title: nil,
                         allowsSearch: true,
-                        errorText: vm.fieldErrors[.specializations],
+                        errorText: vm.fieldErrors[.specializations]
                     )
                 }
                 
@@ -102,7 +98,7 @@ struct SignUpView: View {
             // When viewModel sets showOTP = true, push to OTP screen
             if newValue {
                 let phone = authVM.otpPhoneDisplay ?? ""
-                router.push(.otp(phoneDisplay: phone))
+                router.push(.otp(phoneDisplay: phone, from:.signup))
                 // Optionally reset the flag if you don't want it re-triggered
                 authVM.showOTP = false
             }
@@ -111,6 +107,10 @@ struct SignUpView: View {
         .navigationBarHidden(true)
         .onAppear{
             vm.userType = selectedUserType
+            Task {
+                await appVM.loadCountryCodes()
+                await appVM.loadSpecializations()
+            }
         }
         .toast(
             isPresenting: $authVM.showErrorToast,
@@ -273,6 +273,9 @@ struct SignUpView: View {
         guard vm.validateSignupFields() else { return }
         
         Task {
+            // Extract specialization IDs from the selected Specialization objects
+            let specializationIds = vm.specializations?.map { $0.id }
+            
             let request = SignUpRequest(
                 name: vm.name,
                 username: vm.username,
@@ -281,7 +284,7 @@ struct SignUpView: View {
                 countryCode: vm.countryCode,
                 phoneNumber: vm.phone,
                 medicalLicenseNumber: vm.medicalLicense,
-                specializations: vm.specializations,
+                specializations: specializationIds,
                 description: vm.description,
                 password: vm.password,
                 confirmPassword: vm.confirmPassword,

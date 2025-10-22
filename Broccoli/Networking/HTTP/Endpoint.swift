@@ -32,11 +32,14 @@ public enum AuthEndpoint: Endpoint {
     case about
     case logout
     case verifyEmail(userId: String, otp: String)
+    case verifyOtp(email: String, otp: String)
     case resendOtp(userId: String)
+    case forgotPassword(email: String)
+    case resetPassword(email: String, otp: String, newPassword: String, confirmPassword: String)
     
     public var path: String {
         switch self {
-        case .login: return "/auth/login"
+        case .login: return "/login"
         case .socialLogin: return "/auth/social-login"
         case .register: return "/register"
         case .refreshToken: return "/auth/refresh"
@@ -45,14 +48,17 @@ public enum AuthEndpoint: Endpoint {
         case .privacy: return "/static/privacy"
         case .about: return "/static/about"
         case .verifyEmail: return "/verify-email"
+        case .verifyOtp: return "/verify-otp"
         case .resendOtp: return "/resend-otp"
+        case .forgotPassword: return "/forgot-password"
+        case .resetPassword: return "/reset-password"
             
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .login, .socialLogin, .register, .refreshToken, .logout, .verifyEmail, .resendOtp:
+        case .login, .socialLogin, .register, .refreshToken, .logout, .verifyEmail, .resendOtp, .forgotPassword, .resetPassword, .verifyOtp:
             return .POST
         case .terms, .privacy, .about:
             return .GET
@@ -75,6 +81,12 @@ public enum AuthEndpoint: Endpoint {
             return ["user_id": userId, "otp": otp]
         case .resendOtp(userId: let userId):
             return ["user_id": userId]
+        case .forgotPassword(email: let email):
+            return ["email": email]
+        case .resetPassword(email: let email, otp: let otp, newPassword: let newPassword, confirmPassword: let confirmPassword):
+            return ["email": email, "otp": otp, "password": newPassword, "password_confirmation": confirmPassword]
+        case .verifyOtp(email: let email, otp: let otp):
+            return ["email": email, "otp": otp]
         }
     }
 }
@@ -113,6 +125,8 @@ public enum UserEndpoint: Endpoint {
 
 public enum AppEndpoint: Endpoint {
     case staticPages(page: StaticPageType)
+    case countrys
+    case specializations
     
     public var path: String {
         switch self {
@@ -122,18 +136,21 @@ public enum AppEndpoint: Endpoint {
             case .privacy: return "/static/privacy"
             case .about: return "/static/about"
             }
+        case .countrys: return "/countries"
+        case .specializations: return "/specializations"
+
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .staticPages: return .GET
+        case .staticPages, .countrys, .specializations: return .GET
         }
     }
     
     public var body: [String: Any]? {
         switch self {
-        case .staticPages:
+        case .staticPages, .countrys, .specializations:
             return nil
         }
     }

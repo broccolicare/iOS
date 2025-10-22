@@ -31,6 +31,7 @@ public final class AuthGlobalViewModel: ObservableObject {
     @Published var otpToastIsError: Bool = true
     @Published var showOtpVerificationSuccess: Bool = false
     
+    
     var signupResponseObject: SignupResponse? = nil
     
     private let authService: AuthServiceProtocol
@@ -42,9 +43,6 @@ public final class AuthGlobalViewModel: ObservableObject {
         self.authService = authService
         self.secureStore = secureStore
     }
-    
-    
-    
     
     // MARK: - Authentication operations (UI-facing wrappers)
     
@@ -122,7 +120,7 @@ public final class AuthGlobalViewModel: ObservableObject {
         isLoading = false
     }
     
-    public func verifyOTP(code: String) async {
+    public func verifyEmail(code: String) async {
         isLoading = true
         otpToastMessage = nil
         do {
@@ -140,7 +138,30 @@ public final class AuthGlobalViewModel: ObservableObject {
             otpToastMessage = error.localizedDescription
             otpToastIsError = true
             otpShowToast = true
-            print("verifyOTP error: \(error)")
+            print("verifyEmail error: \(error)")
+        }
+        isLoading = false
+    }
+    
+    public func verifyOtp(email: String, code: String) async {
+        isLoading = true
+        otpToastMessage = nil
+        do {
+            let _ = try await authService.verifyOtp(email: email, otp: code)
+            showOtpVerificationSuccess = true
+            otpToastMessage = "OTP verified successfully"
+            otpShowToast = true
+        } catch let srvErr as ServiceError {
+            // Show server-provided message
+            otpToastMessage = srvErr.errorDescription ?? "Something went wrong"
+            otpToastIsError = true
+            otpShowToast = true
+        } catch {
+            // generic fallback
+            otpToastMessage = error.localizedDescription
+            otpToastIsError = true
+            otpShowToast = true
+            print("verifyEmail error: \(error)")
         }
         isLoading = false
     }
@@ -168,6 +189,40 @@ public final class AuthGlobalViewModel: ObservableObject {
         isLoading = false
     }
     
+    public func forgotPassword(email: String) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let _ = try await authService.forgotPassword(email: email)
+            // Success - the view will handle showing success message
+        } catch let srvErr as ServiceError {
+            errorMessage = srvErr.errorDescription ?? "Failed to send reset email"
+        } catch {
+            errorMessage = "Failed to send reset email. Please try again."
+        }
+        
+        isLoading = false
+    }
+    
+    public func resetPassword(email: String, otp: String, newPassword: String, confirmPassword: String) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let _ = try await authService.resetPassword(email: email, otp: otp, newPassword: newPassword, confirmPassword: confirmPassword)
+            // Success - the view will handle showing success message
+        } catch let srvErr as ServiceError {
+            errorMessage = srvErr.errorDescription ?? "Failed to reset password"
+        } catch {
+            errorMessage = "Failed to reset password. Please try again."
+        }
+        
+        isLoading = false
+    }
+    
+
+    
     // MARK: - Helpers
     
     private func handleExternalToken(_ token: String) async throws {
@@ -182,20 +237,32 @@ public final class AuthGlobalViewModel: ObservableObject {
     }
     
     private func handleAuthResponse(_ resp: AuthResponse) async throws {
-        // save tokens to secure store (adapt to your AuthResponse fields)
-//        if let access = resp.accessToken {
-//            try authService.secureStore.store(access, for: SecureStore.Keys.accessToken)
-//        }
-//        if let refresh = resp.refreshToken {
-//            try authService.secureStore.store(refresh, for: SecureStore.Keys.refreshToken)
-//        }
+        // Store access token to secure store
+        if let token = resp.token {
+            try secureStore.store(token, for: SecureStore.Keys.accessToken)
+        }
         
-        // update UI state
+        // Store user data as JSON to secure store
+        if let user = resp.user {
+            let userData = try JSONEncoder().encode(user)
+            let userDataString = String(data: userData, encoding: .utf8) ?? ""
+            try secureStore.store(userDataString, for: SecureStore.Keys.userData)
+        }
+        
+        // Update UI state
         isAuthenticated = true
         currentUser = resp.user
+        
+        // Clear any previous error messages
+        errorMessage = nil
     }
     
     private func clearAuthState() async {
+        // Clear stored access token and user data
+        try? secureStore.delete(for: SecureStore.Keys.accessToken)
+        try? secureStore.delete(for: SecureStore.Keys.userData)
+        
+        // Update UI state
         isAuthenticated = false
         currentUser = nil
     }
@@ -203,14 +270,38 @@ public final class AuthGlobalViewModel: ObservableObject {
     // Re-check tokens / session (initialization step)
     public func checkAuthenticationStatus() async {
         do {
-            if let token: String = try secureStore.retrieve(for: SecureStore.Keys.accessToken) {
-                isAuthenticated = !token.isEmpty
-                // Optionally fetch user profile here
+            if let token: String = try secureStore.retrieve(for: SecureStore.Keys.accessToken),
+               !token.isEmpty {
+                
+                // Token exists, now try to restore user data
+                if let userDataString: String = try secureStore.retrieve(for: SecureStore.Keys.userData),
+                   let userData = userDataString.data(using: .utf8) {
+                    
+                    // Decode user data from JSON
+                    let user = try JSONDecoder().decode(User.self, from: userData)
+                    
+                    // Restore authentication state
+                    isAuthenticated = true
+                    currentUser = user
+                } else {
+                    // Token exists but no user data - clear everything for safety
+                    try? secureStore.delete(for: SecureStore.Keys.accessToken)
+                    isAuthenticated = false
+                    currentUser = nil
+                }
             } else {
+                // No token found
                 isAuthenticated = false
+                currentUser = nil
             }
         } catch {
+            // Error occurred - clear authentication state
             isAuthenticated = false
+            currentUser = nil
+            try? secureStore.delete(for: SecureStore.Keys.accessToken)
+            try? secureStore.delete(for: SecureStore.Keys.userData)
         }
     }
+    
+    
 }

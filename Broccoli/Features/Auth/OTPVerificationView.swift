@@ -7,6 +7,7 @@
 import SwiftUI
 import AlertToast
 
+
 struct OTPVerificationView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.appTheme) private var theme
@@ -19,13 +20,16 @@ struct OTPVerificationView: View {
     
     let phoneDisplay: String
     let onEditPhone: (() -> Void)?
+    let from: OTPSource
     
     // Provide initializer so view constructs VM itself
     init(phoneDisplay: String,
+         from: OTPSource = .signup,
          onEditPhone: (() -> Void)? = nil,
          digitsCount: Int = 6,
          countdown: Int = 60) {
         self.phoneDisplay = phoneDisplay
+        self.from = from
         self.onEditPhone = onEditPhone
         _vm = StateObject(wrappedValue: OTPViewModel(digitsCount: digitsCount, countdown: countdown))
     }
@@ -146,7 +150,14 @@ struct OTPVerificationView: View {
         .navigationBarHidden(true)
         .onChange(of: authVM.showOtpVerificationSuccess) { _, newValue in
             if newValue {
-                router.push(.signupSuccess)
+                // Navigate to different screens based on where we came from
+                switch from {
+                case .signup:
+                    router.push(.signupSuccess)
+                case .forgotPassword:
+                    // Navigate back to login screen after password reset verification
+                    router.push(.resetPassword(email: phoneDisplay, otp: vm.code))
+                }
                 authVM.showOtpVerificationSuccess = false
             }
         }
@@ -167,7 +178,11 @@ struct OTPVerificationView: View {
             return
         }
         Task {
-            await authVM.verifyOTP(code: vm.code)
+            if from == .forgotPassword {
+                await authVM.verifyOtp(email: phoneDisplay, code: vm.code)
+            } else if from == .signup {
+                await authVM.verifyEmail(code: vm.code)
+            }
         }
     }
     

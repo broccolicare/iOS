@@ -31,7 +31,7 @@ public struct SignUpRequest: Codable {
     var countryCode: String
     var phoneNumber: String
     var medicalLicenseNumber: String?
-    var specializations: [String]?
+    var specializations: [Int]?
     var description: String?
     var password: String
     var confirmPassword: String

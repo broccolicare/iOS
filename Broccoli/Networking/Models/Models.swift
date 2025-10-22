@@ -14,6 +14,11 @@ public enum SignUpOrigin {
     case login
 }
 
+public enum OTPSource {
+    case signup
+    case forgotPassword
+}
+
 public enum UserType: String, CaseIterable, Codable {
     case patient = "patient"
     case doctor = "doctor"
@@ -43,39 +48,75 @@ public enum AuthError: Error {
 
 // MARK: - API Models
 public struct AuthResponse: Codable {
-    public let accessToken: String?
+    public let token: String?
     public let refreshToken: String?
     public let user: User?
 }
 
 public struct EmptyResponse: Codable {}
 
-
-
-// MARK: - Core Models
-public struct Appointment: Codable, Identifiable {
-    public let id: String
-    public let patientId: String
-    public let doctorId: String
-    public let scheduledDate: Date
-    public let duration: TimeInterval
-    public let status: AppointmentStatus
-    public let type: AppointmentType
-    public let notes: String?
+// MARK: - Country Code Models
+public struct CountryCode: Codable, Identifiable, Hashable {
+    public let id: Int
+    public let name: String
+    public let code: String
+    public let phoneCode: String
     
-    public enum AppointmentStatus: String, Codable, CaseIterable {
-        case scheduled = "scheduled"
-        case inProgress = "in_progress"
-        case completed = "completed"
-        case cancelled = "cancelled"
-    }
-    
-    public enum AppointmentType: String, Codable, CaseIterable {
-        case video = "video"
-        case audio = "audio"
-        case chat = "chat"
+    private enum CodingKeys: String, CodingKey {
+        case id, name, code
+        case phoneCode = "phone_code"
     }
 }
+
+public struct CountryCodesResponse: Codable {
+    public let data: [CountryCode]
+    public let message: String?
+}
+
+// MARK: - Specialization Models
+public struct Specialization: Codable, Identifiable, Hashable, CustomStringConvertible {
+    public let id: Int
+    public let name: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name
+    }
+    
+    // CustomStringConvertible conformance - this is what will be displayed in the dropdown
+    public var description: String {
+        return name
+    }
+}
+
+public struct SpecializationsResponse: Codable {
+    public let data: [Specialization]
+    public let message: String?
+}
+
+// MARK: - Core Models
+//public struct Appointment: Codable, Identifiable {
+//    public let id: String
+//    public let patientId: String
+//    public let doctorId: String
+//    public let scheduledDate: Date
+//    public let duration: TimeInterval
+//    public let status: AppointmentStatus
+//    public let type: AppointmentType
+//    public let notes: String?
+//    
+//    public enum AppointmentStatus: String, Codable, CaseIterable {
+//        case scheduled = "scheduled"
+//        case inProgress = "in_progress"
+//        case completed = "completed"
+//        case cancelled = "cancelled"
+//    }
+//    
+//    public enum AppointmentType: String, Codable, CaseIterable {
+//        case video = "video"
+//        case audio = "audio"
+//        case chat = "chat"
+//    }
+//}
 
 public struct Doctor: Codable, Identifiable {
     public let id: String
@@ -144,8 +185,8 @@ public struct User: Codable {
     public let id: Int
     public let email: String
     public let name: String
-    public let role: UserType
-    public let phone: String
+    public let username: String
+    public let role: UserType?
 }
 
 public struct UserProfile: Codable {

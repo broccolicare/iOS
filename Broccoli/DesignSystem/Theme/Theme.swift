@@ -20,6 +20,7 @@ public protocol ThemeColors {
     var border: Color { get }
     var otpInputBox: Color { get }
     var lightGreen: Color { get }
+    var textCallout: Color { get }
 }
 
 public protocol ThemeTypography {

@@ -14,7 +14,8 @@ enum Route: Hashable {
     case profile(userId: String)
     case booking(id: String)
     case staticPage(type: StaticPageType)
-    case otp(phoneDisplay: String)
+    case otp(phoneDisplay: String, from: OTPSource)
     case signupSuccess
+    case resetPassword(email: String, otp: String)
     // add routes as needed
 }

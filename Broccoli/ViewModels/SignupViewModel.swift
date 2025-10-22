@@ -23,7 +23,7 @@ final class SignupViewModel: ObservableObject {
     
     @Published var userType: UserType = .patient
     @Published var medicalLicense: String = ""
-    @Published var specializations: [String]? = nil
+    @Published var specializations: [Specialization]? = nil
     @Published var description: String = ""
     
     @Published private(set) var fieldErrors: [Field: String] = [:]

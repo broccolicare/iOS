@@ -131,6 +131,12 @@ struct LoginView: View {
         .toast(isPresenting: $showError) {
             AlertToast(displayMode: .hud, type: .error(theme.colors.error), title: "Error!", subTitle:authVM.errorMessage)
         }
+        .onChange(of: authVM.isAuthenticated) { isAuthenticated in
+            if isAuthenticated {
+                // User successfully logged in, navigate to home screen
+                router.popToRoot()
+            }
+        }
     }
     
     // MARK: - Actions

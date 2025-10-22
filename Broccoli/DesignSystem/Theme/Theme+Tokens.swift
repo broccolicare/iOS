@@ -24,6 +24,7 @@ public struct AppColors: ThemeColors {
     public let error: Color
     public let border: Color
     public let lightGreen: Color
+    public let textCallout: Color
 
     public init(
         primary: Color = Color("Primary"),
@@ -37,7 +38,8 @@ public struct AppColors: ThemeColors {
         error: Color = Color("Error"),
         border: Color = Color("Border"),
         otpInputBox: Color = Color("OtpInputBox"),
-        lightGreen: Color = Color("LightGreen")
+        lightGreen: Color = Color("LightGreen"),
+        textCallout: Color = Color("TextCallout")
     ) {
         self.primary = primary
         self.secondary = secondary
@@ -51,6 +53,7 @@ public struct AppColors: ThemeColors {
         self.border = border
         self.otpInputBox = otpInputBox
         self.lightGreen = lightGreen
+        self.textCallout = textCallout
     }
 }
 

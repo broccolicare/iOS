@@ -106,7 +106,7 @@ struct DropdownField<T: Hashable & CustomStringConvertible>: View {
                             .foregroundStyle(theme.colors.textSecondary)
                     }
                 }
-                .padding(.vertical, 14)
+                .padding(.vertical, 16)
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity)
                 .background(theme.colors.surface)

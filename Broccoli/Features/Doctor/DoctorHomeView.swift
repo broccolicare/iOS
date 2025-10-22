@@ -74,44 +74,44 @@ struct DoctorHomeView: View {
                                 .foregroundStyle(theme.colors.textPrimary)
                                 .padding(.horizontal, theme.spacing.lg)
                             
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: theme.spacing.md) {
-                                QuickActionCard(
-                                    icon: "calendar.badge.clock",
-                                    title: "Today's Schedule",
-                                    subtitle: "View appointments",
-                                    theme: theme
-                                ) {
-                                    // Navigate to schedule
-                                }
-                                
-                                QuickActionCard(
-                                    icon: "person.3",
-                                    title: "My Patients",
-                                    subtitle: "Manage patient list",
-                                    theme: theme
-                                ) {
-                                    // Navigate to patients
-                                }
-                                
-                                QuickActionCard(
-                                    icon: "stethoscope",
-                                    title: "Consultations",
-                                    subtitle: "Start video call",
-                                    theme: theme
-                                ) {
-                                    // Navigate to consultations
-                                }
-                                
-                                QuickActionCard(
-                                    icon: "doc.text.fill",
-                                    title: "Prescriptions",
-                                    subtitle: "Create prescription",
-                                    theme: theme
-                                ) {
-                                    // Navigate to prescriptions
-                                }
-                            }
-                            .padding(.horizontal, theme.spacing.lg)
+//                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: theme.spacing.md) {
+//                                QuickActionCard(
+//                                    icon: "calendar.badge.clock",
+//                                    title: "Today's Schedule",
+//                                    subtitle: "View appointments",
+//                                    theme: theme
+//                                ) {
+//                                    // Navigate to schedule
+//                                }
+//                                
+//                                QuickActionCard(
+//                                    icon: "person.3",
+//                                    title: "My Patients",
+//                                    subtitle: "Manage patient list",
+//                                    theme: theme
+//                                ) {
+//                                    // Navigate to patients
+//                                }
+//                                
+//                                QuickActionCard(
+//                                    icon: "stethoscope",
+//                                    title: "Consultations",
+//                                    subtitle: "Start video call",
+//                                    theme: theme
+//                                ) {
+//                                    // Navigate to consultations
+//                                }
+//                                
+//                                QuickActionCard(
+//                                    icon: "doc.text.fill",
+//                                    title: "Prescriptions",
+//                                    subtitle: "Create prescription",
+//                                    theme: theme
+//                                ) {
+//                                    // Navigate to prescriptions
+//                                }
+//                            }
+//                            .padding(.horizontal, theme.spacing.lg)
                         }
                         
                         // Next Appointment

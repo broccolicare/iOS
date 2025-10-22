@@ -19,8 +19,11 @@ public protocol AuthServiceProtocol {
     func signUp(request: SignUpRequest) async throws -> SignupResponse
     func refreshToken(refreshToken:String) async throws -> AuthResponse
     func verifyEmail(userId: String, otp: String) async throws -> AuthResponse
+    func verifyOtp(email: String, otp: String) async throws -> AuthResponse
     func resendOtp(userId: String) async throws -> AuthResponse
     func signOut() async throws
+    func forgotPassword(email: String) async throws -> EmptyResponse
+    func resetPassword(email: String, otp: String, newPassword: String, confirmPassword: String) async throws -> EmptyResponse
 }
 
 public final class AuthService: BaseService, AuthServiceProtocol {
@@ -112,4 +115,26 @@ public final class AuthService: BaseService, AuthServiceProtocol {
             let _: EmptyResponse = try await httpClient.request(endpoint)
         }
     }
+    
+    public func forgotPassword(email: String) async throws -> EmptyResponse {
+        return try await handleServiceError {
+            let endpoint = AuthEndpoint.forgotPassword(email: email)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func resetPassword(email: String, otp: String, newPassword: String, confirmPassword: String) async throws -> EmptyResponse {
+        return try await handleServiceError {
+            let endpoint = AuthEndpoint.resetPassword(email: email, otp: otp, newPassword: newPassword, confirmPassword: confirmPassword)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func verifyOtp(email: String, otp: String) async throws -> AuthResponse {
+        return try await handleServiceError {
+            let endpoint = AuthEndpoint.verifyOtp(email: email, otp: otp)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
 }

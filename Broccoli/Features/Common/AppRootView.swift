@@ -24,10 +24,12 @@ struct AppRootView: View {
                         PatientHomeView()
                     case .doctor:
                         DoctorHomeView()
+                    case .none:
+                        PatientRootTabView()
                     }
                 } else {
                     // Fallback in case user data is missing
-                    WelcomeView()
+                    PatientRootTabView()
                 }
             } else {
                 // User is not logged in - show welcome screen

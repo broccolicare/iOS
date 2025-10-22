@@ -40,17 +40,31 @@ struct BroccoliApp: App {
                         case .signup(let origin, let userType):
                             SignUpView(origin: origin, selectedUserType: userType)
                         case .home:
-                            EmptyView()
+                            // Route to appropriate home screen based on user type
+                            if let user = authViewModel.currentUser {
+                                switch user.role {
+                                case .patient:
+                                    PatientHomeView()
+                                case .doctor:
+                                    DoctorHomeView()
+                                case .none:
+                                    WelcomeView()
+                                }
+                            } else {
+                                WelcomeView()
+                            }
                         case .profile(userId: let userId):
                             EmptyView()
                         case .booking(id: let id):
                             EmptyView()
                         case .staticPage(type: let type):
                             StaticPageView(pageType: type)
-                        case .otp(phoneDisplay: let phoneDisplay):
-                            OTPVerificationView(phoneDisplay: phoneDisplay)
+                        case .otp(phoneDisplay: let phoneDisplay, from: let otpSource):
+                            OTPVerificationView(phoneDisplay: phoneDisplay, from: otpSource)
                         case .signupSuccess:
                             SignUpSuccessView()
+                        case .resetPassword(email: let email, otp: let otp):
+                            ResetPasswordView(email: email, otp: otp)
                         }
                     }
             }
