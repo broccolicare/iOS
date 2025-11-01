@@ -18,18 +18,16 @@ struct AppRootView: View {
         Group {
             if authVM.isAuthenticated {
                 // User is logged in - show appropriate home screen based on user type
-                if let user = authVM.currentUser {
-                    switch user.role {
+                if let user = authVM.currentUser, let role = user.primaryRole {
+                    switch role {
                     case .patient:
                         PatientHomeView()
                     case .doctor:
                         DoctorHomeView()
-                    case .none:
-                        PatientRootTabView()
                     }
                 } else {
-                    // Fallback in case user data is missing
-                    PatientRootTabView()
+                    // Fallback if user data exists but role is missing
+                    WelcomeView()
                 }
             } else {
                 // User is not logged in - show welcome screen
@@ -50,5 +48,3 @@ struct AppRootView: View {
     AppRootView()
         .appTheme(AppTheme.default)
 }
-
-

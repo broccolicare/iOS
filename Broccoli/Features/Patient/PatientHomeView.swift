@@ -8,7 +8,8 @@ struct Appointment: Identifiable { let id = UUID(); let doctorName: String; let 
 // MARK: - Home View
 struct PatientHomeView: View {
     @Environment(\.appTheme) private var theme
-    @EnvironmentObject private var router: Router // optional; remove if not using Router
+    @EnvironmentObject private var router: Router
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
     
     // screen state
     @State private var searchText: String = ""
@@ -39,7 +40,7 @@ struct PatientHomeView: View {
                             Text(greetingText())
                                 .font(theme.typography.callout)
                                 .foregroundStyle(theme.colors.textSecondary)
-                            Text("James Hudson") // replace with real user name
+                            Text(authVM.currentUser?.name ?? "Guest")
                                 .font(theme.typography.title)
                                 .foregroundStyle(theme.colors.textPrimary)
                         }

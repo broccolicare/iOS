@@ -41,14 +41,12 @@ struct BroccoliApp: App {
                             SignUpView(origin: origin, selectedUserType: userType)
                         case .home:
                             // Route to appropriate home screen based on user type
-                            if let user = authViewModel.currentUser {
-                                switch user.role {
+                            if let user = authViewModel.currentUser, let role = user.primaryRole {
+                                switch role {
                                 case .patient:
                                     PatientHomeView()
                                 case .doctor:
                                     DoctorHomeView()
-                                case .none:
-                                    WelcomeView()
                                 }
                             } else {
                                 WelcomeView()

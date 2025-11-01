@@ -10,7 +10,6 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var keepLoggedIn = true
-    @State private var showError = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -128,10 +127,10 @@ struct LoginView: View {
         .background(theme.colors.background.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(true)
-        .toast(isPresenting: $showError) {
+        .toast(isPresenting: $authVM.showErrorToast) {
             AlertToast(displayMode: .hud, type: .error(theme.colors.error), title: "Error!", subTitle:authVM.errorMessage)
         }
-        .onChange(of: authVM.isAuthenticated) { isAuthenticated in
+        .onChange(of: authVM.isAuthenticated) { _, isAuthenticated in
             if isAuthenticated {
                 // User successfully logged in, navigate to home screen
                 router.popToRoot()

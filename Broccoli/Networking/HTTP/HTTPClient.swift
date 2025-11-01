@@ -39,10 +39,12 @@ public protocol HTTPClientProtocol {
 public class HTTPClient: HTTPClientProtocol {
     private let session: URLSession
     private let baseURL: String
+    private let secureStore: SecureStore
     
-    public init(baseURL: String = AppEnvironment.current.apiBaseURL, session: URLSession = .shared) {
+    public init(baseURL: String = AppEnvironment.current.apiBaseURL, session: URLSession = .shared, secureStore: SecureStore = SecureStore()) {
         self.baseURL = baseURL
         self.session = session
+        self.secureStore = secureStore
     }
     
     public func request<T: Codable>(_ endpoint: Endpoint) async throws -> T {
@@ -55,6 +57,11 @@ public class HTTPClient: HTTPClientProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
         request.allHTTPHeaderFields = endpoint.headers
+        
+        // Automatically add Authorization header if token exists in secure storage
+        if let token = try? secureStore.retrieve(for: SecureStore.Keys.accessToken) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         
         if let body = endpoint.body {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -112,7 +119,7 @@ public class HTTPClient: HTTPClientProtocol {
             switch httpResponse.statusCode {
             case 401:
                 throw HTTPError.unauthorized(message: serr.combinedMessage ?? (serr.message ?? "Unauthorized"), statusCode: serr.status ?? httpResponse.statusCode, errors: serr.errors)
-            case 422:
+            case 422, 403:
                 throw HTTPError.validationFailed(message: serr.combinedMessage ?? (serr.message ?? "Validation failed"), statusCode: serr.status ?? httpResponse.statusCode, errors: serr.errors)
             default:
                 throw HTTPError.serverError(statusCode: serr.status ?? httpResponse.statusCode, message: serr.combinedMessage ?? serr.message, errors: serr.errors)

@@ -103,14 +103,14 @@ public struct SpecializationsResponse: Codable {
 //    public let status: AppointmentStatus
 //    public let type: AppointmentType
 //    public let notes: String?
-//    
+//
 //    public enum AppointmentStatus: String, Codable, CaseIterable {
 //        case scheduled = "scheduled"
 //        case inProgress = "in_progress"
 //        case completed = "completed"
 //        case cancelled = "cancelled"
 //    }
-//    
+//
 //    public enum AppointmentType: String, Codable, CaseIterable {
 //        case video = "video"
 //        case audio = "audio"
@@ -185,13 +185,54 @@ public struct User: Codable {
     public let id: Int
     public let email: String
     public let name: String
-    public let username: String
-    public let role: UserType?
+    public let roles: [String]
+    public let profile: UserProfile?
+    
+    // Computed property to get the primary role as UserType
+    public var primaryRole: UserType? {
+        guard let firstRole = roles.first else { return nil }
+        return UserType(rawValue: firstRole)
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, email, name, roles, profile
+    }
 }
 
 public struct UserProfile: Codable {
-    public let firstName: String?
-    public let lastName: String?
-    public let avatar: String?
-    public let phoneNumber: String?
+    public let id: Int
+    public let userId: Int
+    public let phone: String?
+    public let phoneCode: String?
+    public let gender: String?
+    public let dateOfBirth: String?
+    public let address: String?
+    public let city: String?
+    public let state: String?
+    public let country: String?
+    public let postalCode: String?
+    public let profileImage: String?
+    public let description: String?
+    public let medicalLicenseNumber: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case phone
+        case phoneCode = "phone_code"
+        case gender
+        case dateOfBirth = "date_of_birth"
+        case address
+        case city
+        case state
+        case country
+        case postalCode = "postal_code"
+        case profileImage = "profile_image"
+        case description
+        case medicalLicenseNumber = "medical_license_number"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
 }

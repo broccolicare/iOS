@@ -57,10 +57,10 @@ public class APIClient: APIClientProtocol {
     }
     
     public func updateUserProfile(_ profile: UserProfile) async throws -> User {
-        let profileData: [String: Any] = [
-            "firstName": profile.firstName ?? "",
-            "lastName": profile.lastName ?? "",
-            "phoneNumber": profile.phoneNumber ?? ""
+        let profileData: [String: Any] = [:
+//            "firstName": profile.firstName ?? "",
+//            "lastName": profile.lastName ?? "",
+//            "phoneNumber": profile.phoneNumber ?? ""
         ]
         let endpoint = UserEndpoint.updateProfile(profileData)
         return try await httpClient.request(endpoint)

@@ -54,6 +54,7 @@ public final class AuthGlobalViewModel: ObservableObject {
             try await handleAuthResponse(resp)
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            showErrorToast = true
         }
         isLoading = false
     }

@@ -43,7 +43,7 @@ public enum AuthEndpoint: Endpoint {
         case .socialLogin: return "/auth/social-login"
         case .register: return "/register"
         case .refreshToken: return "/auth/refresh"
-        case .logout: return "/auth/logout"
+        case .logout: return "/logout"
         case .terms: return "/static/terms"
         case .privacy: return "/static/privacy"
         case .about: return "/static/about"
