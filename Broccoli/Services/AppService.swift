@@ -40,4 +40,11 @@ public final class AppService: BaseService, AppServiceProtocol {
             return try await httpClient.request(endpoint)
         }
     }
+    
+    public func fetchBanners() async throws -> [Specialization] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.specializations
+            return try await httpClient.request(endpoint)
+        }
+    }
 }

@@ -11,7 +11,8 @@ enum Route: Hashable {
     case login
     case signup(origin: SignUpOrigin, userType: UserType)
     case home
-    case profile(userId: String)
+    case profile
+    case doctorProfile
     case booking(id: String)
     case staticPage(type: StaticPageType)
     case otp(phoneDisplay: String, from: OTPSource)

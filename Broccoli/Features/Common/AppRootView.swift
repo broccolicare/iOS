@@ -14,31 +14,56 @@ struct AppRootView: View {
     @EnvironmentObject private var authVM: AuthGlobalViewModel
     @Environment(\.appTheme) private var theme
     
+    @State private var isCheckingAuth = true
+    
     var body: some View {
-        Group {
-            if authVM.isAuthenticated {
+        ZStack {
+            if isCheckingAuth {
+                // Show loading view while checking authentication
+                theme.colors.background.ignoresSafeArea()
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(theme.colors.primary)
+                    Text("Loading...")
+                        .font(theme.typography.caption)
+                        .foregroundColor(theme.colors.textSecondary)
+                }
+            } else if authVM.isAuthenticated {
                 // User is logged in - show appropriate home screen based on user type
                 if let user = authVM.currentUser, let role = user.primaryRole {
                     switch role {
                     case .patient:
-                        PatientHomeView()
+                        PatientRootTabView()
+                            .onAppear {
+                                print("✅ PatientRootTabView appeared for role: patient")
+                            }
                     case .doctor:
                         DoctorHomeView()
+                            .onAppear {
+                                print("✅ DoctorHomeView appeared for role: doctor")
+                            }
                     }
                 } else {
-                    // Fallback if user data exists but role is missing
                     WelcomeView()
+                        .onAppear {
+                            print("⚠️ Authenticated but no user data - showing welcome")
+                        }
                 }
             } else {
-                // User is not logged in - show welcome screen
                 WelcomeView()
+                    .onAppear {
+                        print("👋 User not authenticated - showing welcome")
+                    }
             }
         }
         .animation(.easeInOut(duration: 0.3), value: authVM.isAuthenticated)
-        .onAppear {
-            // Check authentication status when app appears
-            Task {
-                await authVM.checkAuthenticationStatus()
+        .task {
+            print("🚀 AppRootView: Starting auth check...")
+            await authVM.checkAuthenticationStatus()
+            print("✅ AppRootView: Auth check completed")
+            await MainActor.run {
+                isCheckingAuth = false
             }
         }
     }

@@ -110,9 +110,9 @@ public final class AuthService: BaseService, AuthServiceProtocol {
     }
     
     public func signOut() async throws {
-        try await handleServiceErrorVoid {
+        try await handleServiceError {
             let endpoint = AuthEndpoint.logout
-            let _: EmptyResponse = try await httpClient.request(endpoint)
+            let _: EmptyResponse = try await self.httpClient.request(endpoint)
         }
     }
     

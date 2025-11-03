@@ -195,7 +195,41 @@ public struct User: Codable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, email, name, roles, profile
+        case id, email, name, role, roles, profile
+    }
+    
+    // Custom decoder to handle both "role" (string) and "roles" (array)
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(Int.self, forKey: .id)
+        email = try container.decode(String.self, forKey: .email)
+        name = try container.decode(String.self, forKey: .name)
+        profile = try container.decodeIfPresent(UserProfile.self, forKey: .profile)
+        
+        // Try to decode "roles" as array first (login API)
+        if let rolesArray = try? container.decode([String].self, forKey: .roles) {
+            roles = rolesArray
+        }
+        // If that fails, try to decode "role" as string (signup API)
+        else if let roleString = try? container.decode(String.self, forKey: .role) {
+            roles = [roleString]
+        }
+        // Fallback to empty array if neither exists
+        else {
+            roles = []
+        }
+    }
+    
+    // Custom encoder to always encode as "roles" array
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(id, forKey: .id)
+        try container.encode(email, forKey: .email)
+        try container.encode(name, forKey: .name)
+        try container.encode(roles, forKey: .roles)
+        try container.encodeIfPresent(profile, forKey: .profile)
     }
 }
 

@@ -270,38 +270,52 @@ public final class AuthGlobalViewModel: ObservableObject {
     
     // Re-check tokens / session (initialization step)
     public func checkAuthenticationStatus() async {
+        print("🔍 Starting authentication check...")
+        
         do {
             if let token: String = try secureStore.retrieve(for: SecureStore.Keys.accessToken),
                !token.isEmpty {
+                print("✅ Found access token: \(token.prefix(20))...")
                 
                 // Token exists, now try to restore user data
                 if let userDataString: String = try secureStore.retrieve(for: SecureStore.Keys.userData),
                    let userData = userDataString.data(using: .utf8) {
                     
+                    print("📦 Found user data, attempting to decode...")
+                    
                     // Decode user data from JSON
                     let user = try JSONDecoder().decode(User.self, from: userData)
+                    
+                    print("✅ Successfully decoded user: \(user.name), role: \(user.primaryRole?.rawValue ?? "unknown")")
                     
                     // Restore authentication state
                     isAuthenticated = true
                     currentUser = user
+                    
+                    print("✅ Authentication restored successfully")
                 } else {
+                    print("⚠️ Token exists but no user data - clearing authentication")
                     // Token exists but no user data - clear everything for safety
                     try? secureStore.delete(for: SecureStore.Keys.accessToken)
                     isAuthenticated = false
                     currentUser = nil
                 }
             } else {
+                print("ℹ️ No token found - user not authenticated")
                 // No token found
                 isAuthenticated = false
                 currentUser = nil
             }
         } catch {
+            print("❌ Error during auth check: \(error.localizedDescription)")
             // Error occurred - clear authentication state
             isAuthenticated = false
             currentUser = nil
             try? secureStore.delete(for: SecureStore.Keys.accessToken)
             try? secureStore.delete(for: SecureStore.Keys.userData)
         }
+        
+        print("🏁 Authentication check completed. isAuthenticated: \(isAuthenticated)")
     }
     
     

@@ -21,6 +21,10 @@ public protocol ThemeColors {
     var otpInputBox: Color { get }
     var lightGreen: Color { get }
     var textCallout: Color { get }
+    var appointmentCardBlue: Color { get }
+    var appointmentCardLightBlue: Color { get }
+    var gradientStart: Color { get }
+    var gradientEnd: Color { get }
 }
 
 public protocol ThemeTypography {
@@ -31,6 +35,37 @@ public protocol ThemeTypography {
     var callout: Font { get }
     var caption: Font { get }
     var button: Font { get }
+    
+    
+    var regular22: Font { get }
+    var regular20: Font { get }
+    var regular18: Font { get }
+    var regular16: Font { get }
+    var regular14: Font { get }
+    var regular12: Font { get }
+    
+    var medium22: Font { get }
+    var medium20: Font { get }
+    var medium18: Font { get }
+    var medium16: Font { get }
+    var medium14: Font { get }
+    var medium12: Font { get }
+    
+    var semiBold22: Font { get }
+    var semiBold20: Font { get }
+    var semiBold18: Font { get }
+    var semiBold16: Font { get }
+    var semiBold14: Font { get }
+    var semiBold12: Font { get }
+    
+    var bold28: Font { get }
+    var bold30: Font { get }
+    var bold22: Font { get }
+    var bold20: Font { get }
+    var bold18: Font { get }
+    var bold16: Font { get }
+    var bold14: Font { get }
+    var bold12: Font { get }
 }
 
 public struct ThemeSpacing {

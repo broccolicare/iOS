@@ -29,18 +29,22 @@ struct MainTabContainer<Content: View>: View {
 
     var body: some View {
         ZStack {
-            // Content
+            // Content - Only show the selected tab to avoid initializing all views at once
             Group {
-                // Keep all child views in the view hierarchy so they preserve state.
-                // We show only the selected view with opacity; others are hidden but keep alive:
-                content(.home)
-                    .opacity(selected == .home ? 1 : 0)
-                content(.prescription)
-                    .opacity(selected == .prescription ? 1 : 0)
-                content(.packages)
-                    .opacity(selected == .packages ? 1 : 0)
-                content(.profile)
-                    .opacity(selected == .profile ? 1 : 0)
+                switch selected {
+                case .home:
+                    content(.home)
+                        .transition(.opacity)
+                case .prescription:
+                    content(.prescription)
+                        .transition(.opacity)
+                case .packages:
+                    content(.packages)
+                        .transition(.opacity)
+                case .profile:
+                    content(.profile)
+                        .transition(.opacity)
+                }
             }
             .animation(.easeInOut(duration: 0.25), value: selected)
 
@@ -48,7 +52,6 @@ struct MainTabContainer<Content: View>: View {
             VStack {
                 Spacer()
                 CustomPillTabBar(selected: $selected)
-                    .padding(.horizontal, 12)
                     .padding(.bottom, safeBottomPadding() > 0 ? safeBottomPadding() - 4 : 10)
             }
             .ignoresSafeArea(edges: .bottom)

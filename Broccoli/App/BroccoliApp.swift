@@ -44,15 +44,17 @@ struct BroccoliApp: App {
                             if let user = authViewModel.currentUser, let role = user.primaryRole {
                                 switch role {
                                 case .patient:
-                                    PatientHomeView()
+                                    PatientRootTabView()
                                 case .doctor:
                                     DoctorHomeView()
                                 }
                             } else {
                                 WelcomeView()
                             }
-                        case .profile(userId: let userId):
-                            EmptyView()
+                        case .profile:
+                            ProfileView()
+                        case .doctorProfile:
+                            DoctorProfileView()
                         case .booking(id: let id):
                             EmptyView()
                         case .staticPage(type: let type):
@@ -66,6 +68,7 @@ struct BroccoliApp: App {
                         }
                     }
             }
+            
             .environmentObject(router)
             .environmentObject(authViewModel)
             .environmentObject(appViewModel)

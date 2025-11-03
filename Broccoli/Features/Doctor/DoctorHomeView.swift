@@ -4,209 +4,178 @@ struct DoctorHomeView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var authVM: AuthGlobalViewModel
     
+    // Sample data for appointments
+    @State private var todaysAppointments: [DoctorAppointment] = [
+        DoctorAppointment(
+            id: 1,
+            patientName: "Sophia Carter",
+            patientAvatar: "patient-avatar-1",
+            startTime: "10:00 AM",
+            endTime: "10:30 AM",
+            status: .pending
+        ),
+        DoctorAppointment(
+            id: 2,
+            patientName: "James Gulliver",
+            patientAvatar: "patient-avatar-2",
+            startTime: "12:00 PM",
+            endTime: "12:30 PM",
+            status: .pending
+        )
+    ]
+    
+    @State private var scheduledAppointments: [DoctorAppointment] = [
+        DoctorAppointment(
+            id: 3,
+            patientName: "Marc Maddison",
+            patientAvatar: "patient-avatar-3",
+            startTime: "12:00 PM",
+            endTime: "12:30 PM",
+            status: .scheduled
+        ),
+        DoctorAppointment(
+            id: 4,
+            patientName: "Anni Wilmer",
+            patientAvatar: "patient-avatar-4",
+            startTime: "02:00 PM",
+            endTime: "02:30 PM",
+            status: .scheduled
+        )
+    ]
+    
     var body: some View {
         NavigationView {
-            VStack(spacing: theme.spacing.lg) {
-                // Header
-                VStack(spacing: theme.spacing.md) {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("Welcome back,")
-                                .font(theme.typography.body)
-                                .foregroundStyle(theme.colors.textSecondary)
+            VStack(spacing: 0) {
+                // Fixed Header
+                HStack(spacing: 12) {
+                    // Profile Image and Name - Tappable
+                    NavigationLink(destination: DoctorProfileView()) {
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Image("doctor-placeholder")
+                                )
                             
-                            if let user = authVM.currentUser {
-                                Text("Dr. \(user.name)")
-                                    .font(theme.typography.title)
-                                    .foregroundStyle(theme.colors.textPrimary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(DateHelper.greetingText())
+                                    .font(theme.typography.regular16)
+                                    .foregroundStyle(theme.colors.textSecondary)
+                                
+                                if let user = authVM.currentUser {
+                                    Text(user.name)
+                                        .font(theme.typography.bold28)
+                                        .foregroundStyle(theme.colors.textPrimary)
+                                }
                             }
                         }
-                        
-                        Spacer()
-                        
-                        Button(action: signOut) {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .font(.title2)
-                                .foregroundStyle(theme.colors.textSecondary)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Spacer()
+                    
+                    // Notification Bell
+                    Button(action: {}) {
+                        ZStack {
+                            Circle()
+                                .fill(theme.colors.primary.opacity(0.1))
+                                .frame(width: 44, height: 44)
+                            
+                            Image("notification-icon").frame(width: 40, height: 40)
+                            
+                            // Notification badge
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 10, y: -10)
                         }
                     }
-                    .padding(.horizontal, theme.spacing.lg)
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
                 
-                ScrollView {
-                    VStack(spacing: theme.spacing.lg) {
-                        // Today's Stats
-                        VStack(alignment: .leading, spacing: theme.spacing.md) {
-                            Text("Today's Overview")
-                                .font(theme.typography.subtitle)
-                                .foregroundStyle(theme.colors.textPrimary)
-                                .padding(.horizontal, theme.spacing.lg)
-                            
-                            HStack(spacing: theme.spacing.md) {
-                                StatCard(
-                                    number: "8",
-                                    label: "Appointments",
-                                    icon: "calendar",
-                                    theme: theme
-                                )
-                                
-                                StatCard(
-                                    number: "3",
-                                    label: "Pending",
-                                    icon: "clock",
-                                    theme: theme
-                                )
-                                
-                                StatCard(
-                                    number: "12",
-                                    label: "Messages",
-                                    icon: "message",
-                                    theme: theme
-                                )
+                // List Content with Sections
+                List {
+                    // Today's Appointment Section
+                    Section {
+                        if todaysAppointments.isEmpty {
+                            NoAppointmentView(message: "No appointments for today")
+                                .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 20, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                        } else {
+                            ForEach(todaysAppointments) { appointment in
+                                TodayAppointmentCard(appointment: appointment, theme: theme) {
+                                    // Accept action
+                                    acceptAppointment(appointment)
+                                } onReject: {
+                                    // Reject action
+                                    rejectAppointment(appointment)
+                                }
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
                             }
-                            .padding(.horizontal, theme.spacing.lg)
                         }
-                        
-                        // Quick Actions
-                        VStack(alignment: .leading, spacing: theme.spacing.md) {
-                            Text("Quick Actions")
-                                .font(theme.typography.subtitle)
-                                .foregroundStyle(theme.colors.textPrimary)
-                                .padding(.horizontal, theme.spacing.lg)
-                            
-//                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: theme.spacing.md) {
-//                                QuickActionCard(
-//                                    icon: "calendar.badge.clock",
-//                                    title: "Today's Schedule",
-//                                    subtitle: "View appointments",
-//                                    theme: theme
-//                                ) {
-//                                    // Navigate to schedule
-//                                }
-//                                
-//                                QuickActionCard(
-//                                    icon: "person.3",
-//                                    title: "My Patients",
-//                                    subtitle: "Manage patient list",
-//                                    theme: theme
-//                                ) {
-//                                    // Navigate to patients
-//                                }
-//                                
-//                                QuickActionCard(
-//                                    icon: "stethoscope",
-//                                    title: "Consultations",
-//                                    subtitle: "Start video call",
-//                                    theme: theme
-//                                ) {
-//                                    // Navigate to consultations
-//                                }
-//                                
-//                                QuickActionCard(
-//                                    icon: "doc.text.fill",
-//                                    title: "Prescriptions",
-//                                    subtitle: "Create prescription",
-//                                    theme: theme
-//                                ) {
-//                                    // Navigate to prescriptions
-//                                }
-//                            }
-//                            .padding(.horizontal, theme.spacing.lg)
-                        }
-                        
-                        // Next Appointment
-                        VStack(alignment: .leading, spacing: theme.spacing.md) {
-                            Text("Next Appointment")
-                                .font(theme.typography.subtitle)
-                                .foregroundStyle(theme.colors.textPrimary)
-                                .padding(.horizontal, theme.spacing.lg)
-                            
-                            // Placeholder for next appointment
-                            HStack(spacing: theme.spacing.md) {
-                                VStack(alignment: .leading, spacing: theme.spacing.xs) {
-                                    Text("10:30 AM")
-                                        .font(theme.typography.subtitle)
-                                        .foregroundStyle(theme.colors.textPrimary)
-                                    
-                                    Text("Video Consultation")
-                                        .font(theme.typography.callout)
-                                        .foregroundStyle(theme.colors.textSecondary)
+                    } header: {
+                        Text("Todays Appointment")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .textCase(nil)
+                    }
+                    
+                    // Scheduled Appointments Section
+                    Section {
+                        if scheduledAppointments.isEmpty {
+                            NoAppointmentView(message: "No scheduled appointments")
+                                .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 20, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                        } else {
+                            ForEach(scheduledAppointments) { appointment in
+                                ScheduledAppointmentCard(appointment: appointment, theme: theme) {
+                                    // Start call action
+                                    startCall(appointment)
                                 }
-                                
-                                Spacer()
-                                
-                                VStack(alignment: .trailing, spacing: theme.spacing.xs) {
-                                    Text("John Smith")
-                                        .font(theme.typography.callout)
-                                        .foregroundStyle(theme.colors.textPrimary)
-                                    
-                                    Text("Age 45")
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.textSecondary)
-                                }
-                                
-                                Button(action: {}) {
-                                    Image(systemName: "video")
-                                        .font(.title2)
-                                        .foregroundStyle(.white)
-                                        .frame(width: 48, height: 48)
-                                        .background(theme.colors.primary)
-                                        .cornerRadius(theme.cornerRadius)
-                                }
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
                             }
-                            .padding(theme.spacing.lg)
-                            .background(theme.colors.surface)
-                            .cornerRadius(theme.cornerRadius)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: theme.cornerRadius)
-                                    .stroke(theme.colors.border, lineWidth: 1)
-                            )
-                            .padding(.horizontal, theme.spacing.lg)
                         }
+                    } header: {
+                        Text("Scheduled Appointments")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .textCase(nil)
                     }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .navigationBarHidden(true)
             }
-            .background(theme.colors.background)
-            .navigationBarHidden(true)
-        }
-        .navigationViewStyle(StackNavigationViewStyle())
-    }
-    
-    private func signOut() {
-        Task {
-            await authVM.signOut()
+            .navigationViewStyle(StackNavigationViewStyle())
         }
     }
-}
-
-struct StatCard: View {
-    let number: String
-    let label: String
-    let icon: String
-    let theme: AppThemeProtocol
     
-    var body: some View {
-        VStack(spacing: theme.spacing.sm) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(theme.colors.primary)
-            
-            Text(number)
-                .font(theme.typography.title)
-                .foregroundStyle(theme.colors.textPrimary)
-            
-            Text(label)
-                .font(theme.typography.caption)
-                .foregroundStyle(theme.colors.textSecondary)
+    private func acceptAppointment(_ appointment: DoctorAppointment) {
+        // Move to scheduled appointments
+        if let index = todaysAppointments.firstIndex(where: { $0.id == appointment.id }) {
+            var updatedAppointment = appointment
+            updatedAppointment.status = .scheduled
+            todaysAppointments.remove(at: index)
+            scheduledAppointments.append(updatedAppointment)
         }
-        .frame(maxWidth: .infinity)
-        .padding(theme.spacing.lg)
-        .background(theme.colors.surface)
-        .cornerRadius(theme.cornerRadius)
-        .overlay(
-            RoundedRectangle(cornerRadius: theme.cornerRadius)
-                .stroke(theme.colors.border, lineWidth: 1)
-        )
+    }
+    
+    private func rejectAppointment(_ appointment: DoctorAppointment) {
+        // Remove from today's appointments
+        todaysAppointments.removeAll { $0.id == appointment.id }
+    }
+    
+    private func startCall(_ appointment: DoctorAppointment) {
+        // Navigate to video call
+        print("Starting call with \(appointment.patientName)")
     }
 }
 

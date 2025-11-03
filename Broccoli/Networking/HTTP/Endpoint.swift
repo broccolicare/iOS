@@ -127,6 +127,7 @@ public enum AppEndpoint: Endpoint {
     case staticPages(page: StaticPageType)
     case countrys
     case specializations
+    case banners
     
     public var path: String {
         switch self {
@@ -138,19 +139,19 @@ public enum AppEndpoint: Endpoint {
             }
         case .countrys: return "/countries"
         case .specializations: return "/specializations"
-
+        case .banners: return "/sliders"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .staticPages, .countrys, .specializations: return .GET
+        case .staticPages, .countrys, .specializations, .banners: return .GET
         }
     }
     
     public var body: [String: Any]? {
         switch self {
-        case .staticPages, .countrys, .specializations:
+        case .staticPages, .countrys, .specializations, .banners:
             return nil
         }
     }
