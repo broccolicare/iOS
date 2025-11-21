@@ -27,6 +27,12 @@ struct BroccoliApp: App {
         return AppGlobalViewModel(appService: appService)
     }()
     
+    @StateObject private var userViewModel: UserGlobalViewModel = {
+        let httpClient = HTTPClient() as any HTTPClientProtocol
+        let userService = UserService(httpClient: httpClient)
+        return UserGlobalViewModel(userService: userService)
+    }()
+    
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $router.path){
@@ -65,6 +71,14 @@ struct BroccoliApp: App {
                             SignUpSuccessView()
                         case .resetPassword(email: let email, otp: let otp):
                             ResetPasswordView(email: email, otp: otp)
+                        case .patientProfileDetail:
+                            PatientProfileDetailView()
+                        case .doctorProfileDetail:
+                            DoctorProfileDetailView()
+                        case .editPatientProfile:
+                            EditPatientProfileView()
+                        case .editDoctorProfile:
+                            EditDoctorProfileView()
                         }
                     }
             }
@@ -72,6 +86,7 @@ struct BroccoliApp: App {
             .environmentObject(router)
             .environmentObject(authViewModel)
             .environmentObject(appViewModel)
+            .environmentObject(userViewModel)
             .environment(\.appTheme, AppTheme.default)
         }
     }

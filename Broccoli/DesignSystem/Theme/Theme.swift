@@ -25,6 +25,8 @@ public protocol ThemeColors {
     var appointmentCardLightBlue: Color { get }
     var gradientStart: Color { get }
     var gradientEnd: Color { get }
+    var profileDetailTextColor: Color { get }
+    var profileDetailSectionBackground: Color { get }
 }
 
 public protocol ThemeTypography {
@@ -51,6 +53,8 @@ public protocol ThemeTypography {
     var medium14: Font { get }
     var medium12: Font { get }
     
+    var semiBold30: Font { get }
+    var semiBold28: Font { get }
     var semiBold22: Font { get }
     var semiBold20: Font { get }
     var semiBold18: Font { get }

@@ -10,13 +10,10 @@ struct PatientHomeView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var authVM: AuthGlobalViewModel
+    @EnvironmentObject private var appVM: AppGlobalViewModel
     
     // screen state
     @State private var searchText: String = ""
-    @State private var banners: [Banner] = [
-        Banner(title: "Online Doctor Service", subtitle: "Frictionless access to healthcare", imageName: "person.crop.rectangle"),
-        Banner(title: "Book a Specialist", subtitle: "Get consultation from experts", imageName: "stethoscope")
-    ]
     @State private var services: [ServiceItem] = [
         ServiceItem(title: "GP Booking", icon: "calendar-icon", color: Color("Tile1")),
         ServiceItem(title: "Specialist", icon: "specilist-icon", color: Color("Tile2")),
@@ -67,9 +64,11 @@ struct PatientHomeView: View {
                                 .padding(.horizontal, theme.spacing.lg)
                             
                             // Banners carousel
-                            BannerCarousel(banners: banners)
-                                .frame(height: 150)
-                                .padding(.horizontal, theme.spacing.lg)
+                            if !appVM.slidersData.isEmpty {
+                                BannerCarousel(sliders: appVM.slidersData)
+                                    .frame(height: 150)
+                                    .padding(.horizontal, theme.spacing.lg)
+                            }
                             
                             // 2x2 service tiles
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: theme.spacing.md) {
@@ -130,6 +129,11 @@ struct PatientHomeView: View {
             .navigationBarHidden(true)
         } // NavigationStack
         .navigationViewStyle(.stack)
+        .task {
+            if appVM.slidersData.isEmpty {
+                await appVM.loadSlidersData()
+            }
+        }
     }
     
     private func safeTop() -> CGFloat {
@@ -172,30 +176,50 @@ private struct SearchBar: View {
 
 private struct BannerCarousel: View {
     @Environment(\.appTheme) private var theme
-    let banners: [Banner]
+    let sliders: [Slider]
     @State private var index: Int = 0
     
     var body: some View {
         TabView(selection: $index) {
-            ForEach(Array(banners.enumerated()), id: \.element.id) { idx, banner in
+            ForEach(Array(sliders.enumerated()), id: \.element.id) { idx, slider in
                 ZStack(alignment: .leading) {
+                    // Background with image from API
+                    AsyncImage(url: URL(string: slider.imageUrl)) { phase in
+                        switch phase {
+                        case .empty:
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(LinearGradient(colors: [Color.purple.opacity(0.9), Color.blue.opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            ProgressView()
+                                .tint(.white)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(16)
+                        case .failure:
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(LinearGradient(colors: [Color.purple.opacity(0.9), Color.blue.opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            Image(systemName: "photo")
+                                .foregroundStyle(.white.opacity(0.5))
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    
+                    // Overlay gradient for better text visibility
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(LinearGradient(colors: [Color.purple.opacity(0.9), Color.blue.opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .fill(LinearGradient(colors: [Color.black.opacity(0.6), Color.clear], startPoint: .leading, endPoint: .trailing))
+                    
+                    // Text content
                     HStack {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(banner.title)
+                            Text(slider.title)
                                 .font(theme.typography.title)
                                 .foregroundStyle(.white)
-                            Text(banner.subtitle)
-                                .font(theme.typography.callout)
-                                .foregroundStyle(.white.opacity(0.9))
                         }
                         Spacer()
-                        Image(systemName: banner.imageName)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 84, height: 84)
-                            .foregroundStyle(.white.opacity(0.9))
                     }
                     .padding()
                 }

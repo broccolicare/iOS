@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     
     @Environment(\.appTheme) private var theme
+    @EnvironmentObject private var router: Router
     @EnvironmentObject private var authVM: AuthGlobalViewModel
     
     var body: some View {
@@ -58,33 +59,38 @@ struct ProfileView: View {
                                 .foregroundStyle(.gray)
                         )
                     
-                    VStack(alignment: .leading, spacing: 4) {
-                        // Name
-                        Text(authVM.currentUser?.name ?? "James Hudson")
-                            .font(theme.typography.semiBold22)
-                            .foregroundStyle(.white)
-                        
-                        // Email with arrow
-                        HStack(spacing: 8) {
-                            Text(verbatim: authVM.currentUser?.email ?? "")
-                                .font(theme.typography.regular14)
-                                .foregroundColor(.white)
-                            Spacer()
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 12))
+                    Button(action: {
+                        router.push(.patientProfileDetail)
+                    }) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            // Name
+                            Text(authVM.currentUser?.name ?? "James Hudson")
+                                .font(theme.typography.semiBold22)
                                 .foregroundStyle(.white)
-                                .frame(width: 24, height: 24)
+                            
+                            // Email with arrow
+                            HStack(spacing: 8) {
+                                Text(verbatim: authVM.currentUser?.email ?? "")
+                                    .font(theme.typography.regular14)
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 24, height: 24)
+                            }
+                            
+                            // Basic Plan Badge
+                            Text("Basic Plan")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(theme.colors.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.white)
+                                .cornerRadius(16)
                         }
-                        
-                        // Basic Plan Badge
-                        Text("Basic Plan")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(theme.colors.primary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.white)
-                            .cornerRadius(16)
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
                     Spacer()
                 }

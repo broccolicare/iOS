@@ -58,12 +58,21 @@ public struct EmptyResponse: Codable {}
 // MARK: - Country Code Models
 public struct CountryCode: Codable, Identifiable, Hashable {
     public let id: Int
-    public let name: String
-    public let code: String
+    public let nicename: String
     public let phoneCode: String
     
+    // Computed property for display name
+    public var displayName: String {
+        return nicename
+    }
+    
+    // Computed property for phone code with + prefix
+    public var formattedPhoneCode: String {
+        return "+\(phoneCode)"
+    }
+    
     private enum CodingKeys: String, CodingKey {
-        case id, name, code
+        case id, nicename
         case phoneCode = "phone_code"
     }
 }
@@ -234,8 +243,6 @@ public struct User: Codable {
 }
 
 public struct UserProfile: Codable {
-    public let id: Int
-    public let userId: Int
     public let phone: String?
     public let phoneCode: String?
     public let gender: String?
@@ -250,10 +257,10 @@ public struct UserProfile: Codable {
     public let medicalLicenseNumber: String?
     public let createdAt: String?
     public let updatedAt: String?
+    public let bloodGroupId: Int?
+    public let bloodGroup: String?
     
     private enum CodingKeys: String, CodingKey {
-        case id
-        case userId = "user_id"
         case phone
         case phoneCode = "phone_code"
         case gender
@@ -268,5 +275,7 @@ public struct UserProfile: Codable {
         case medicalLicenseNumber = "medical_license_number"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case bloodGroupId = "blood_group_id"
+        case bloodGroup = "blood_group"
     }
 }

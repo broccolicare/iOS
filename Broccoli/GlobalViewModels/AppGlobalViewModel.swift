@@ -18,9 +18,17 @@ public final class AppGlobalViewModel: ObservableObject {
     
     @Published var countryCodes: [CountryCode] = []
     @Published var specializations: [Specialization] = []
+    @Published var slidersData: [Slider] = []
+    
+    // Metadata from API
+    @Published public var bloodGroups: [BloodGroup] = []
+    @Published public var allergyCategories: [AllergyCategory] = []
+    @Published public var allergies: [MetadataAllergy] = []
+    @Published public var genders: [Gender] = []
+    @Published public private(set) var isMetadataLoaded: Bool = false
     
     private var fallbackCountryCodes: [CountryCode] = [
-        CountryCode(id: 1, name: "Ireland", code: "IE", phoneCode: "+353"),
+        CountryCode(id: 103, nicename: "Ireland", phoneCode: "353"),
     ]
 
     private let appService: AppServiceProtocol
@@ -36,7 +44,11 @@ public final class AppGlobalViewModel: ObservableObject {
     // MARK: - Computed Properties for UI
     
     public var phoneCodesOnly: [String] {
-        return countryCodes.map { $0.phoneCode }
+        return countryCodes.map { $0.formattedPhoneCode }
+    }
+    
+    public var countryNamesOnly: [String] {
+        return countryCodes.map { $0.nicename }
     }
     
     public var specializationNamesOnly: [String] {
@@ -103,6 +115,52 @@ public final class AppGlobalViewModel: ObservableObject {
             errorMessage = "Failed to load specialization."
             // Keep fallback specializations if API fails
             specializations = []
+        }
+    }
+    
+    public func loadMetadata() async {
+        // Prevent loading multiple times
+        guard !isMetadataLoaded else { return }
+        
+        do {
+            let response = try await appService.fetchMetaData()
+            let metadata = response.data
+            
+            // Store all metadata
+            bloodGroups = metadata.bloodGroups
+            allergyCategories = metadata.allergyCategories
+            allergies = metadata.allergies
+            genders = metadata.genders
+            
+            isMetadataLoaded = true
+            
+            print("✅ Metadata loaded successfully")
+            print("   - Blood Groups: \(bloodGroups.count)")
+            print("   - Allergy Categories: \(allergyCategories.count)")
+            print("   - Allergies: \(allergies.count)")
+            print("   - Genders: \(genders.count)")
+        } catch {
+            errorMessage = "Failed to load metadata: \(error.localizedDescription)"
+            print("❌ Failed to load metadata: \(error)")
+            
+            // Set default values as fallback
+            genders = [
+                Gender(value: "male", label: "Male"),
+                Gender(value: "female", label: "Female"),
+                Gender(value: "other", label: "Other")
+            ]
+        }
+    }
+    
+    public func loadSlidersData() async {
+        do {
+            let sliders = try await appService.fetchSlidersData()
+            slidersData = sliders
+            print("✅ Sliders data loaded successfully: \(sliders.count) items")
+        } catch {
+            errorMessage = "Failed to load sliders data: \(error.localizedDescription)"
+            print("❌ Failed to load sliders data: \(error)")
+            slidersData = []
         }
     }
 }

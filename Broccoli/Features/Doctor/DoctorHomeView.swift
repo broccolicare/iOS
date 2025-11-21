@@ -3,6 +3,7 @@ import SwiftUI
 struct DoctorHomeView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var authVM: AuthGlobalViewModel
+    @EnvironmentObject private var router: Router
     
     // Sample data for appointments
     @State private var todaysAppointments: [DoctorAppointment] = [
@@ -49,7 +50,7 @@ struct DoctorHomeView: View {
                 // Fixed Header
                 HStack(spacing: 12) {
                     // Profile Image and Name - Tappable
-                    NavigationLink(destination: DoctorProfileView()) {
+                    Button(action:{ router.push(.doctorProfile) }) {
                         HStack(spacing: 12) {
                             Circle()
                                 .fill(Color.gray.opacity(0.3))

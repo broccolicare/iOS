@@ -10,6 +10,7 @@ import SwiftUI
 struct DoctorProfileView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var router: Router
     @EnvironmentObject private var authVM: AuthGlobalViewModel
     
     var body: some View {
@@ -31,7 +32,7 @@ struct DoctorProfileView: View {
             VStack(alignment:.leading ,spacing: 0) {
                 // Header with back button and settings
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: { router.pop() }) {
                         Image("back-icon-white")
                             .frame(width: 30, height: 30)
                     }
@@ -53,60 +54,64 @@ struct DoctorProfileView: View {
                 
                 // Profile Card
                 VStack(spacing: 0) {
-                    HStack(alignment: .top) {
-                        // Profile Image
-                        Circle()
-                            .frame(width: 120, height: 144)
-                            .overlay(
-                                Image("doctor-square-placeholder")
-                            )
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            // Name
-                            Text(authVM.currentUser?.name ?? "Doctor Name")
-                                .font(theme.typography.bold30)
-                                .foregroundStyle(.white)
+                    Button(action: { router.push(.doctorProfileDetail) }) {
+                        HStack(alignment: .top) {
+                            // Profile Image
+                            Rectangle()
+                                .frame(width: 120, height: 144)
+                                .cornerRadius(8)
+                                .overlay(
+                                    Image("doctor-square-placeholder")
+                                )
                             
-                            // Email
-                            if let email = authVM.currentUser?.email {
-                                Text(email)
-                                    .font(theme.typography.regular14)
-                                    .foregroundColor(.white)
-                            }
                             
-                            // Specialization
-                            if let profile = authVM.currentUser?.profile,
-                               let specialization = getSpecialization(from: profile) {
-                                Text(specialization)
-                                    .font(theme.typography.bold20)
+                            VStack(alignment: .leading, spacing: 8) {
+                                // Name
+                                Text(authVM.currentUser?.name ?? "Doctor Name")
+                                    .font(theme.typography.bold30)
                                     .foregroundStyle(.white)
-                            }
-                            
-                            // Rating and Price
-                            HStack(spacing: 16) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "star.fill")
-                                        .foregroundStyle(.white)
-                                        .font(.system(size: 16))
-                                    Text("4.5")
-                                        .font(theme.typography.bold18)
+                                
+                                // Email
+                                if let email = authVM.currentUser?.email {
+                                    Text(email)
+                                        .font(theme.typography.regular14)
+                                        .foregroundColor(.white)
+                                }
+                                
+                                // Specialization
+                                if let profile = authVM.currentUser?.profile,
+                                   let specialization = getSpecialization(from: profile) {
+                                    Text(specialization)
+                                        .font(theme.typography.bold20)
                                         .foregroundStyle(.white)
                                 }
-                                Spacer()
-                                HStack(spacing: 4) {
-                                    Image("dollar-symbol")
-                                    Text("€230")
-                                        .font(theme.typography.semiBold18)
+                                
+                                // Rating and Price
+                                HStack(spacing: 16) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "star.fill")
+                                            .foregroundStyle(.white)
+                                            .font(.system(size: 16))
+                                        Text("4.5")
+                                            .font(theme.typography.bold18)
+                                            .foregroundStyle(.white)
+                                    }
+                                    Spacer()
+                                    HStack(spacing: 4) {
+                                        Image("dollar-symbol")
+                                        Text("€230")
+                                            .font(theme.typography.semiBold18)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color.white.opacity(0.2))
+                                    .cornerRadius(20)
                                 }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.white.opacity(0.2))
-                                .cornerRadius(20)
+                                .padding(.top, 8)
                             }
-                            .padding(.top, 8)
                         }
+                        .padding(20)
                     }
-                    .padding(20)
                     
                     
                     // Stats Card

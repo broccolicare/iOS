@@ -13,10 +13,14 @@ enum Route: Hashable {
     case home
     case profile
     case doctorProfile
+    case patientProfileDetail
+    case doctorProfileDetail
     case booking(id: String)
     case staticPage(type: StaticPageType)
     case otp(phoneDisplay: String, from: OTPSource)
     case signupSuccess
     case resetPassword(email: String, otp: String)
+    case editPatientProfile
+    case editDoctorProfile
     // add routes as needed
 }

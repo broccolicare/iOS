@@ -11,6 +11,8 @@ public protocol AppServiceProtocol {
     func fetchStaticPage(_ page: StaticPageType) async throws -> String
     func fetchCountryCodes() async throws -> [CountryCode]
     func fetchSpecializations() async throws -> [Specialization]
+    func fetchMetaData() async throws -> MetadataResponse
+    func fetchSlidersData() async throws -> [Slider]
 }
 
 public final class AppService: BaseService, AppServiceProtocol {
@@ -41,9 +43,16 @@ public final class AppService: BaseService, AppServiceProtocol {
         }
     }
     
-    public func fetchBanners() async throws -> [Specialization] {
+    public func fetchMetaData() async throws -> MetadataResponse {
         return try await handleServiceError {
-            let endpoint = AppEndpoint.specializations
+            let endpoint = AppEndpoint.metaData
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func fetchSlidersData() async throws -> [Slider] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.banners
             return try await httpClient.request(endpoint)
         }
     }

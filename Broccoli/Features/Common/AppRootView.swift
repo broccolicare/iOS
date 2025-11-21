@@ -12,6 +12,7 @@ import SwiftUI
 
 struct AppRootView: View {
     @EnvironmentObject private var authVM: AuthGlobalViewModel
+    @EnvironmentObject private var appVM: AppGlobalViewModel
     @Environment(\.appTheme) private var theme
     
     @State private var isCheckingAuth = true
@@ -62,6 +63,11 @@ struct AppRootView: View {
             print("🚀 AppRootView: Starting auth check...")
             await authVM.checkAuthenticationStatus()
             print("✅ AppRootView: Auth check completed")
+            
+            // Load metadata for the app
+            print("🚀 AppRootView: Loading metadata...")
+            await appVM.loadMetadata()
+            
             await MainActor.run {
                 isCheckingAuth = false
             }

@@ -99,7 +99,8 @@ public enum UserEndpoint: Endpoint {
     
     public var path: String {
         switch self {
-        case .profile, .updateProfile: return "/user/profile"
+        case .profile: return "/me"
+        case .updateProfile: return "/me"
         case .uploadAvatar: return "/user/avatar"
         }
     }
@@ -128,6 +129,7 @@ public enum AppEndpoint: Endpoint {
     case countrys
     case specializations
     case banners
+    case metaData
     
     public var path: String {
         switch self {
@@ -137,21 +139,22 @@ public enum AppEndpoint: Endpoint {
             case .privacy: return "/static/privacy"
             case .about: return "/static/about"
             }
-        case .countrys: return "/countries"
+        case .countrys: return "/country-calling-codes"
         case .specializations: return "/specializations"
         case .banners: return "/sliders"
+        case .metaData: return "/meta-data"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .staticPages, .countrys, .specializations, .banners: return .GET
+        case .staticPages, .countrys, .specializations, .banners, .metaData: return .GET
         }
     }
     
     public var body: [String: Any]? {
         switch self {
-        case .staticPages, .countrys, .specializations, .banners:
+        case .staticPages, .countrys, .specializations, .banners, .metaData:
             return nil
         }
     }

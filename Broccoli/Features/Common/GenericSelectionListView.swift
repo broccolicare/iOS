@@ -26,6 +26,7 @@ struct GenericSelectionListView<T: Hashable & CustomStringConvertible>: View {
 
     // search
     @State private var searchText: String = ""
+    @State private var isSearching: Bool = false
     
     // Single selection initializer
     init(
@@ -65,43 +66,49 @@ struct GenericSelectionListView<T: Hashable & CustomStringConvertible>: View {
 
     var body: some View {
         NavigationView {
-            List(filteredItems, id: \.self) { item in
-                Button(action: {
-                    if allowsMultiSelection {
-                        toggleMultiSelection(for: item)
-                    } else {
-                        selectedValue = item
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }) {
-                    HStack {
-                        Text(item.description)
-                            .foregroundColor(.primary)
-                        Spacer()
-                        
+            List {
+                ForEach(filteredItems, id: \.self) { item in
+                    Button(action: {
                         if allowsMultiSelection {
-                            // Multi-selection checkmark
-                            if selectedValues.contains(item) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.accentColor)
-                            } else {
-                                Image(systemName: "circle")
-                                    .foregroundColor(.gray)
-                            }
+                            toggleMultiSelection(for: item)
                         } else {
-                            // Single selection checkmark
-                            if selectedValue == item {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.accentColor)
+                            selectedValue = item
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    }) {
+                        HStack {
+                            Text(item.description)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            
+                            if allowsMultiSelection {
+                                // Multi-selection checkmark
+                                if selectedValues.contains(item) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.accentColor)
+                                } else {
+                                    Image(systemName: "circle")
+                                        .foregroundColor(.gray)
+                                }
+                            } else {
+                                // Single selection checkmark
+                                if selectedValue == item {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.accentColor)
+                                }
                             }
                         }
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
             }
             .listStyle(.insetGrouped)
             .navigationTitle(title)
-            .searchable(text: $searchText, isPresented: .constant(allowsSearch))
+            .navigationBarTitleDisplayMode(.inline)
+            .if(allowsSearch) { view in
+                view.searchable(text: $searchText, prompt: "Search")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -127,6 +134,18 @@ struct GenericSelectionListView<T: Hashable & CustomStringConvertible>: View {
             selectedValues.removeAll { $0 == item }
         } else {
             selectedValues.append(item)
+        }
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
         }
     }
 }

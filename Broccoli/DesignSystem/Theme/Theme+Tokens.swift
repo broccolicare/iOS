@@ -11,6 +11,9 @@ extension Font {
 }
 
 public struct AppColors: ThemeColors {
+    public var profileDetailSectionBackground: Color
+    
+    public var profileDetailTextColor: Color
     public var gradientStart: Color
     public var gradientEnd: Color
     public var appointmentCardBlue: Color
@@ -46,7 +49,9 @@ public struct AppColors: ThemeColors {
         appointmentCardBlue: Color = Color("AppointmentCardBlue"),
         appointmentCardLightBlue: Color = Color("AppointmentCardLightBlue"),
         gradientStart: Color = Color("GradientStart"),
-        gradientEnd: Color = Color("GradientEnd")
+        gradientEnd: Color = Color("GradientEnd"),
+        profileDetailTextColor: Color = Color("ProfileDetailTextColor"),
+        profileDetailSectionBackground: Color = Color("ProfileDetailSectionBackground")
     ) {
         self.primary = primary
         self.secondary = secondary
@@ -65,10 +70,13 @@ public struct AppColors: ThemeColors {
         self.appointmentCardLightBlue = appointmentCardLightBlue
         self.gradientStart = gradientStart
         self.gradientEnd = gradientEnd
+        self.profileDetailTextColor = profileDetailTextColor
+        self.profileDetailSectionBackground = profileDetailSectionBackground
     }
 }
 
 public struct AppTypography: ThemeTypography {
+    
     public var regular22: Font
     public var regular20: Font
     public var regular18: Font
@@ -83,6 +91,8 @@ public struct AppTypography: ThemeTypography {
     public var medium14: Font
     public var medium12: Font
     
+    public var semiBold30: Font
+    public var semiBold28: Font
     public var semiBold22: Font
     public var semiBold20: Font
     public var semiBold18: Font
@@ -141,6 +151,8 @@ public struct AppTypography: ThemeTypography {
         medium14: Font = Font.custom("Figtree-Medium", size: 14),
         medium12: Font = Font.custom("Figtree-Medium", size: 12),
         
+        semiBold30: Font = Font.custom("Figtree-SemiBold", size: 30),
+        semiBold28: Font = Font.custom("Figtree-SemiBold", size: 28),
         semiBold22: Font = Font.custom("Figtree-SemiBold", size: 22),
         semiBold20: Font = Font.custom("Figtree-SemiBold", size: 20),
         semiBold18: Font = Font.custom("Figtree-SemiBold", size: 18),
@@ -172,6 +184,8 @@ public struct AppTypography: ThemeTypography {
         self.regular14 = regular14
         self.regular12 = regular12
         
+        self.semiBold30 = semiBold30
+        self.semiBold28 = semiBold28
         self.semiBold22 = semiBold22
         self.semiBold20 = semiBold20
         self.semiBold18 = semiBold18
