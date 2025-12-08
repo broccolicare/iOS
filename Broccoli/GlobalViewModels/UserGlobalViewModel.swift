@@ -10,6 +10,7 @@ import Combine
 @MainActor
 public final class UserGlobalViewModel: ObservableObject {
     private let userService: UserServiceProtocol
+    private let secureStore: SecureStore
     
     @Published public var isLoading: Bool = false
     @Published public var errorMessage: String? = nil
@@ -17,8 +18,12 @@ public final class UserGlobalViewModel: ObservableObject {
     @Published public var showSuccessToast: Bool = false
     @Published public var profileData: UserProfileData? = nil
     
-    public init(userService: UserServiceProtocol) {
+    public init(userService: UserServiceProtocol, secureStore: SecureStore = SecureStore()) {
         self.userService = userService
+        self.secureStore = secureStore
+        
+        // Load cached user data immediately from secure store
+        loadCachedUserProfile()
     }
     
     // MARK: - Computed Properties
@@ -49,12 +54,41 @@ public final class UserGlobalViewModel: ObservableObject {
     
     // MARK: - Methods
     
+    /// Load cached user profile from secure store (synchronous, fast)
+    private func loadCachedUserProfile() {
+        do {
+            if let userDataString: String = try secureStore.retrieve(for: SecureStore.Keys.userProfileData),
+               let userData = userDataString.data(using: .utf8) {
+                let profile = try JSONDecoder().decode(UserProfileData.self, from: userData)
+                profileData = profile
+                print("✅ Loaded cached user profile: \(profile.name)")
+            }
+        } catch {
+            print("⚠️ No cached profile data or failed to decode: \(error)")
+        }
+    }
+    
+    /// Save user profile to secure store for offline access
+    private func cacheUserProfile(_ profile: UserProfileData) {
+        do {
+            let userData = try JSONEncoder().encode(profile)
+            let userDataString = String(data: userData, encoding: .utf8) ?? ""
+            try secureStore.store(userDataString, for: SecureStore.Keys.userProfileData)
+            print("✅ Cached user profile data")
+        } catch {
+            print("❌ Failed to cache profile data: \(error)")
+        }
+    }
+    
     public func fetchProfileDetail() async {
         isLoading = true
         errorMessage = nil
         do {
             let response = try await userService.fetchUserProfile()
             profileData = response.data
+            
+            // Cache the profile data for offline access
+            cacheUserProfile(response.data)
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             showErrorToast = true
@@ -69,6 +103,10 @@ public final class UserGlobalViewModel: ObservableObject {
         do {
             let response = try await userService.updateProfile(data: data)
             profileData = response.data
+            
+            // Cache the updated profile data
+            cacheUserProfile(response.data)
+            
             showSuccessToast = true
             print("✅ Profile updated successfully")
         } catch {

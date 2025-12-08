@@ -11,6 +11,7 @@
 		5381EE262E9562660096B7DF /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5381EE252E9562660096B7DF /* FirebaseCore */; };
 		5381EE282E9562660096B7DF /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 5381EE272E9562660096B7DF /* FirebaseCrashlytics */; };
 		5381EE2A2E9562660096B7DF /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 5381EE292E9562660096B7DF /* FirebaseMessaging */; };
+		5382FA1E2ED86D3A0062DE39 /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 5382FA1D2ED86D3A0062DE39 /* StripePaymentSheet */; };
 		53A210902E9564A800586875 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 53A2108F2E9564A800586875 /* GoogleSignIn */; };
 		53A210922E9564A800586875 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210912E9564A800586875 /* GoogleSignInSwift */; };
 		53A210952E95664300586875 /* FacebookCore in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210942E95664300586875 /* FacebookCore */; };
@@ -60,6 +61,7 @@
 				53A2109A2E9566FD00586875 /* KeychainAccess in Frameworks */,
 				5381EE262E9562660096B7DF /* FirebaseCore in Frameworks */,
 				53A210972E95664300586875 /* FacebookLogin in Frameworks */,
+				5382FA1E2ED86D3A0062DE39 /* StripePaymentSheet in Frameworks */,
 				5381EE282E9562660096B7DF /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -114,6 +116,7 @@
 				53A210992E9566FD00586875 /* KeychainAccess */,
 				53FC16B62E98D05C004CA9CE /* AlertToast */,
 				53FC16BD2E98D5A7004CA9CE /* Toasts */,
+				5382FA1D2ED86D3A0062DE39 /* StripePaymentSheet */,
 			);
 			productName = Broccoli;
 			productReference = 535BAF5D2E95347A00C4A634 /* Broccoli.app */;
@@ -150,6 +153,7 @@
 				53A210982E9566FD00586875 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				53FC16B52E98D05C004CA9CE /* XCRemoteSwiftPackageReference "AlertToast" */,
 				53FC16BC2E98D5A7004CA9CE /* XCRemoteSwiftPackageReference "swiftui-toasts" */,
+				5382FA1C2ED86D3A0062DE39 /* XCRemoteSwiftPackageReference "stripe-ios-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 535BAF5E2E95347A00C4A634 /* Products */;
@@ -424,6 +428,14 @@
 				minimumVersion = 12.3.0;
 			};
 		};
+		5382FA1C2ED86D3A0062DE39 /* XCRemoteSwiftPackageReference "stripe-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stripe/stripe-ios-spm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 25.1.1;
+			};
+		};
 		53A2108E2E9564A800586875 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
@@ -481,6 +493,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5381EE242E9562660096B7DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseMessaging;
+		};
+		5382FA1D2ED86D3A0062DE39 /* StripePaymentSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5382FA1C2ED86D3A0062DE39 /* XCRemoteSwiftPackageReference "stripe-ios-spm" */;
+			productName = StripePaymentSheet;
 		};
 		53A2108F2E9564A800586875 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;

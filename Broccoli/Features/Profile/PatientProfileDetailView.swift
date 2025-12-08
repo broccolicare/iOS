@@ -193,19 +193,19 @@ struct PatientProfileDetailView: View {
                             VStack(spacing: 16) {
                                 ProfileInfoRow(
                                     label: "Name",
-                                    value: "Ethan Carter",
+                                    value: userVM.profileData?.emergencyContact?.name ?? "Not provided",
                                     valueColor: theme.colors.profileDetailTextColor,
                                 )
                                 
                                 ProfileInfoRow(
                                     label: "Relationship",
-                                    value: "Spouse",
+                                    value: userVM.profileData?.emergencyContact?.relationship ?? "Not provided",
                                     valueColor: theme.colors.profileDetailTextColor,
                                 )
                                 
                                 ProfileInfoRow(
                                     label: "Phone Num",
-                                    value: "+1 (555) 987-6543",
+                                    value: userVM.profileData?.emergencyContact?.phone ?? "Not provided",
                                     valueColor: theme.colors.profileDetailTextColor,
                                 )
                             }

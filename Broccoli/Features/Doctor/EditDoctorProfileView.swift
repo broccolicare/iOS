@@ -37,7 +37,7 @@ struct EditDoctorProfileView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: { router.pop() }) {
                         Image("BackButton")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(theme.colors.primary)

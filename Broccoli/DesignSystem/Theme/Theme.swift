@@ -27,6 +27,8 @@ public protocol ThemeColors {
     var gradientEnd: Color { get }
     var profileDetailTextColor: Color { get }
     var profileDetailSectionBackground: Color { get }
+    var monthSwitcherBackgroundColor: Color { get }
+    var orderConfirmationBorderColor: Color { get }
 }
 
 public protocol ThemeTypography {
@@ -38,7 +40,11 @@ public protocol ThemeTypography {
     var caption: Font { get }
     var button: Font { get }
     
-    
+    var regular32: Font { get }
+    var regular30: Font { get }
+    var regular28: Font { get }
+    var regular26: Font { get }
+    var regular24: Font { get }
     var regular22: Font { get }
     var regular20: Font { get }
     var regular18: Font { get }
@@ -46,6 +52,11 @@ public protocol ThemeTypography {
     var regular14: Font { get }
     var regular12: Font { get }
     
+    var medium32: Font { get }
+    var medium30: Font { get }
+    var medium28: Font { get }
+    var medium26: Font { get }
+    var medium24: Font { get }
     var medium22: Font { get }
     var medium20: Font { get }
     var medium18: Font { get }
@@ -53,8 +64,11 @@ public protocol ThemeTypography {
     var medium14: Font { get }
     var medium12: Font { get }
     
+    var semiBold32: Font { get }
     var semiBold30: Font { get }
     var semiBold28: Font { get }
+    var semiBold26: Font { get }
+    var semiBold24: Font { get }
     var semiBold22: Font { get }
     var semiBold20: Font { get }
     var semiBold18: Font { get }
@@ -62,14 +76,28 @@ public protocol ThemeTypography {
     var semiBold14: Font { get }
     var semiBold12: Font { get }
     
-    var bold28: Font { get }
+    var bold34: Font { get }
+    var bold32: Font { get }
     var bold30: Font { get }
+    var bold28: Font { get }
+    var bold26: Font { get }
+    var bold24: Font { get }
     var bold22: Font { get }
     var bold20: Font { get }
     var bold18: Font { get }
     var bold16: Font { get }
     var bold14: Font { get }
     var bold12: Font { get }
+    
+    var extraBold28: Font { get }
+    var extraBold30: Font { get }
+    var extraBold24: Font { get }
+    var extraBold22: Font { get }
+    var extraBold20: Font { get }
+    var extraBold18: Font { get }
+    var extraBold16: Font { get }
+    var extraBold14: Font { get }
+    var extraBold12: Font { get }
 }
 
 public struct ThemeSpacing {

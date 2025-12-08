@@ -24,7 +24,7 @@ struct PatientHomeView: View {
         Appointment(doctorName: "Dr. Ethan Carter", specialty: "General Practitioner", date: "2nd Oct, 2025", time: "12:30 PM", avatar: "person.circle"),
         Appointment(doctorName: "Dr. Laura Smith", specialty: "Dermatologist", date: "10th Oct, 2025", time: "09:00 AM", avatar: "person.circle.fill")
     ]
-
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -44,14 +44,20 @@ struct PatientHomeView: View {
                         Spacer()
                         Button {
                             // navigate to notifications screen; if you use router:
-                            //router.push(.profile) // example; replace with .notifications route if defined
+                            router.push(.notifications) // example; replace with .notifications route if defined
                         } label: {
                             ZStack {
                                 Circle()
-                                    .fill(theme.colors.surface)
+                                    .fill(theme.colors.primary.opacity(0.1))
                                     .frame(width: 44, height: 44)
-                                Image(systemName: "bell.fill")
-                                    .foregroundStyle(theme.colors.primary)
+                                
+                                Image("notification-icon").frame(width: 40, height: 40)
+                                
+                                // Notification badge
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 10, y: -10)
                             }
                         }
                     }
@@ -72,11 +78,16 @@ struct PatientHomeView: View {
                             
                             // 2x2 service tiles
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: theme.spacing.md) {
-                                ForEach(services) { s in
-                                    ServiceTile(item: s) {
+                                ForEach(services) { service in
+                                    ServiceTile(item: service) {
                                         // navigate to respective screen
                                         // e.g. router.push(.specialist) or NavigationLink
-                                        print("Tapped \(s.title)")
+                                        print("Tapped \(service.title)")
+                                        if service.title == "GP Booking" {
+                                            router.push(.gPAppointBookingForm)
+                                        } else if service.title == "Specialist" {
+                                            router.push(.specialistList)
+                                        }
                                     }
                                 }
                             }
@@ -90,13 +101,13 @@ struct PatientHomeView: View {
                                     .padding(.horizontal, theme.spacing.lg)
                                 
                                 VerticalCarousel(items: appointments,
-                                                                  visibleCount: 4,
-                                                                 spacing: 12,
-                                                                 scaleGap: 0.06,
-                                                                 swipeThreshold: 90,
-                                                                 maxRotationX: 16,
-                                                                 perspective: 0.9,
-                                                                  height: 160) { item in
+                                                 visibleCount: 4,
+                                                 spacing: 12,
+                                                 scaleGap: 0.06,
+                                                 swipeThreshold: 90,
+                                                 maxRotationX: 16,
+                                                 perspective: 0.9,
+                                                 height: 160) { item in
                                     ZStack {
                                         AppointmentCard(appointment: item)
                                             .padding(.horizontal, theme.spacing.lg)
@@ -107,18 +118,27 @@ struct PatientHomeView: View {
                             
                             // bottom two boxes
                             HStack(spacing: theme.spacing.md) {
+                                Button(action: {
+                                    router.push(.medicalTourisimForm)
+                                }) {
                                     SmallActionTile(
                                         title: "Medical Tourism",
                                         icon: "medical-tourism-icon"
                                     )
                                     .frame(height: 100)
-                                    
+                                }.buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    router.push(.cureFromDrugForm)
+                                }) {
                                     SmallActionTile(
                                         title: "Cure From Drug",
                                         icon: "cure-from-drug-icon"
                                     )
                                     .frame(height: 100)
-                                }
+                                }.buttonStyle(.plain)
+                                
+                            }
                             .padding(.horizontal, theme.spacing.lg)
                             .padding(.bottom, 80) // space for tab bar
                         }

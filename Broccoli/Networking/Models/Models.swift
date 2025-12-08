@@ -157,11 +157,6 @@ public struct Patient: Codable, Identifiable {
     }
 }
 
-public struct EmergencyContact: Codable {
-    public let name: String
-    public let phoneNumber: String
-    public let relationship: String
-}
 
 public struct MedicalRecord: Codable, Identifiable {
     public let id: String

@@ -22,5 +22,16 @@ enum Route: Hashable {
     case resetPassword(email: String, otp: String)
     case editPatientProfile
     case editDoctorProfile
+    case gPAppointBookingForm
+    case bookingConfirmation
+    case specialistList
+    case specilistBookingForm
+    case paymentSuccess(booking: BookingData?)
+    case medicalTourisimForm
+    case cureFromDrugForm
+    case notifications
+    case myAppointments
+    case myPharmacies
+    case addPharmacy
     // add routes as needed
 }

@@ -45,6 +45,7 @@ public extension SecureStore {
         public static let accessToken = "access_token"
         public static let refreshToken = "refresh_token"
         public static let userData = "user_data"
+        public static let userProfileData = "user_profile_data"
         public static let userID = "user_id"
         public static let fcmToken = "fcm_token"
     }

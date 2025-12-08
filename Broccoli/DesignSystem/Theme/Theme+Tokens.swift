@@ -11,8 +11,10 @@ extension Font {
 }
 
 public struct AppColors: ThemeColors {
-    public var profileDetailSectionBackground: Color
+    public var orderConfirmationBorderColor: Color
     
+    public var monthSwitcherBackgroundColor: Color
+    public var profileDetailSectionBackground: Color
     public var profileDetailTextColor: Color
     public var gradientStart: Color
     public var gradientEnd: Color
@@ -51,7 +53,9 @@ public struct AppColors: ThemeColors {
         gradientStart: Color = Color("GradientStart"),
         gradientEnd: Color = Color("GradientEnd"),
         profileDetailTextColor: Color = Color("ProfileDetailTextColor"),
-        profileDetailSectionBackground: Color = Color("ProfileDetailSectionBackground")
+        profileDetailSectionBackground: Color = Color("ProfileDetailSectionBackground"),
+        monthSwitcherBackgroundColor: Color = Color("MonthSwitcherBackground"),
+        orderConfirmationBorderColor: Color = Color("OrderConfirmationBorderColor")
     ) {
         self.primary = primary
         self.secondary = secondary
@@ -72,11 +76,28 @@ public struct AppColors: ThemeColors {
         self.gradientEnd = gradientEnd
         self.profileDetailTextColor = profileDetailTextColor
         self.profileDetailSectionBackground = profileDetailSectionBackground
+        self.monthSwitcherBackgroundColor = monthSwitcherBackgroundColor
+        self.orderConfirmationBorderColor = orderConfirmationBorderColor
     }
 }
 
 public struct AppTypography: ThemeTypography {
     
+    public var extraBold28: Font
+    public var extraBold30: Font
+    public var extraBold24: Font
+    public var extraBold22: Font
+    public var extraBold20: Font
+    public var extraBold18: Font
+    public var extraBold16: Font
+    public var extraBold14: Font
+    public var extraBold12: Font
+    
+    public var regular32: Font
+    public var regular30: Font
+    public var regular28: Font
+    public var regular26: Font
+    public var regular24: Font
     public var regular22: Font
     public var regular20: Font
     public var regular18: Font
@@ -84,6 +105,11 @@ public struct AppTypography: ThemeTypography {
     public var regular14: Font
     public var regular12: Font
     
+    public var medium32: Font
+    public var medium30: Font
+    public var medium28: Font
+    public var medium26: Font
+    public var medium24: Font
     public var medium22: Font
     public var medium20: Font
     public var medium18: Font
@@ -91,8 +117,11 @@ public struct AppTypography: ThemeTypography {
     public var medium14: Font
     public var medium12: Font
     
+    public var semiBold32: Font
     public var semiBold30: Font
     public var semiBold28: Font
+    public var semiBold26: Font
+    public var semiBold24: Font
     public var semiBold22: Font
     public var semiBold20: Font
     public var semiBold18: Font
@@ -100,8 +129,12 @@ public struct AppTypography: ThemeTypography {
     public var semiBold14: Font
     public var semiBold12: Font
     
+    public var bold34: Font
+    public var bold32: Font
     public var bold30: Font
     public var bold28: Font
+    public var bold26: Font
+    public var bold24: Font
     public let bold22: Font
     public var bold20: Font
     public var bold18: Font
@@ -127,15 +160,34 @@ public struct AppTypography: ThemeTypography {
         caption: Font = Font.custom("Figtree-Regular", size: 12),
         button: Font = Font.custom("Figtree-Bold", size: 16),
         
-        bold30: Font = Font.custom("Figtree-Bold", size: 30),
-        bold28: Font = Font.custom("Figtree-Bold", size: 28),
-        bold22: Font = Font.custom("Figtree-Bold", size: 22),
-        bold20: Font = Font.custom("Figtree-Bold", size: 20),
-        bold18: Font = Font.custom("Figtree-Bold", size: 18),
-        bold16: Font = Font.custom("Figtree-Bold", size: 16),
-        bold14: Font = Font.custom("Figtree-Bold", size: 14),
-        bold12: Font = Font.custom("Figtree-Bold", size: 12),
+        bold34: Font = Font.custom("Figtree-ExtraBold", size: 34),
+        bold32: Font = Font.custom("Figtree-ExtraBold", size: 32),
+        bold30: Font = Font.custom("Figtree-ExtraBold", size: 30),
+        bold28: Font = Font.custom("Figtree-ExtraBold", size: 28),
+        bold26: Font = Font.custom("Figtree-ExtraBold", size: 26),
+        bold24: Font = Font.custom("Figtree-ExtraBold", size: 24),
+        bold22: Font = Font.custom("Figtree-ExtraBold", size: 22),
+        bold20: Font = Font.custom("Figtree-ExtraBold", size: 20),
+        bold18: Font = Font.custom("Figtree-ExtraBold", size: 18),
+        bold16: Font = Font.custom("Figtree-ExtraBold", size: 16),
+        bold14: Font = Font.custom("Figtree-ExtraBold", size: 14),
+        bold12: Font = Font.custom("Figtree-ExtraBold", size: 12),
         
+        extraBold30: Font = Font.custom("Figtree-Bold", size: 30),
+        extraBold28: Font = Font.custom("Figtree-Bold", size: 28),
+        extraBold24: Font = Font.custom("Figtree-Bold", size: 24),
+        extraBold22: Font = Font.custom("Figtree-Bold", size: 22),
+        extraBold20: Font = Font.custom("Figtree-Bold", size: 20),
+        extraBold18: Font = Font.custom("Figtree-Bold", size: 18),
+        extraBold16: Font = Font.custom("Figtree-Bold", size: 16),
+        extraBold14: Font = Font.custom("Figtree-Bold", size: 14),
+        extraBold12: Font = Font.custom("Figtree-Bold", size: 12),
+        
+        regular32: Font = Font.custom("Figtree-Regular", size: 32),
+        regular30: Font = Font.custom("Figtree-Regular", size: 30),
+        regular28: Font = Font.custom("Figtree-Regular", size: 28),
+        regular26: Font = Font.custom("Figtree-Regular", size: 26),
+        regular24: Font = Font.custom("Figtree-Regular", size: 24),
         regular22: Font = Font.custom("Figtree-Regular", size: 22),
         regular20: Font = Font.custom("Figtree-Regular", size: 20),
         regular18: Font = Font.custom("Figtree-Regular", size: 18),
@@ -144,6 +196,11 @@ public struct AppTypography: ThemeTypography {
         regular12: Font = Font.custom("Figtree-Regular", size: 12),
         
         
+        medium32: Font = Font.custom("Figtree-Medium", size: 32),
+        medium30: Font = Font.custom("Figtree-Medium", size: 30),
+        medium28: Font = Font.custom("Figtree-Medium", size: 28),
+        medium26: Font = Font.custom("Figtree-Medium", size: 26),
+        medium24: Font = Font.custom("Figtree-Medium", size: 24),
         medium22: Font = Font.custom("Figtree-Medium", size: 22),
         medium20: Font = Font.custom("Figtree-Medium", size: 20),
         medium18: Font = Font.custom("Figtree-Medium", size: 18),
@@ -151,8 +208,11 @@ public struct AppTypography: ThemeTypography {
         medium14: Font = Font.custom("Figtree-Medium", size: 14),
         medium12: Font = Font.custom("Figtree-Medium", size: 12),
         
+        semiBold32: Font = Font.custom("Figtree-SemiBold", size: 32),
         semiBold30: Font = Font.custom("Figtree-SemiBold", size: 30),
         semiBold28: Font = Font.custom("Figtree-SemiBold", size: 28),
+        semiBold26: Font = Font.custom("Figtree-SemiBold", size: 26),
+        semiBold24: Font = Font.custom("Figtree-SemiBold", size: 24),
         semiBold22: Font = Font.custom("Figtree-SemiBold", size: 22),
         semiBold20: Font = Font.custom("Figtree-SemiBold", size: 20),
         semiBold18: Font = Font.custom("Figtree-SemiBold", size: 18),
@@ -170,6 +230,11 @@ public struct AppTypography: ThemeTypography {
         self.caption = caption
         self.button = button
         
+        self.medium32 = medium32
+        self.medium30 = medium30
+        self.medium28 = medium28
+        self.medium26 = medium26
+        self.medium24 = medium24
         self.medium22 = medium22
         self.medium20 = medium20
         self.medium18 = medium18
@@ -177,6 +242,11 @@ public struct AppTypography: ThemeTypography {
         self.medium14 = medium14
         self.medium12 = medium12
         
+        self.regular32 = regular32
+        self.regular30 = regular30
+        self.regular28 = regular28
+        self.regular26 = regular26
+        self.regular24 = regular24
         self.regular22 = regular22
         self.regular20 = regular20
         self.regular18 = regular18
@@ -184,8 +254,11 @@ public struct AppTypography: ThemeTypography {
         self.regular14 = regular14
         self.regular12 = regular12
         
+        self.semiBold32 = semiBold32
         self.semiBold30 = semiBold30
         self.semiBold28 = semiBold28
+        self.semiBold26 = semiBold26
+        self.semiBold24 = semiBold24
         self.semiBold22 = semiBold22
         self.semiBold20 = semiBold20
         self.semiBold18 = semiBold18
@@ -193,14 +266,28 @@ public struct AppTypography: ThemeTypography {
         self.semiBold14 = semiBold14
         self.semiBold12 = semiBold12
         
+        self.bold34 = bold34
+        self.bold32 = bold32
         self.bold30 = bold30
         self.bold28 = bold28
+        self.bold26 = bold26
+        self.bold24 = bold24
         self.bold22 = bold22
         self.bold20 = bold20
         self.bold18 = bold18
         self.bold16 = bold16
         self.bold14 = bold14
         self.bold12 = bold12
+        
+        self.extraBold30 = extraBold30
+        self.extraBold28 = extraBold28
+        self.extraBold24 = extraBold24
+        self.extraBold22 = extraBold22
+        self.extraBold20 = extraBold20
+        self.extraBold18 = extraBold18
+        self.extraBold16 = extraBold16
+        self.extraBold14 = extraBold14
+        self.extraBold12 = extraBold12
     }
 }
 

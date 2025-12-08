@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import StripePaymentSheet
 
 @main
 struct BroccoliApp: App {
@@ -31,6 +32,12 @@ struct BroccoliApp: App {
         let httpClient = HTTPClient() as any HTTPClientProtocol
         let userService = UserService(httpClient: httpClient)
         return UserGlobalViewModel(userService: userService)
+    }()
+    
+    @StateObject private var bookingViewModel: BookingGlobalViewModel = {
+        let httpClient = HTTPClient() as any HTTPClientProtocol
+        let bookingService = BookingService(httpClient: httpClient)
+        return BookingGlobalViewModel(bookingService: bookingService)
     }()
     
     var body: some Scene {
@@ -79,6 +86,29 @@ struct BroccoliApp: App {
                             EditPatientProfileView()
                         case .editDoctorProfile:
                             EditDoctorProfileView()
+                        case .gPAppointBookingForm:
+                            GPAppointmentBookingForm()
+                        case .bookingConfirmation:
+                            BookingConfirmationView()
+                        case .specialistList:
+                            SpecialityListView()
+                        case .specilistBookingForm
+                            : SpecialistBookingFormView()
+                        case .paymentSuccess(booking: let booking):
+                            PaymentSuccessView(booking: booking)
+                        case .medicalTourisimForm:
+                            MedicalEnquiryView()
+                        case .cureFromDrugForm:
+                            CureFromDrugView()
+                        case .notifications:
+                            NotificationsView()
+                        case .myAppointments:
+                            MyAppointmentsView()
+                        case .myPharmacies:
+                            MyPharmaciesView()
+                        case .addPharmacy:
+                            AddPharmacyView()
+                        
                         }
                     }
             }
@@ -87,7 +117,16 @@ struct BroccoliApp: App {
             .environmentObject(authViewModel)
             .environmentObject(appViewModel)
             .environmentObject(userViewModel)
+            .environmentObject(bookingViewModel)
             .environment(\.appTheme, AppTheme.default)
+            .onOpenURL { incomingURL in
+                // Handle Stripe redirect URLs
+                let stripeHandled = StripeAPI.handleURLCallback(with: incomingURL)
+                if !stripeHandled {
+                    // Handle other URLs if needed
+                    print("URL not handled by Stripe: \\(incomingURL)")
+                }
+            }
         }
     }
 }

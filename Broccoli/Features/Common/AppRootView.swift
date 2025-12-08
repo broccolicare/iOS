@@ -13,6 +13,7 @@ import SwiftUI
 struct AppRootView: View {
     @EnvironmentObject private var authVM: AuthGlobalViewModel
     @EnvironmentObject private var appVM: AppGlobalViewModel
+    @EnvironmentObject private var userVM: UserGlobalViewModel
     @Environment(\.appTheme) private var theme
     
     @State private var isCheckingAuth = true
@@ -63,6 +64,13 @@ struct AppRootView: View {
             print("🚀 AppRootView: Starting auth check...")
             await authVM.checkAuthenticationStatus()
             print("✅ AppRootView: Auth check completed")
+            
+            // If user is authenticated, fetch their profile in the background
+            if authVM.isAuthenticated {
+                print("🚀 AppRootView: Fetching user profile...")
+                await userVM.fetchProfileDetail()
+                print("✅ AppRootView: User profile fetched")
+            }
             
             // Load metadata for the app
             print("🚀 AppRootView: Loading metadata...")

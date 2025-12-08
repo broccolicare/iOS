@@ -169,11 +169,11 @@ public class HTTPClient: HTTPClientProtocol {
             logMessage += "Headers:\n"
             for (key, value) in headers {
                 // Mask sensitive headers
-                if key.lowercased().contains("authorization") || key.lowercased().contains("token") {
-                    logMessage += "  \(key): [REDACTED]\n"
-                } else {
+//                if key.lowercased().contains("authorization") || key.lowercased().contains("token") {
+//                    logMessage += "  \(key): [REDACTED]\n"
+//                } else {
                     logMessage += "  \(key): \(value)\n"
-                }
+//                }
             }
         }
         if let body = body {

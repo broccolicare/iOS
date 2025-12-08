@@ -126,7 +126,9 @@ struct ProfileView: View {
                     MenuItemRow(
                         icon: "appointment-history-icon",
                         title: "My Appointments",
-                        action: {}
+                        action: {
+                            router.push(.myAppointments)
+                        }
                     )
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color.white)
@@ -134,7 +136,9 @@ struct ProfileView: View {
                     MenuItemRow(
                         icon: "my-pharmacies",
                         title: "My Pharmacies",
-                        action: {},
+                        action: {
+                            router.push(.myPharmacies)
+                        },
                         isLast: true
                     )
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))

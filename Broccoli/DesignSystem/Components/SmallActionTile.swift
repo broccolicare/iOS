@@ -12,32 +12,27 @@ struct SmallActionTile: View {
     let icon: String
     
     var body: some View {
-        Button {
-            // navigate
-        } label: {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack{
-                    Image(icon)
-                        .resizable()
-                        .scaledToFill()
-                        .foregroundStyle(theme.colors.primary)
-                        .frame(width: 28, height: 28)
-                        .padding(8)
-                        .background(
-                            Circle()
-                                .fill(theme.colors.primary.opacity(0.1))
-                        )
-                    Spacer()
-                }
-                Text(title)
-                    .font(theme.typography.medium18)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack{
+                Image(icon)
+                    .resizable()
+                    .scaledToFill()
+                    .foregroundStyle(theme.colors.primary)
+                    .frame(width: 28, height: 28)
+                    .padding(8)
+                    .background(
+                        Circle()
+                            .fill(theme.colors.primary.opacity(0.1))
+                    )
+                Spacer()
             }
-            .padding()
-            .background(theme.colors.surface)
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.colors.border))
+            Text(title)
+                .font(theme.typography.medium18)
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding()
+        .background(theme.colors.surface)
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.colors.border))
     }
 }
 

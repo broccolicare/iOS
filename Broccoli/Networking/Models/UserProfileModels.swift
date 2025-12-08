@@ -23,6 +23,7 @@ public struct UserProfileData: Codable {
     public let roles: [String]
     public let profile: DetailedUserProfile?
     public let medicalInfo: MedicalInfo?
+    public let emergencyContact: EmergencyContact?
     public let allergies: [Allergy]?
     public let pendingAllergies: [Allergy]?
     public let insurances: [Insurance]?
@@ -31,6 +32,7 @@ public struct UserProfileData: Codable {
     private enum CodingKeys: String, CodingKey {
         case id, name, email, username, roles, profile, insurances, specializations
         case medicalInfo = "medical_info"
+        case emergencyContact = "emergency_contact"
         case allergies
         case pendingAllergies = "pending_allergies"
     }
@@ -116,4 +118,10 @@ public struct Insurance: Codable, Identifiable {
         case coverageEndDate = "coverage_end_date"
         case relationship
     }
+}
+
+public struct EmergencyContact: Codable {
+    public let name: String?
+    public let phone: String?
+    public let relationship: String?
 }
