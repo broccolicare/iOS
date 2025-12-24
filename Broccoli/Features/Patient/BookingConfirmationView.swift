@@ -61,8 +61,16 @@ struct BookingConfirmationView: View {
     }
     
     private var serviceCharge: String {
-        guard let price = selectedSlot?.price else { return "N/A" }
-        return formatPrice(price)
+        // First try to get price from selected slot
+        if let slotPrice = selectedSlot?.price {
+            return formatPrice(slotPrice)
+        }
+        // Fall back to selected service price if slot doesn't have price
+        if let servicePrice = bookingViewModel.selectedService?.price {
+            return formatPrice(servicePrice)
+        }
+        // If neither has a price, return N/A
+        return "N/A"
     }
     
     private var totalPrice: String {
@@ -70,15 +78,7 @@ struct BookingConfirmationView: View {
     }
     
     private func formatPrice(_ price: String) -> String {
-        let currency = bookingViewModel.pricingInfo?.currency ?? "USD"
-        let symbol: String
-        switch currency {
-        case "EUR": symbol = "€"
-        case "GBP": symbol = "£"
-        case "USD": symbol = "$"
-        default: symbol = currency
-        }
-        return "\(symbol)\(price)"
+        return "€\(price)"
     }
     
     var body: some View {
@@ -246,7 +246,7 @@ struct BookingConfirmationView: View {
                         }
                         
                         // Step 2: Check if booking is covered by subscription
-                        if initResponse.covered {
+                        if initResponse.covered == true {
                             // User has subscription - show success message and navigate
                             bookingViewModel.showSuccessToast = true
                             bookingViewModel.errorMessage = initResponse.message ?? "This booking is covered by your subscription"

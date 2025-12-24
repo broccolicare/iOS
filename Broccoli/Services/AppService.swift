@@ -12,7 +12,7 @@ public protocol AppServiceProtocol {
     func fetchCountryCodes() async throws -> [CountryCode]
     func fetchSpecializations() async throws -> [Specialization]
     func fetchMetaData() async throws -> MetadataResponse
-    func fetchSlidersData() async throws -> [Slider]
+    func fetchSlidersData() async throws -> SlidersResponse
 }
 
 public final class AppService: BaseService, AppServiceProtocol {
@@ -50,7 +50,7 @@ public final class AppService: BaseService, AppServiceProtocol {
         }
     }
     
-    public func fetchSlidersData() async throws -> [Slider] {
+    public func fetchSlidersData() async throws -> SlidersResponse {
         return try await handleServiceError {
             let endpoint = AppEndpoint.banners
             return try await httpClient.request(endpoint)

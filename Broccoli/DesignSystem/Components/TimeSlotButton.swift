@@ -11,6 +11,7 @@ struct TimeSlotButton: View {
     let time: String
     let price: String
     let isSelected: Bool
+    let showPrice: Bool
     let action: () -> Void
     
     var body: some View {
@@ -20,9 +21,11 @@ struct TimeSlotButton: View {
                     .font(theme.typography.medium14)
                     .foregroundStyle(isSelected ? .white : theme.colors.textPrimary)
                 
-                Text(price)
-                    .font(theme.typography.regular12)
-                    .foregroundStyle(isSelected ? .white : theme.colors.textSecondary)
+                if showPrice {
+                    Text(price)
+                        .font(theme.typography.regular12)
+                        .foregroundStyle(isSelected ? .white : theme.colors.textSecondary)
+                }
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)

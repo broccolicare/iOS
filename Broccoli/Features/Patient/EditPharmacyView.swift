@@ -1,21 +1,26 @@
 //
-//  AddPharmacyView.swift
+//  EditPharmacyView.swift
 //  Broccoli
 //
-//  Created by Gaurav Jaiswal on 29/11/25.
+//  Created by Gaurav Jaiswal on 24/12/25.
 //
 
 import SwiftUI
 import AlertToast
 
-struct AddPharmacyView: View {
+struct EditPharmacyView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var pharmacyViewModel: PharmacyGlobalViewModel
     @EnvironmentObject private var appVM: AppGlobalViewModel
     
-    @StateObject private var vm = AddPharmacyViewModel()
+    @StateObject private var vm: EditPharmacyViewModel
+    @State private var showDeleteConfirmation = false
+    
+    init(pharmacy: Pharmacy) {
+        _vm = StateObject(wrappedValue: EditPharmacyViewModel(pharmacy: pharmacy))
+    }
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -40,6 +45,12 @@ struct AddPharmacyView: View {
                     }
                     
                     Spacer()
+                    
+                    Button(action: { showDeleteConfirmation = true }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white)
+                    }
                 }
                 .padding(.horizontal, 20)
                 
@@ -162,7 +173,7 @@ struct AddPharmacyView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 40)
-                    .padding(.bottom, 100)
+                    .padding(.bottom, 160)
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -172,20 +183,56 @@ struct AddPharmacyView: View {
                 Spacer()
             }
             
-            // Save Button (Fixed at bottom)
+            // Update and Make Default Buttons (Fixed at bottom)
             VStack {
                 Spacer()
                 
-                Button(action: {
-                    savePharmacy()
-                }) {
-                    Text("Save")
-                        .font(theme.typography.button)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(theme.colors.primary)
-                        .cornerRadius(12)
+                VStack(spacing: 12) {
+                    // Update Button
+                    Button(action: {
+                        updatePharmacy()
+                    }) {
+                        if pharmacyViewModel.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                        } else {
+                            Text("Update")
+                                .font(theme.typography.button)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                        }
+                    }
+                    .background(theme.colors.primary)
+                    .cornerRadius(12)
+                    .disabled(pharmacyViewModel.isLoading)
+                    
+                    // Make Default Button
+                    Button(action: {
+                        makeDefaultPharmacy()
+                    }) {
+                        if pharmacyViewModel.isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: theme.colors.primary))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                        } else {
+                            Text("Make Default")
+                                .font(theme.typography.button)
+                                .foregroundColor(theme.colors.primary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                        }
+                    }
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(theme.colors.primary, lineWidth: 2)
+                    )
+                    .cornerRadius(12)
+                    .disabled(pharmacyViewModel.isLoading)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
@@ -199,8 +246,8 @@ struct AddPharmacyView: View {
         .toast(isPresenting: $pharmacyViewModel.showSuccessToast) {
             AlertToast(
                 displayMode: .hud,
-                type: .complete(theme.colors.success),
-                title: "Pharmacy added successfully!"
+                type: .complete(theme.colors.primary),
+                title: "Pharmacy updated successfully!"
             )
         }
         .toast(isPresenting: $pharmacyViewModel.showErrorToast) {
@@ -210,6 +257,14 @@ struct AddPharmacyView: View {
                 title: "Error",
                 subTitle: pharmacyViewModel.errorMessage
             )
+        }
+        .alert("Delete Pharmacy", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deletePharmacy()
+            }
+        } message: {
+            Text("Are you sure you want to delete this pharmacy? This action cannot be undone.")
         }
         .onAppear {
             Task {
@@ -224,7 +279,7 @@ struct AddPharmacyView: View {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
     
-    private func savePharmacy() {
+    private func updatePharmacy() {
         hideKeyboard()
         
         // Validate form using view model
@@ -233,9 +288,10 @@ struct AddPharmacyView: View {
         // Combine country code and phone number
         let fullPhoneNumber = "\(vm.countryCode)\(vm.phoneNumber)"
         
-        // Call global view model to create pharmacy
+        // Call global view model to update pharmacy
         Task {
-            let success = await pharmacyViewModel.createPharmacy(
+            let success = await pharmacyViewModel.updatePharmacy(
+                pharmacyId: "\(vm.pharmacyId)",
                 name: vm.pharmacyName.trimmingCharacters(in: .whitespacesAndNewlines),
                 licenseNumber: vm.licenseNumber.trimmingCharacters(in: .whitespacesAndNewlines),
                 address: vm.streetAddress.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -248,6 +304,41 @@ struct AddPharmacyView: View {
             )
             
             if success {
+                // Small delay to show the success toast
+                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                
+                // Navigate back on success
+                router.pop()
+            }
+        }
+    }
+    
+    private func deletePharmacy() {
+        hideKeyboard()
+        
+        Task {
+            let success = await pharmacyViewModel.deletePharmacy(pharmacyId: "\(vm.pharmacyId)")
+            
+            if success {
+                // Small delay to show the success toast
+                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                
+                // Navigate back on success
+                router.pop()
+            }
+        }
+    }
+    
+    private func makeDefaultPharmacy() {
+        hideKeyboard()
+        
+        Task {
+            let success = await pharmacyViewModel.setDefaultPharmacy(pharmacyId: "\(vm.pharmacyId)")
+            
+            if success {
+                // Small delay to show the success toast
+                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                
                 // Navigate back on success
                 router.pop()
             }
@@ -257,6 +348,23 @@ struct AddPharmacyView: View {
 
 // MARK: - Preview
 #Preview {
-    AddPharmacyView()
-        .environment(\.appTheme, AppTheme.default)
+    EditPharmacyView(pharmacy: Pharmacy(
+        id: 1,
+        name: "Test Pharmacy",
+        address: "123 Main St",
+        city: "Dublin",
+        state: "Leinster",
+        postalCode: "D01 A123",
+        country: "IE",
+        phone: "+353123456789",
+        email: "test@pharmacy.com",
+        licenseNumber: "LIC123",
+        isActive: true,
+        isVerified: true,
+        isAdminManaged: false,
+        operatingHours: nil,
+        createdAt: nil,
+        updatedAt: nil
+    ))
+    .environment(\.appTheme, AppTheme.default)
 }

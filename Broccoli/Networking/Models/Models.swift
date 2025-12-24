@@ -59,6 +59,8 @@ public struct EmptyResponse: Codable {}
 public struct CountryCode: Codable, Identifiable, Hashable {
     public let id: Int
     public let nicename: String
+    public let iso: String
+    public let iso3: String
     public let phoneCode: String
     
     // Computed property for display name
@@ -72,7 +74,7 @@ public struct CountryCode: Codable, Identifiable, Hashable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, nicename
+        case id, nicename, iso, iso3
         case phoneCode = "phone_code"
     }
 }

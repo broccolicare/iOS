@@ -86,7 +86,11 @@ struct PatientHomeView: View {
                                         if service.title == "GP Booking" {
                                             router.push(.gPAppointBookingForm)
                                         } else if service.title == "Specialist" {
-                                            router.push(.specialistList)
+                                            router.push(.specialistList(departmentId: "2"))
+                                        } else if service.title == "Nutritionists" {
+                                            router.push(.specialistList(departmentId: "3"))
+                                        } else if service.title == "Blood Tests" {
+                                            router.push(.specialistList(departmentId: "4"))
                                         }
                                     }
                                 }

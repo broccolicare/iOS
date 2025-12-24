@@ -40,6 +40,12 @@ struct BroccoliApp: App {
         return BookingGlobalViewModel(bookingService: bookingService)
     }()
     
+    @StateObject private var pharmacyViewModel: PharmacyGlobalViewModel = {
+        let httpClient = HTTPClient() as any HTTPClientProtocol
+        let pharmacyService = PharmacyService(httpClient: httpClient)
+        return PharmacyGlobalViewModel(pharmacyService: pharmacyService)
+    }()
+    
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $router.path){
@@ -90,8 +96,8 @@ struct BroccoliApp: App {
                             GPAppointmentBookingForm()
                         case .bookingConfirmation:
                             BookingConfirmationView()
-                        case .specialistList:
-                            SpecialityListView()
+                        case .specialistList(departmentId: let departmentId):
+                            SpecialtyListView(departmentId: departmentId)
                         case .specilistBookingForm
                             : SpecialistBookingFormView()
                         case .paymentSuccess(booking: let booking):
@@ -108,6 +114,12 @@ struct BroccoliApp: App {
                             MyPharmaciesView()
                         case .addPharmacy:
                             AddPharmacyView()
+                        case .editPharmacy(let pharmacy):
+                            EditPharmacyView(pharmacy: pharmacy)
+                        case .bookPrescription:
+                            BookPrescriptionView()
+                        case .prescriptionQuestions:
+                            PrescriptionQuestionsView()
                         
                         }
                     }
@@ -118,6 +130,7 @@ struct BroccoliApp: App {
             .environmentObject(appViewModel)
             .environmentObject(userViewModel)
             .environmentObject(bookingViewModel)
+            .environmentObject(pharmacyViewModel)
             .environment(\.appTheme, AppTheme.default)
             .onOpenURL { incomingURL in
                 // Handle Stripe redirect URLs

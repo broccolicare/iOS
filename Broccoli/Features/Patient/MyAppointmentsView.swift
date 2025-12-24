@@ -18,21 +18,21 @@ struct MyAppointmentsView: View {
     @State private var upcomingAppointments: [AppointmentItemData] = [
         AppointmentItemData(
             id: "1",
-            speciality: "Oncologist",
+            specialty: "Oncologist",
             doctorName: "Dr. Emily Carter",
             dateTime: "Tomorrow, 10:00 AM",
             status: nil
         ),
         AppointmentItemData(
             id: "2",
-            speciality: "Orthopedist",
+            specialty: "Orthopedist",
             doctorName: "Dr. Michael Chen",
             dateTime: "Next Week, 2:00 PM",
             status: nil
         ),
         AppointmentItemData(
             id: "3",
-            speciality: "ENT",
+            specialty: "ENT",
             doctorName: "Dr. Olivia Reed",
             dateTime: "In 2 Weeks, 11:30 AM",
             status: nil
@@ -42,21 +42,21 @@ struct MyAppointmentsView: View {
     @State private var historyAppointments: [AppointmentItemData] = [
         AppointmentItemData(
             id: "4",
-            speciality: "Oncologist",
+            specialty: "Oncologist",
             doctorName: "Dr. Emily Carter",
             dateTime: "12 Jun 25, 10:00 AM",
             status: .completed
         ),
         AppointmentItemData(
             id: "5",
-            speciality: "Orthopedist",
+            specialty: "Orthopedist",
             doctorName: "Dr. Michael Chen",
             dateTime: "06 Feb 25, 02:00 PM",
             status: .completed
         ),
         AppointmentItemData(
             id: "6",
-            speciality: "ENT",
+            specialty: "ENT",
             doctorName: "Dr. Olivia Reed",
             dateTime: "26 Dec 24, 04:30 PM",
             status: .cancelled
@@ -110,7 +110,7 @@ struct MyAppointmentsView: View {
                                     appointment: appointment,
                                     showStatus: false
                                 ) {
-                                    print("Tapped appointment: \(appointment.speciality)")
+                                    print("Tapped appointment: \(appointment.specialty)")
                                 }
                             }
                         } else {
@@ -119,7 +119,7 @@ struct MyAppointmentsView: View {
                                     appointment: appointment,
                                     showStatus: true
                                 ) {
-                                    print("Tapped appointment: \(appointment.speciality)")
+                                    print("Tapped appointment: \(appointment.specialty)")
                                 }
                             }
                         }
@@ -144,7 +144,7 @@ enum AppointmentTab {
 
 struct AppointmentItemData: Identifiable {
     let id: String
-    let speciality: String
+    let specialty: String
     let doctorName: String
     let dateTime: String
     let status: AppointmentStatus?
@@ -234,7 +234,7 @@ struct AppointmentListRow: View {
                 // Text content
                 VStack(alignment: .leading, spacing: 4) {
                     HStack{
-                        Text(appointment.speciality)
+                        Text(appointment.specialty)
                             .font(theme.typography.semiBold18)
                             .foregroundStyle(theme.colors.textPrimary)
                         Spacer()

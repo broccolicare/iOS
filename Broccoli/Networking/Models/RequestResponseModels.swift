@@ -73,7 +73,7 @@ public struct TimeSlotsResponse: Codable {
     let date: String?
     let isGP: Int?
     let departmentId: String?
-    let serviceId: String?
+    let serviceId: Int?
     let slots: TimeSlotsByPeriod?
     let pricing: PricingInfo?
     let minGapMinutes: Int?
@@ -244,7 +244,7 @@ public struct BookingDetail: Codable {
     let bookingId: String
     let patientName: String?
     let doctorName: String?
-    let speciality: String?
+    let specialty: String?
     let appointmentDate: String?
     let appointmentTime: String?
     let status: String
@@ -267,7 +267,8 @@ public struct DocumentData: Codable {
 // MARK: - Payment Models
 
 public struct PaymentInitializeResponse: Codable {
-    let covered: Bool
+    let success: Bool?
+    let covered: Bool?
     let message: String?
     let paymentIntent: PaymentIntentData?
     let ephemeralKey: EphemeralKeyData?
@@ -276,7 +277,13 @@ public struct PaymentInitializeResponse: Codable {
     let amount: String?
     let currency: String?
     
+    // Alternative format for prescription payments (string format)
+    let paymentIntentString: String?
+    let ephemeralKeyString: String?
+    let customerString: String?
+    
     enum CodingKeys: String, CodingKey {
+        case success
         case covered
         case message
         case paymentIntent
@@ -285,6 +292,76 @@ public struct PaymentInitializeResponse: Codable {
         case publishableKey
         case amount
         case currency
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        success = try container.decodeIfPresent(Bool.self, forKey: .success)
+        covered = try container.decodeIfPresent(Bool.self, forKey: .covered)
+        message = try container.decodeIfPresent(String.self, forKey: .message)
+        publishableKey = try container.decodeIfPresent(String.self, forKey: .publishableKey)
+        currency = try container.decodeIfPresent(String.self, forKey: .currency)
+        
+        // Handle amount as either String or Int
+        if let amountString = try? container.decode(String.self, forKey: .amount) {
+            amount = amountString
+        } else if let amountInt = try? container.decode(Int.self, forKey: .amount) {
+            amount = String(amountInt)
+        } else if let amountDouble = try? container.decode(Double.self, forKey: .amount) {
+            amount = String(format: "%.2f", amountDouble)
+        } else {
+            amount = nil
+        }
+        
+        // Try to decode as objects first (booking format), then as strings (prescription format)
+        if let paymentIntentObj = try? container.decode(PaymentIntentData.self, forKey: .paymentIntent) {
+            paymentIntent = paymentIntentObj
+            paymentIntentString = nil
+        } else if let paymentIntentStr = try? container.decode(String.self, forKey: .paymentIntent) {
+            paymentIntent = nil
+            paymentIntentString = paymentIntentStr
+        } else {
+            paymentIntent = nil
+            paymentIntentString = nil
+        }
+        
+        if let ephemeralKeyObj = try? container.decode(EphemeralKeyData.self, forKey: .ephemeralKey) {
+            ephemeralKey = ephemeralKeyObj
+            ephemeralKeyString = nil
+        } else if let ephemeralKeyStr = try? container.decode(String.self, forKey: .ephemeralKey) {
+            ephemeralKey = nil
+            ephemeralKeyString = ephemeralKeyStr
+        } else {
+            ephemeralKey = nil
+            ephemeralKeyString = nil
+        }
+        
+        if let customerObj = try? container.decode(CustomerData.self, forKey: .customer) {
+            customer = customerObj
+            customerString = nil
+        } else if let customerStr = try? container.decode(String.self, forKey: .customer) {
+            customer = nil
+            customerString = customerStr
+        } else {
+            customer = nil
+            customerString = nil
+        }
+    }
+    
+    // Helper to get client secret regardless of format
+    var clientSecret: String? {
+        return paymentIntent?.clientSecret ?? paymentIntentString
+    }
+    
+    // Helper to get customer ID regardless of format
+    var customerId: String? {
+        return customer?.id ?? customerString
+    }
+    
+    // Helper to get ephemeral key secret regardless of format
+    var ephemeralKeySecret: String? {
+        return ephemeralKey?.secret ?? ephemeralKeyString
     }
 }
 
@@ -295,14 +372,302 @@ public struct PaymentIntentData: Codable {
 
 public struct EphemeralKeyData: Codable {
     let secret: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case secret
+    }
 }
 
 public struct CustomerData: Codable {
     let id: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+    }
 }
 
 public struct PaymentConfirmResponse: Codable {
     let success: Bool
     let booking: BookingData?
     let message: String?
+}
+
+// MARK: - Treatments Models
+
+public struct TreatmentsResponse: Codable {
+    public let success: Bool
+    public let treatments: [Treatment]
+    public let message: String?
+}
+
+public struct Treatment: Codable, Identifiable {
+    public let id: Int
+    public let name: String
+    public let description: String?
+    public let category: String?
+    public let price: String?
+    public let isActive: Bool
+    public let requiresQuestionnaire: Bool?
+    public let stripeProductId: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, description, category, price
+        case isActive = "is_active"
+        case requiresQuestionnaire = "requires_questionnaire"
+        case stripeProductId = "stripe_product_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+// MARK: - Services Models
+
+public struct ServicesResponse: Codable {
+    public let success: Bool
+    public let department: DepartmentInfo
+    public let data: [Service]
+}
+
+public struct DepartmentInfo: Codable {
+    public let id: Int
+    public let name: String
+}
+
+public struct Service: Codable, Identifiable {
+    public let id: Int
+    public let name: String
+    public let description: String?
+    public let price: String
+    public let duration: Int
+    public let requiresDoctor: Int
+    public let subServices: [SubService]
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, description, price, duration
+        case requiresDoctor = "requires_doctor"
+        case subServices = "sub_services"
+    }
+}
+
+public struct SubService: Codable, Identifiable {
+    public let id: Int
+    public let name: String
+    public let description: String?
+    public let price: String
+    public let duration: Int
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, description, price, duration
+    }
+}
+
+// MARK: - Questionnaire Models
+
+public struct QuestionnaireResponse: Codable {
+    public let success: Bool
+    public let treatment: TreatmentWithQuestionnaire
+}
+
+public struct TreatmentWithQuestionnaire: Codable, Identifiable {
+    public let id: Int
+    public let name: String
+    public let description: String?
+    public let category: String?
+    public let price: String?
+    public let isActive: Bool
+    public let requiresQuestionnaire: Bool?
+    public let stripeProductId: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+    public let questionnaireGroups: [QuestionnaireGroup]
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, description, category, price
+        case isActive = "is_active"
+        case requiresQuestionnaire = "requires_questionnaire"
+        case stripeProductId = "stripe_product_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case questionnaireGroups = "questionnaire_groups"
+    }
+}
+
+public struct QuestionnaireGroup: Codable, Identifiable {
+    public let id: Int
+    public let treatmentId: Int
+    public let title: String
+    public let description: String?
+    public let type: String
+    public let order: Int
+    public let isActive: Bool
+    public let questions: [QuestionnaireQuestion]
+    public let createdAt: String?
+    public let updatedAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case treatmentId = "treatment_id"
+        case title, description, type, order
+        case isActive = "is_active"
+        case questions
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+public struct QuestionnaireQuestion: Codable, Identifiable {
+    public let id: Int
+    public let questionnaireGroupId: Int
+    public let questionText: String
+    public let questionType: String // "multiple_choice", "single_choice", "text"
+    public let isRequired: Bool
+    public let order: Int
+    public let validationRules: String?
+    public let options: [QuestionOption]
+    public let createdAt: String?
+    public let updatedAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case questionnaireGroupId = "questionnaire_group_id"
+        case questionText = "question_text"
+        case questionType = "question_type"
+        case isRequired = "is_required"
+        case order
+        case validationRules = "validation_rules"
+        case options
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+public struct QuestionOption: Codable, Identifiable {
+    public let id: Int
+    public let questionId: Int
+    public let optionText: String
+    public let order: Int
+    public let hasFollowUp: Bool
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case questionId = "question_id"
+        case optionText = "option_text"
+        case order
+        case hasFollowUp = "has_follow_up"
+    }
+}
+
+// MARK: - Prescription Order Models
+
+public struct PrescriptionOrderRequest: Codable {
+    public let treatmentId: Int
+    public let answers: [PrescriptionAnswer]
+    
+    private enum CodingKeys: String, CodingKey {
+        case treatmentId = "treatment_id"
+        case answers
+    }
+}
+
+public struct PrescriptionAnswer: Codable {
+    public let questionId: Int
+    public let answerText: String?
+    public let selectedOptions: [Int]?
+    
+    private enum CodingKeys: String, CodingKey {
+        case questionId = "question_id"
+        case answerText = "answer_text"
+        case selectedOptions = "selected_options"
+    }
+}
+
+public struct PrescriptionOrderResponse: Codable {
+    public let success: Bool
+    public let message: String?
+    public let requiresPayment: Bool
+    public let promptAddPharmacy: Bool
+    public let prescription: PrescriptionOrder?
+    
+    private enum CodingKeys: String, CodingKey {
+        case success, message
+        case requiresPayment = "requires_payment"
+        case promptAddPharmacy = "prompt_add_pharmacy"
+        case prescription
+    }
+}
+
+public struct PrescriptionOrder: Codable, Identifiable {
+    public let id: Int
+    public let status: String
+    public let paymentStatus: String
+    public let amount: String
+    public let validUntil: String
+    public let notes: String?
+    public let rejectionReason: String?
+    public let createdAt: String
+    public let updatedAt: String
+    public let approvedAt: String?
+    public let rejectedAt: String?
+    public let assignedAt: String?
+    public let sentAt: String?
+    public let completedAt: String?
+    public let treatment: Treatment
+    public let answers: [PrescriptionAnswerDetail]
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, status, notes, treatment, answers
+        case paymentStatus = "payment_status"
+        case amount
+        case validUntil = "valid_until"
+        case rejectionReason = "rejection_reason"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case approvedAt = "approved_at"
+        case rejectedAt = "rejected_at"
+        case assignedAt = "assigned_at"
+        case sentAt = "sent_at"
+        case completedAt = "completed_at"
+    }
+}
+
+public struct PrescriptionAnswerDetail: Codable, Identifiable {
+    public let id: Int
+    public let answerText: String
+    public let option: String?
+    public let answeredAt: String
+    public let question: AnsweredQuestion
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case answerText = "answer_text"
+        case option
+        case answeredAt = "answered_at"
+        case question
+    }
+}
+
+public struct AnsweredQuestion: Codable, Identifiable {
+    public let id: Int
+    public let questionnaireGroupId: Int
+    public let questionText: String
+    public let questionType: String
+    public let isRequired: Bool
+    public let order: Int
+    public let validationRules: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case questionnaireGroupId = "questionnaire_group_id"
+        case questionText = "question_text"
+        case questionType = "question_type"
+        case isRequired = "is_required"
+        case order
+        case validationRules = "validation_rules"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
 }

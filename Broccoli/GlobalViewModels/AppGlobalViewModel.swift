@@ -28,7 +28,7 @@ public final class AppGlobalViewModel: ObservableObject {
     @Published public private(set) var isMetadataLoaded: Bool = false
     
     private var fallbackCountryCodes: [CountryCode] = [
-        CountryCode(id: 103, nicename: "Ireland", phoneCode: "353"),
+        CountryCode(id: 103, nicename: "Ireland", iso: "IE", iso3: "IRL", phoneCode: "353"),
     ]
 
     private let appService: AppServiceProtocol
@@ -154,9 +154,9 @@ public final class AppGlobalViewModel: ObservableObject {
     
     public func loadSlidersData() async {
         do {
-            let sliders = try await appService.fetchSlidersData()
-            slidersData = sliders
-            print("✅ Sliders data loaded successfully: \(sliders.count) items")
+            let response = try await appService.fetchSlidersData()
+            slidersData = response.data
+            print("✅ Sliders data loaded successfully: \(response.data.count) items")
         } catch {
             errorMessage = "Failed to load sliders data: \(error.localizedDescription)"
             print("❌ Failed to load sliders data: \(error)")

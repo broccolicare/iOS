@@ -24,7 +24,7 @@ enum Route: Hashable {
     case editDoctorProfile
     case gPAppointBookingForm
     case bookingConfirmation
-    case specialistList
+    case specialistList(departmentId: String?)
     case specilistBookingForm
     case paymentSuccess(booking: BookingData?)
     case medicalTourisimForm
@@ -33,5 +33,8 @@ enum Route: Hashable {
     case myAppointments
     case myPharmacies
     case addPharmacy
+    case editPharmacy(pharmacy: Pharmacy)
+    case bookPrescription
+    case prescriptionQuestions
     // add routes as needed
 }

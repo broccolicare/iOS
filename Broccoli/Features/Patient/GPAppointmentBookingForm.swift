@@ -178,7 +178,8 @@ struct GPAppointmentBookingForm: View {
                                                         TimeSlotButton(
                                                             time: slot.displayTime,
                                                             price: formatPrice(slot.price),
-                                                            isSelected: selectedTimeSlot == slot.time
+                                                            isSelected: selectedTimeSlot == slot.time,
+                                                            showPrice: true
                                                         ) {
                                                             bookingViewModel.selectedTimeSlot = slot.time
                                                             bookingViewModel.selectedTimeSlotPeriod = "morning"
@@ -200,7 +201,8 @@ struct GPAppointmentBookingForm: View {
                                                         TimeSlotButton(
                                                             time: slot.displayTime,
                                                             price: formatPrice(slot.price),
-                                                            isSelected: selectedTimeSlot == slot.time
+                                                            isSelected: selectedTimeSlot == slot.time,
+                                                            showPrice: true
                                                         ) {
                                                             bookingViewModel.selectedTimeSlot = slot.time
                                                             bookingViewModel.selectedTimeSlotPeriod = "afternoon"
@@ -222,7 +224,8 @@ struct GPAppointmentBookingForm: View {
                                                         TimeSlotButton(
                                                             time: slot.displayTime,
                                                             price: formatPrice(slot.price),
-                                                            isSelected: selectedTimeSlot == slot.time
+                                                            isSelected: selectedTimeSlot == slot.time,
+                                                            showPrice: true
                                                         ) {
                                                             bookingViewModel.selectedTimeSlot = slot.time
                                                             bookingViewModel.selectedTimeSlotPeriod = "evening"

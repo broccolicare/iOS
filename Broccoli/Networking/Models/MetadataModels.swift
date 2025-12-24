@@ -66,14 +66,22 @@ public struct Slider: Codable, Identifiable, Hashable {
     public let id: Int
     public let title: String
     public let imageUrl: String
-    public let image: String
+    public let description: String?
+    public let order: Int
     public let link: String?
     
     private enum CodingKeys: String, CodingKey {
         case id
         case title
         case imageUrl = "image_url"
-        case image
+        case description
+        case order
         case link
     }
+}
+
+// MARK: - Sliders Response
+public struct SlidersResponse: Codable {
+    public let success: Bool
+    public let data: [Slider]
 }

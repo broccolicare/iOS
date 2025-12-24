@@ -11,20 +11,23 @@ struct SpecialistBookingFormView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
+    @FocusState private var isTextEditorFocused: Bool
     
     // State variables
-    @State private var selectedDate: Date? = nil
-    @State private var selectedTimeSlot: String? = nil
+    @State private var selectedDate: Date? = Date()
     @State private var additionalDescription: String = ""
     @State private var currentMonth: Date = Date()
     
-    // Sample time slots - will be dynamic based on selected date
-    private let timeSlots = [
-        "9:00 AM", "10:00 AM", "11:00 AM",
-        "12:00 PM", "01:00 PM", "02:00 PM",
-        "03:00 PM", "04:00 PM", "05:00 PM",
-        "06:00 PM", "07:00 PM", "08:00 PM"
-    ]
+    // Computed property for selected time slot from view model
+    private var selectedTimeSlot: String? {
+        bookingViewModel.selectedTimeSlot
+    }
+    
+    // Get all available slots combined
+    private var allAvailableSlots: [TimeSlot] {
+        bookingViewModel.morningSlots + bookingViewModel.afternoonSlots + bookingViewModel.eveningSlots
+    }
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -116,7 +119,13 @@ struct SpecialistBookingFormView: View {
                                                 isCurrentMonth: Calendar.current.isDate(date, equalTo: currentMonth, toGranularity: .month)
                                             ) {
                                                 selectedDate = date
-                                                selectedTimeSlot = nil // Reset time slot when date changes
+                                                bookingViewModel.selectedTimeSlot = nil // Reset time slot when date changes
+                                                bookingViewModel.selectedDate = date
+                                                
+                                                // Fetch time slots for the new date
+                                                Task {
+                                                    await bookingViewModel.fetchAvailableTimeSlots()
+                                                }
                                             }
                                         } else {
                                             Color.clear
@@ -137,48 +146,132 @@ struct SpecialistBookingFormView: View {
                         )
                         
                         // Available Slots Section
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Available Slots")
-                                .font(theme.typography.semiBold18)
-                                .foregroundStyle(theme.colors.textPrimary)
-                            
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
-                                ForEach(timeSlots, id: \.self) { slot in
-                                    SpecialistTimeSlot(
-                                        time: slot,
-                                        isSelected: selectedTimeSlot == slot
-                                    ) {
-                                        selectedTimeSlot = slot
+                        if selectedDate != nil {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Available Slots")
+                                    .font(theme.typography.semiBold18)
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                    .padding(.horizontal, 20)
+                                
+                                if bookingViewModel.isLoading {
+                                    // Loading state
+                                    ProgressView()
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 100)
+                                } else if allAvailableSlots.isEmpty {
+                                    // No slots available
+                                    Text("No available slots for this date")
+                                        .font(theme.typography.regular14)
+                                        .foregroundStyle(theme.colors.textSecondary)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 100)
+                                        .padding(.horizontal, 20)
+                                } else {
+                                    VStack(alignment: .leading, spacing: 20) {
+                                        // Morning Slots
+                                        if !bookingViewModel.morningSlots.isEmpty {
+                                            VStack(alignment: .leading, spacing: 12) {
+                                                Text("Morning")
+                                                    .font(theme.typography.semiBold16)
+                                                    .foregroundStyle(theme.colors.textPrimary)
+                                                
+                                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
+                                                    ForEach(bookingViewModel.morningSlots) { slot in
+                                                        TimeSlotButton(
+                                                            time: slot.displayTime,
+                                                            price: formatPrice(slot.price),
+                                                            isSelected: selectedTimeSlot == slot.time,
+                                                            showPrice: false
+                                                        ) {
+                                                            bookingViewModel.selectedTimeSlot = slot.time
+                                                            bookingViewModel.selectedTimeSlotPeriod = "morning"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Afternoon Slots
+                                        if !bookingViewModel.afternoonSlots.isEmpty {
+                                            VStack(alignment: .leading, spacing: 12) {
+                                                Text("Afternoon")
+                                                    .font(theme.typography.semiBold16)
+                                                    .foregroundStyle(theme.colors.textPrimary)
+                                                
+                                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
+                                                    ForEach(bookingViewModel.afternoonSlots) { slot in
+                                                        TimeSlotButton(
+                                                            time: slot.displayTime,
+                                                            price: formatPrice(slot.price),
+                                                            isSelected: selectedTimeSlot == slot.time,
+                                                            showPrice: false
+                                                        ) {
+                                                            bookingViewModel.selectedTimeSlot = slot.time
+                                                            bookingViewModel.selectedTimeSlotPeriod = "afternoon"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Evening Slots
+                                        if !bookingViewModel.eveningSlots.isEmpty {
+                                            VStack(alignment: .leading, spacing: 12) {
+                                                Text("Evening")
+                                                    .font(theme.typography.semiBold16)
+                                                    .foregroundStyle(theme.colors.textPrimary)
+                                                
+                                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
+                                                    ForEach(bookingViewModel.eveningSlots) { slot in
+                                                        TimeSlotButton(
+                                                            time: slot.displayTime,
+                                                            price: formatPrice(slot.price),
+                                                            isSelected: selectedTimeSlot == slot.time,
+                                                            showPrice: false
+                                                        ) {
+                                                            bookingViewModel.selectedTimeSlot = slot.time
+                                                            bookingViewModel.selectedTimeSlotPeriod = "evening"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
+                                    .padding(.horizontal, 20)
                                 }
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 24)
                         
-                        // Additional Descriptions Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Additional Descriptions")
-                                .font(theme.typography.semiBold18)
-                                .foregroundStyle(theme.colors.textPrimary)
-                            
-                            TextEditor(text: $additionalDescription)
-                                .font(theme.typography.regular14)
-                                .foregroundStyle(theme.colors.textPrimary)
-                                .frame(height: 120)
-                                .padding(12)
-                                .background(Color.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
-                                )
-                                .cornerRadius(12)
+                        // Additional Descriptions Section (visible after selecting date and time)
+                        if selectedDate != nil && selectedTimeSlot != nil {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Additional Descriptions")
+                                    .font(theme.typography.semiBold18)
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                
+                                TextEditor(text: $additionalDescription)
+                                    .font(theme.typography.regular14)
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                    .frame(height: 120)
+                                    .padding(12)
+                                    .focused($isTextEditorFocused)
+                                    .background(Color.white)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
+                                    )
+                                    .cornerRadius(12)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 24)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 24)
                         
-                        // Bottom spacing for button
-                        Color.clear.frame(height: 100)
+                        // Bottom spacing
+                        if selectedDate != nil && selectedTimeSlot != nil {
+                            Color.clear.frame(height: 80)
+                        } else {
+                            Color.clear.frame(height: 20)
+                        }
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -186,39 +279,86 @@ struct SpecialistBookingFormView: View {
                     }
                 }
                 
-                // Save & Next Button
-                Button(action: {
-                    hideKeyboard()
-                    // Handle save and next
-                    print("Save & Next tapped")
-                    // Navigate to next screen
-                    router.push(.bookingConfirmation)
-                }) {
-                    Text("Save & Next")
-                        .font(theme.typography.button)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(
-                            (selectedDate != nil && selectedTimeSlot != nil) 
-                                ? theme.colors.primary 
-                                : theme.colors.primary.opacity(0.5)
-                        )
-                        .cornerRadius(12)
+                // Save & Next Button (visible after selecting date and time)
+                if selectedDate != nil && selectedTimeSlot != nil {
+                    Button(action: {
+                        // Dismiss keyboard
+                        hideKeyboard()
+                        
+                        // Save selected date, time slot and additional notes to view model
+                        bookingViewModel.selectedDate = selectedDate
+                        bookingViewModel.additionalNotes = additionalDescription
+                        
+                        // Navigate to booking confirmation to review before creating
+                        router.push(.bookingConfirmation)
+                    }) {
+                        Text("Save & Next")
+                            .font(theme.typography.button)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                    }
+                    .background(theme.colors.primary)
+                    .cornerRadius(12)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                    .background(Color.white)
                 }
-                .disabled(selectedDate == nil || selectedTimeSlot == nil)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .background(
-                    Color.white
-                        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: -5)
-                )
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            // Initialize view model with current date
+            bookingViewModel.selectedDate = selectedDate
+            
+            // Set specialist booking parameters (isGP = 0 for specialists)
+            bookingViewModel.isGP = "0"
+            // Note: selectedDepartmentId should be set from the specialty selection
+            //bookingViewModel.selectedDepartmentId = "2"
+            
+            // Fetch time slots for current date on load
+            if selectedDate != nil {
+                Task {
+                    await bookingViewModel.fetchAvailableTimeSlots()
+                }
+            }
+        }
+        .alert("Error", isPresented: $bookingViewModel.showErrorToast) {
+            Button("OK", role: .cancel) {
+                bookingViewModel.errorMessage = nil
+            }
+        } message: {
+            if let errorMessage = bookingViewModel.errorMessage {
+                Text(errorMessage)
+            }
+        }
     }
     
     // MARK: - Helper Functions
+    
+    private func formatPrice(_ price: String?) -> String {
+        // Use slot price if available, otherwise use service price if available
+        let priceToUse: String?
+        if let slotPrice = price {
+            priceToUse = slotPrice
+        } else if let selectedService = bookingViewModel.selectedService {
+            priceToUse = selectedService.price
+        } else {
+            priceToUse = nil
+        }
+        
+        guard let finalPrice = priceToUse else { return "N/A" }
+        
+        let currency = bookingViewModel.pricingInfo?.currency ?? "USD"
+        let symbol: String
+        switch currency {
+        case "EUR": symbol = "€"
+        case "GBP": symbol = "£"
+        case "USD": symbol = "$"
+        default: symbol = currency
+        }
+        return "\(symbol)\(finalPrice)"
+    }
     
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
@@ -299,29 +439,6 @@ struct SpecialistDayCell: View {
     }
 }
 
-// MARK: - Specialist Time Slot Component
-struct SpecialistTimeSlot: View {
-    @Environment(\.appTheme) private var theme
-    let time: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(time)
-                .font(theme.typography.medium14)
-                .foregroundStyle(isSelected ? .white : theme.colors.textPrimary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(isSelected ? theme.colors.primary : Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? theme.colors.primary : Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
-                )
-                .cornerRadius(8)
-        }
-    }
-}
 
 // MARK: - Preview
 #Preview {
