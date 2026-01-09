@@ -13,6 +13,7 @@ struct ProfileView: View {
             HStack {
                 Button(action: {
                     // Settings action
+                    router.push(.settings)
                 }) {
                     Circle()
                         .fill(Color.white)

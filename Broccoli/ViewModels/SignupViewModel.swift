@@ -23,7 +23,7 @@ final class SignupViewModel: ObservableObject {
     
     @Published var userType: UserType = .patient
     @Published var medicalLicense: String = ""
-    @Published var specializations: [Specialization]? = nil
+    @Published var specialization: Specialization? = nil
     @Published var description: String = ""
     
     @Published private(set) var fieldErrors: [Field: String] = [:]
@@ -72,7 +72,7 @@ final class SignupViewModel: ObservableObject {
             if medicalLicense.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 fieldErrors[.medicalLicense] = "Please enter your medical license number."
             }
-            if specializations?.isEmpty ?? true {
+            if specialization == nil {
                 fieldErrors[.specializations] = "Please select your specialization."
             }
         }

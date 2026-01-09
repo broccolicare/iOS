@@ -29,10 +29,10 @@ public final class UserGlobalViewModel: ObservableObject {
     // MARK: - Computed Properties
     
     public var formattedSpecializations: String {
-        guard let specializations = profileData?.specializations, !specializations.isEmpty else {
+        guard let specialization = profileData?.specialization else {
             return "Not specified"
         }
-        return specializations.map { $0 }.joined(separator: ", ")
+        return specialization.name
     }
     
     public var formattedPhoneNumber: String {
@@ -45,11 +45,11 @@ public final class UserGlobalViewModel: ObservableObject {
     
     public var formattedAddress: String {
         guard let address = profileData?.profile?.address,
-              let city = profileData?.profile?.city,
+              let postalCode = profileData?.profile?.postalCode,
               let country = profileData?.profile?.country else {
             return ""
         }
-        return "\(address), \(city), \(country)"
+        return "\(address), \(country) - \(postalCode)"
     }
     
     // MARK: - Methods

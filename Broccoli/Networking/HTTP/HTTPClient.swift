@@ -7,6 +7,11 @@
 
 import Foundation
 
+// MARK: - Notification Names
+extension Notification.Name {
+    static let unauthorizedErrorReceived = Notification.Name("unauthorizedErrorReceived")
+}
+
 // Matches server JSON:
 // {
 //   "message": "The given data was invalid.",
@@ -49,7 +54,48 @@ public class HTTPClient: HTTPClientProtocol {
     
     public func request<T: Codable>(_ endpoint: Endpoint) async throws -> T {
         let data = try await request(endpoint)
-        return try JSONDecoder().decode(T.self, from: data)
+        
+        do {
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch let DecodingError.keyNotFound(key, context) {
+            print("❌ [Decoding Error] Key '\(key.stringValue)' not found:")
+            print("   Context: \(context.debugDescription)")
+            print("   CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("   Raw JSON: \(jsonString)")
+            }
+            throw DecodingError.keyNotFound(key, context)
+        } catch let DecodingError.typeMismatch(type, context) {
+            print("❌ [Decoding Error] Type mismatch for type '\(type)':")
+            print("   Context: \(context.debugDescription)")
+            print("   CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("   Raw JSON: \(jsonString)")
+            }
+            throw DecodingError.typeMismatch(type, context)
+        } catch let DecodingError.valueNotFound(type, context) {
+            print("❌ [Decoding Error] Value not found for type '\(type)':")
+            print("   Context: \(context.debugDescription)")
+            print("   CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("   Raw JSON: \(jsonString)")
+            }
+            throw DecodingError.valueNotFound(type, context)
+        } catch let DecodingError.dataCorrupted(context) {
+            print("❌ [Decoding Error] Data corrupted:")
+            print("   Context: \(context.debugDescription)")
+            print("   CodingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("   Raw JSON: \(jsonString)")
+            }
+            throw DecodingError.dataCorrupted(context)
+        } catch {
+            print("❌ [Decoding Error] Unknown error: \(error)")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("   Raw JSON: \(jsonString)")
+            }
+            throw error
+        }
     }
     
     public func request(_ endpoint: Endpoint) async throws -> Data {
@@ -118,6 +164,8 @@ public class HTTPClient: HTTPClientProtocol {
         if let serr = serverError {
             switch httpResponse.statusCode {
             case 401:
+                // Post notification for app-wide 401 handling
+                NotificationCenter.default.post(name: .unauthorizedErrorReceived, object: nil)
                 throw HTTPError.unauthorized(message: serr.combinedMessage ?? (serr.message ?? "Unauthorized"), statusCode: serr.status ?? httpResponse.statusCode, errors: serr.errors)
             case 422, 403:
                 throw HTTPError.validationFailed(message: serr.combinedMessage ?? (serr.message ?? "Validation failed"), statusCode: serr.status ?? httpResponse.statusCode, errors: serr.errors)
@@ -128,6 +176,8 @@ public class HTTPClient: HTTPClientProtocol {
             // no structured server error available - generic fallback
             switch httpResponse.statusCode {
             case 401:
+                // Post notification for app-wide 401 handling
+                NotificationCenter.default.post(name: .unauthorizedErrorReceived, object: nil)
                 throw HTTPError.unauthorized(message: "Unauthorized", statusCode: httpResponse.statusCode, errors: nil)
             case 422:
                 throw HTTPError.validationFailed(message: "Validation failed", statusCode: httpResponse.statusCode, errors: nil)

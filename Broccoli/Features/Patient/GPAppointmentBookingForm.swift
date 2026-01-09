@@ -97,7 +97,7 @@ struct GPAppointmentBookingForm: View {
                             VStack(spacing: 12) {
                                 // Weekday headers
                                 HStack(spacing: 0) {
-                                    ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                                    ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { index, day in
                                         Text(day)
                                             .font(theme.typography.medium14)
                                             .foregroundStyle(.white)
@@ -109,7 +109,7 @@ struct GPAppointmentBookingForm: View {
                                 // Calendar days
                                 let days = generateCalendarDays(for: currentMonth)
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 12) {
-                                    ForEach(days, id: \.self) { date in
+                                    ForEach(Array(days.enumerated()), id: \.offset) { index, date in
                                         if let date = date {
                                             DayCell(
                                                 date: date,
@@ -328,18 +328,31 @@ struct GPAppointmentBookingForm: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            // Reset booking form state first
+            bookingViewModel.resetBookingForm()
+            
             // Initialize view model with current date
             bookingViewModel.selectedDate = selectedDate
             
             // Set GP booking parameters
             bookingViewModel.isGP = "1"
             bookingViewModel.selectedDepartmentId = "1"
+        }
+        .task {
+            // Use .task instead of .onAppear with Task to ensure proper lifecycle management
+            // Add a small delay to let navigation settle
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
             
-            // Fetch time slots for current date on load
-            if selectedDate != nil {
-                Task {
-                    await bookingViewModel.fetchAvailableTimeSlots()
+            // First, fetch services for the department
+            await bookingViewModel.loadDepartmentServices(departmentId: "1")
+            
+            // Then fetch time slots if date is selected and services loaded successfully
+            if selectedDate != nil && !bookingViewModel.services.isEmpty {
+                // Set the first service as selected if available
+                if let firstService = bookingViewModel.services.first {
+                    bookingViewModel.selectedService = firstService
                 }
+                await bookingViewModel.fetchAvailableTimeSlots()
             }
         }
         .alert("Error", isPresented: $bookingViewModel.showErrorToast) {

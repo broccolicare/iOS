@@ -18,7 +18,7 @@ final class EditDoctorProfileViewModel: ObservableObject {
     @Published var phoneCountryCode: String = "+353"
     @Published var phoneNumber: String = ""
     @Published var dateOfBirth: Date? = nil
-    @Published var selectedSpecializations: [Specialization] = []
+    @Published var selectedSpecialization: Specialization? = nil
     @Published var licenseNumber: String = ""
     @Published var selectedGender: String = ""
     
@@ -72,6 +72,8 @@ final class EditDoctorProfileViewModel: ObservableObject {
         fullName = profileData.name
         email = profileData.email
         id = profileData.id
+        licenseNumber = profileData.licenseNumber ?? ""
+        price = profileData.consultationFee ?? "0.00"
         
         if let profile = profileData.profile {
             phoneCountryCode = profile.phoneCode ?? "+353"
@@ -86,16 +88,11 @@ final class EditDoctorProfileViewModel: ObservableObject {
             address = profile.address ?? ""
             selectedCountry = profile.country ?? ""
             postalCode = profile.postalCode ?? ""
-            licenseNumber = "Lic. No"//profile.medicalLicenseNumber ?? ""
         }
         
-        // Load specializations
-        if let specializationNames = profileData.specializations,
-           let appVM = appViewModel {
-            // Find the Specialization objects from the names
-            selectedSpecializations = specializationNames.compactMap { name in
-                appVM.specializations.first(where: { $0.name == name })
-            }
+        // Load specialization
+        if let specialization = profileData.specialization {
+            selectedSpecialization = specialization
         }
         
         // TODO: Load time slots and pricing from profile data when API provides them
@@ -138,22 +135,13 @@ final class EditDoctorProfileViewModel: ObservableObject {
         }
         
         // Validate Specialization
-        if selectedSpecializations.isEmpty {
-            fieldErrors[.specialization] = "Please select at least one specialization."
+        if selectedSpecialization == nil {
+            fieldErrors[.specialization] = "Please select a specialization."
         }
         
         // Validate License Number
         if licenseNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             fieldErrors[.licenseNumber] = "Please enter your license number."
-        }
-        
-        // Validate Price
-        if !price.isEmpty {
-            if let priceValue = Double(price), priceValue <= 0 {
-                fieldErrors[.price] = "Please enter a valid price."
-            } else if Double(price) == nil {
-                fieldErrors[.price] = "Please enter a valid price."
-            }
         }
         
         return fieldErrors.isEmpty
@@ -164,45 +152,40 @@ final class EditDoctorProfileViewModel: ObservableObject {
     public func prepareUpdateData() -> [String: Any] {
         var updateData: [String: Any] = [
             "name": fullName,
-            "email": email,
-            "id": id ?? 0
+            "email": email
         ]
         
-        // Profile data
+        // Profile data - Doctor-specific fields
         var profileData: [String: Any] = [
             "phone_code": phoneCountryCode,
             "phone": phoneNumber,
-            "address": address,
-            "country": selectedCountry,
-            "postal_code": postalCode,
-            "gender": selectedGender,
+            "gender": selectedGender.lowercased(),
             "medical_license_number": licenseNumber
         ]
         
+        // Add optional address fields if not empty
+        if !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            profileData["address"] = address
+        }
+        
+        if !selectedCountry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            profileData["country"] = selectedCountry
+        }
+        
+        if !postalCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            profileData["postal_code"] = postalCode
+        }
+        
+        // Add date of birth if provided
         if let dob = dateOfBirth {
             profileData["date_of_birth"] = dateToString(dob)
         }
         
         updateData["profile"] = profileData
         
-        // Specializations - send array of IDs
-        if !selectedSpecializations.isEmpty {
-            updateData["specialization_ids"] = selectedSpecializations.map { $0.id }
-        }
-        
-        // Time slots and pricing
-        if !selectedTimeSlots.isEmpty {
-            updateData["available_time_slots"] = Array(selectedTimeSlots)
-        }
-        
-        if !price.isEmpty {
-            updateData["consultation_fee"] = price
-        }
-        
-        if !selectedDuration.isEmpty {
-            // Convert duration string to minutes (e.g., "30 min" -> 30)
-            let durationValue = selectedDuration.replacingOccurrences(of: " min", with: "")
-            updateData["consultation_duration"] = Int(durationValue) ?? 30
+        // Specialization - send single ID (doctor-specific)
+        if let specialization = selectedSpecialization {
+            updateData["specialization_id"] = specialization.id
         }
         
         return updateData

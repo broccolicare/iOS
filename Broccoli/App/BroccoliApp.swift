@@ -46,10 +46,25 @@ struct BroccoliApp: App {
         return PharmacyGlobalViewModel(pharmacyService: pharmacyService)
     }()
     
+    @StateObject private var packageViewModel: PackageGlobalViewModel = {
+        let httpClient = HTTPClient() as any HTTPClientProtocol
+        let packageService = PackageService(httpClient: httpClient)
+        return PackageGlobalViewModel(packageService: packageService)
+    }()
+    
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $router.path){
                 AppRootView()
+                    .onReceive(NotificationCenter.default.publisher(for: .unauthorizedErrorReceived)) { _ in
+                        // Handle 401 error - logout user and redirect to login
+                        Task { @MainActor in
+                            print("🔐 401 Unauthorized error detected - logging out user")
+                            await authViewModel.forceLogout()
+                            router.popToRoot()
+                            router.push(.login)
+                        }
+                    }
                     .navigationDestination(for: Route.self) { route in
                         switch route {
                         case .welcome:
@@ -120,7 +135,10 @@ struct BroccoliApp: App {
                             BookPrescriptionView()
                         case .prescriptionQuestions:
                             PrescriptionQuestionsView()
-                        
+                        case .settings:
+                            SettingsView()
+                        case .appointmentDetailForDoctor(let booking):
+                            AppointmentDetailForDoctorView(booking: booking)
                         }
                     }
             }
@@ -131,6 +149,7 @@ struct BroccoliApp: App {
             .environmentObject(userViewModel)
             .environmentObject(bookingViewModel)
             .environmentObject(pharmacyViewModel)
+            .environmentObject(packageViewModel)
             .environment(\.appTheme, AppTheme.default)
             .onOpenURL { incomingURL in
                 // Handle Stripe redirect URLs

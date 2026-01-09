@@ -101,6 +101,46 @@ final class EditPatientProfileViewModel: ObservableObject {
             }
         }
         
+        // Emergency Contact - Load from top-level emergencyContact object
+        if let emergencyContact = profileData.emergencyContact {
+            emergencyContactName = emergencyContact.name ?? ""
+            emergencyRelationship = emergencyContact.relationship ?? ""
+            
+            // Parse emergency contact phone to split country code and phone number
+            if let emergencyPhone = emergencyContact.phone, !emergencyPhone.isEmpty {
+                // Emergency phone comes as full number like "+35312345678"
+                // Extract country code and phone number
+                if emergencyPhone.hasPrefix("+") {
+                    // Try to find matching country code from available codes
+                    if let appVM = appViewModel {
+                        // Find the longest matching country code
+                        let matchingCode = appVM.phoneCodesOnly
+                            .filter { emergencyPhone.hasPrefix($0) }
+                            .max(by: { $0.count < $1.count })
+                        
+                        if let code = matchingCode {
+                            emergencyCountryCode = code
+                            emergencyPhoneNumber = String(emergencyPhone.dropFirst(code.count))
+                        } else {
+                            // Fallback: assume +XXX format for country code
+                            let endIndex = emergencyPhone.index(emergencyPhone.startIndex, offsetBy: min(4, emergencyPhone.count))
+                            emergencyCountryCode = String(emergencyPhone[..<endIndex])
+                            emergencyPhoneNumber = String(emergencyPhone[endIndex...])
+                        }
+                    } else {
+                        // No app view model, use default parsing
+                        let endIndex = emergencyPhone.index(emergencyPhone.startIndex, offsetBy: min(4, emergencyPhone.count))
+                        emergencyCountryCode = String(emergencyPhone[..<endIndex])
+                        emergencyPhoneNumber = String(emergencyPhone[endIndex...])
+                    }
+                } else {
+                    // No country code prefix
+                    emergencyCountryCode = "+353"
+                    emergencyPhoneNumber = emergencyPhone
+                }
+            }
+        }
+        
         
         // Chronic Conditions
         if let medicalInfo = profileData.medicalInfo {
@@ -119,12 +159,6 @@ final class EditPatientProfileViewModel: ObservableObject {
                 )
             }
         }
-        
-        // Emergency Contact - Currently not in the API response
-        emergencyContactName = ""
-        emergencyRelationship = ""
-        emergencyCountryCode = "+353"
-        emergencyPhoneNumber = ""
         
         print("✅ Profile data loaded successfully")
     }
@@ -187,47 +221,75 @@ final class EditPatientProfileViewModel: ObservableObject {
     public func prepareUpdateData() -> [String: Any] {
         var updateData: [String: Any] = [
             "name": fullName,
-            "email": email,
-            "id": id ?? 0
+            "email": email
         ]
         
-        // Profile data
+        // Profile data - Patient-specific fields
         var profileData: [String: Any] = [
             "phone_code": phoneCountryCode,
             "phone": phoneNumber,
-            "address": address,
-            "country": selectedCountry,
-            "postal_code": postalCode,
-            "gender": selectedGender
+            "gender": selectedGender.lowercased()
         ]
         
+        // Add optional address fields if not empty
+        if !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            profileData["address"] = address
+        }
+        
+        if !selectedCountry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            profileData["country"] = selectedCountry
+        }
+        
+        if !postalCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            profileData["postal_code"] = postalCode
+        }
+        
+        // Add date of birth if provided
         if let dob = dateOfBirth {
             profileData["date_of_birth"] = dateToString(dob)
         }
         
+        // Add blood group if selected
         if let bloodType = selectedBloodType {
             profileData["blood_group_id"] = bloodType
         }
         
+        // Add emergency contact fields to profile if provided
+        if !emergencyContactName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            profileData["emergency_contact_name"] = emergencyContactName
+            profileData["emergency_contact_relationship"] = emergencyRelationship
+            
+            // Combine country code and phone number for emergency contact
+            let fullEmergencyPhone = emergencyCountryCode + emergencyPhoneNumber
+            profileData["emergency_contact_phone"] = fullEmergencyPhone
+        }
+        
         updateData["profile"] = profileData
         
-        // Medical info
-        if !allergies.isEmpty || !chronicConditions.isEmpty {
-            var medicalInfo: [String: Any] = [:]
-            if !allergies.isEmpty {
-                medicalInfo["allergies"] = allergies
-                updateData["replace_allergies"] = true
-            } else {
-                updateData["replace_allergies"] = false
-            }
-            if !chronicConditions.isEmpty {
-                medicalInfo["known_conditions"] = chronicConditions
-            }
+        // Medical info - Patient-specific
+        var medicalInfo: [String: Any] = [:]
+        var hasMedicalInfo = false
+        
+        if !allergies.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            medicalInfo["allergies"] = allergies
+            hasMedicalInfo = true
+        }
+        
+        if !chronicConditions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            medicalInfo["known_conditions"] = chronicConditions
+            hasMedicalInfo = true
+        }
+        
+        if hasMedicalInfo {
             updateData["medical_info"] = medicalInfo
         }
         
-        // Insurance info
-        let validInsurances = insurances.filter { !$0.providerName.isEmpty && !$0.policyNumber.isEmpty }
+        // Insurance info - Patient-specific
+        let validInsurances = insurances.filter { 
+            !$0.providerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
+            !$0.policyNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty 
+        }
+        
         if !validInsurances.isEmpty {
             updateData["insurances"] = validInsurances.map { insurance in
                 [
@@ -240,15 +302,8 @@ final class EditPatientProfileViewModel: ObservableObject {
             updateData["replace_insurances"] = false
         }
         
-        // Emergency contact
-        if !emergencyContactName.isEmpty {
-            updateData["emergency_contact"] = [
-                "name": emergencyContactName,
-                "relationship": emergencyRelationship,
-                "phone_code": emergencyCountryCode,
-                "phone": emergencyPhoneNumber
-            ]
-        }
+        // Set replace_allergies flag
+        updateData["replace_allergies"] = !allergies.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         
         return updateData
     }

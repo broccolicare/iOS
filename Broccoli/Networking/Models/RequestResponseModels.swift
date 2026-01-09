@@ -31,7 +31,7 @@ public struct SignUpRequest: Codable {
     var countryCode: String
     var phoneNumber: String
     var medicalLicenseNumber: String?
-    var specializations: [Int]?
+    var specialization_id: Int?
     var description: String?
     var password: String
     var confirmPassword: String
@@ -50,7 +50,7 @@ public struct SignUpRequest: Codable {
             "password_confirmation": confirmPassword,
             "role": userType.rawValue,
             "medical_license_number": medicalLicenseNumber?.isEmpty == false ? medicalLicenseNumber : nil,
-            "specializations": specializations?.isEmpty == false ? specializations : nil,
+            "specialization_id": specialization_id,
             "description": description?.isEmpty == false ? description : nil
         ]
 
@@ -71,20 +71,60 @@ public struct SignupResponse: Codable {
 public struct TimeSlotsResponse: Codable {
     let success: Bool
     let date: String?
-    let isGP: Int?
-    let departmentId: String?
-    let serviceId: Int?
     let slots: TimeSlotsByPeriod?
     let pricing: PricingInfo?
     let minGapMinutes: Int?
+    let service: ServiceInfo?
+    let department: DepartmentInfo?
     let message: String?
     
     private enum CodingKeys: String, CodingKey {
-        case success, date, slots, pricing, message
-        case isGP = "is_gp"
-        case departmentId = "department_id"
-        case serviceId = "service_id"
+        case success, date, slots, pricing, service, department, message
         case minGapMinutes = "min_gap_minutes"
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        do {
+            success = try container.decode(Bool.self, forKey: .success)
+        } catch {
+            print("❌ [TimeSlotsResponse] Failed to decode 'success': \(error)")
+            throw error
+        }
+        
+        date = try? container.decode(String.self, forKey: .date)
+        
+        do {
+            slots = try container.decodeIfPresent(TimeSlotsByPeriod.self, forKey: .slots)
+        } catch {
+            print("❌ [TimeSlotsResponse] Failed to decode 'slots': \(error)")
+            slots = nil
+        }
+        
+        do {
+            pricing = try container.decodeIfPresent(PricingInfo.self, forKey: .pricing)
+        } catch {
+            print("❌ [TimeSlotsResponse] Failed to decode 'pricing': \(error)")
+            pricing = nil
+        }
+        
+        do {
+            service = try container.decodeIfPresent(ServiceInfo.self, forKey: .service)
+        } catch {
+            print("❌ [TimeSlotsResponse] Failed to decode 'service': \(error)")
+            service = nil
+        }
+        
+        do {
+            department = try container.decodeIfPresent(DepartmentInfo.self, forKey: .department)
+        } catch {
+            print("❌ [TimeSlotsResponse] Failed to decode 'department': \(error)")
+            department = nil
+        }
+        
+        minGapMinutes = try? container.decode(Int.self, forKey: .minGapMinutes)
+        message = try? container.decode(String.self, forKey: .message)
     }
 }
 
@@ -92,6 +132,117 @@ public struct TimeSlotsByPeriod: Codable {
     let morning: [TimeSlot]?
     let afternoon: [TimeSlot]?
     let evening: [TimeSlot]?
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        do {
+            morning = try container.decodeIfPresent([TimeSlot].self, forKey: .morning)
+        } catch {
+            print("❌ [TimeSlotsByPeriod] Failed to decode 'morning': \(error)")
+            morning = []
+        }
+        
+        do {
+            afternoon = try container.decodeIfPresent([TimeSlot].self, forKey: .afternoon)
+        } catch {
+            print("❌ [TimeSlotsByPeriod] Failed to decode 'afternoon': \(error)")
+            afternoon = []
+        }
+        
+        do {
+            evening = try container.decodeIfPresent([TimeSlot].self, forKey: .evening)
+        } catch {
+            print("❌ [TimeSlotsByPeriod] Failed to decode 'evening': \(error)")
+            evening = []
+        }
+    }
+}
+
+public struct ServiceInfo: Codable {
+    let id: Int
+    let code: String
+    let name: String
+    let price: String
+    let duration: Int
+    let specialization: SpecializationInfo?
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        do {
+            id = try container.decode(Int.self, forKey: .id)
+        } catch {
+            print("❌ [ServiceInfo] Failed to decode 'id': \(error)")
+            throw error
+        }
+        
+        do {
+            code = try container.decode(String.self, forKey: .code)
+        } catch {
+            print("❌ [ServiceInfo] Failed to decode 'code': \(error)")
+            throw error
+        }
+        
+        do {
+            name = try container.decode(String.self, forKey: .name)
+        } catch {
+            print("❌ [ServiceInfo] Failed to decode 'name': \(error)")
+            throw error
+        }
+        
+        do {
+            price = try container.decode(String.self, forKey: .price)
+        } catch {
+            print("❌ [ServiceInfo] Failed to decode 'price': \(error)")
+            throw error
+        }
+        
+        do {
+            duration = try container.decode(Int.self, forKey: .duration)
+        } catch {
+            print("❌ [ServiceInfo] Failed to decode 'duration': \(error)")
+            throw error
+        }
+        
+        do {
+            specialization = try container.decodeIfPresent(SpecializationInfo.self, forKey: .specialization)
+        } catch {
+            print("❌ [ServiceInfo] Failed to decode 'specialization': \(error)")
+            specialization = nil
+        }
+    }
+}
+
+public struct SpecializationInfo: Codable {
+    let id: Int
+    let code: String
+    let name: String
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        do {
+            id = try container.decode(Int.self, forKey: .id)
+        } catch {
+            print("❌ [SpecializationInfo] Failed to decode 'id': \(error)")
+            throw error
+        }
+        
+        do {
+            code = try container.decode(String.self, forKey: .code)
+        } catch {
+            print("❌ [SpecializationInfo] Failed to decode 'code': \(error)")
+            throw error
+        }
+        
+        do {
+            name = try container.decode(String.self, forKey: .name)
+        } catch {
+            print("❌ [SpecializationInfo] Failed to decode 'name': \(error)")
+            throw error
+        }
+    }
 }
 
 public struct TimeSlot: Codable, Identifiable {
@@ -107,11 +258,63 @@ public struct TimeSlot: Codable, Identifiable {
         case displayTime = "display_time"
         case time24h = "time_24h"
     }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        do {
+            time = try container.decode(String.self, forKey: .time)
+        } catch {
+            print("❌ [TimeSlot] Failed to decode 'time': \(error)")
+            throw error
+        }
+        
+        do {
+            displayTime = try container.decode(String.self, forKey: .displayTime)
+        } catch {
+            print("❌ [TimeSlot] Failed to decode 'display_time': \(error)")
+            throw error
+        }
+        
+        do {
+            time24h = try container.decode(String.self, forKey: .time24h)
+        } catch {
+            print("❌ [TimeSlot] Failed to decode 'time_24h': \(error)")
+            throw error
+        }
+        
+        do {
+            available = try container.decode(Bool.self, forKey: .available)
+        } catch {
+            print("❌ [TimeSlot] Failed to decode 'available': \(error)")
+            throw error
+        }
+        
+        price = try? container.decode(String.self, forKey: .price)
+    }
 }
 
 public struct PricingInfo: Codable {
     let type: String
     let currency: String
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        do {
+            type = try container.decode(String.self, forKey: .type)
+        } catch {
+            print("❌ [PricingInfo] Failed to decode 'type': \(error)")
+            throw error
+        }
+        
+        do {
+            currency = try container.decode(String.self, forKey: .currency)
+        } catch {
+            print("❌ [PricingInfo] Failed to decode 'currency': \(error)")
+            throw error
+        }
+    }
 }
 
 public struct BookingResponse: Codable {
@@ -128,11 +331,142 @@ public struct BookingResponse: Codable {
     }
 }
 
+public struct UpcomingAppointmentsResponse: Codable {
+    let success: Bool
+    let data: [BookingData]
+    let pagination: PaginationInfo
+    let message: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case data
+        case pagination
+        case message
+    }
+    
+    // Computed properties for easy access
+    var bookings: [BookingData] { data }
+    var currentPage: Int { pagination.currentPage }
+    var lastPage: Int { pagination.lastPage }
+    var perPage: Int { pagination.perPage }
+    var total: Int { pagination.total }
+}
+
+public struct PaginationInfo: Codable {
+    let currentPage: Int
+    let lastPage: Int
+    let perPage: Int
+    let total: Int
+    let from: Int?
+    let to: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case currentPage = "current_page"
+        case lastPage = "last_page"
+        case perPage = "per_page"
+        case total
+        case from
+        case to
+    }
+}
+
+public struct PendingBookingsResponse: Codable {
+    let success: Bool
+    let bookings: [BookingData]
+    let message: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case bookings
+        case message
+    }
+}
+
+public struct MyBookingsResponse: Codable {
+    let success: Bool
+    let bookings: MyBookingsPaginatedData
+    let message: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case bookings
+        case message
+    }
+    
+    // Computed properties for easy access
+    var bookingsList: [BookingData] { bookings.data }
+    var currentPage: Int { bookings.currentPage }
+    var lastPage: Int { bookings.lastPage }
+    var perPage: Int { bookings.perPage }
+    var total: Int { bookings.total }
+}
+
+public struct MyBookingsPaginatedData: Codable {
+    let data: [BookingData]
+    let currentPage: Int
+    let lastPage: Int
+    let perPage: Int
+    let total: Int
+    let from: Int?
+    let to: Int?
+    let path: String?
+    let firstPageUrl: String?
+    let lastPageUrl: String?
+    let nextPageUrl: String?
+    let prevPageUrl: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case data
+        case currentPage = "current_page"
+        case lastPage = "last_page"
+        case perPage = "per_page"
+        case total
+        case from
+        case to
+        case path
+        case firstPageUrl = "first_page_url"
+        case lastPageUrl = "last_page_url"
+        case nextPageUrl = "next_page_url"
+        case prevPageUrl = "prev_page_url"
+    }
+}
+
+public struct AcceptBookingResponse: Codable {
+    let success: Bool
+    let data: BookingData?
+    let message: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case data
+        case message
+    }
+    
+    // Computed property for easy access
+    var booking: BookingData? { data }
+}
+
+public struct RejectBookingResponse: Codable {
+    let success: Bool
+    let data: BookingData?
+    let message: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case data
+        case message
+    }
+    
+    // Computed property for easy access
+    var booking: BookingData? { data }
+}
+
 public struct BookingData: Codable, Hashable {
     let id: Int
     let userId: Int?
     let departmentId: Int?
     let serviceId: Int?
+    let assignedDoctorId: Int?
     let date: String
     let time: String
     let timeSlot: String?
@@ -141,6 +475,11 @@ public struct BookingData: Codable, Hashable {
     let paymentStatus: String?
     let paymentMethod: String?
     let stripePaymentIntentId: String?
+    let stripeCustomerId: String?
+    let stripePaymentMethodId: String?
+    let doctorStatus: String?
+    let doctorNotes: String?
+    let doctorRespondedAt: String?
     let createdAt: String?
     let updatedAt: String?
     let service: ServiceData?
@@ -152,6 +491,7 @@ public struct BookingData: Codable, Hashable {
         case userId = "user_id"
         case departmentId = "department_id"
         case serviceId = "service_id"
+        case assignedDoctorId = "assigned_doctor_id"
         case date
         case time
         case timeSlot = "time_slot"
@@ -160,6 +500,11 @@ public struct BookingData: Codable, Hashable {
         case paymentStatus = "payment_status"
         case paymentMethod = "payment_method"
         case stripePaymentIntentId = "stripe_payment_intent_id"
+        case stripeCustomerId = "stripe_customer_id"
+        case stripePaymentMethodId = "stripe_payment_method_id"
+        case doctorStatus = "doctor_status"
+        case doctorNotes = "doctor_notes"
+        case doctorRespondedAt = "doctor_responded_at"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case service
@@ -171,32 +516,48 @@ public struct BookingData: Codable, Hashable {
 public struct ServiceData: Codable, Hashable {
     let id: Int
     let name: String
+    let code: String?
     let description: String?
     let price: String?
     let duration: Int?
     let departmentId: Int?
+    let specializationId: Int?
+    let parentId: Int?
     let status: String?
     let billingType: String?
     let subscriptionRequired: Int?
+    let subscriptionQuotaMonthly: Int?
+    let quotaScopedTo: String?
     let requiresDoctor: Int?
     let bookableOnline: Int?
     let stripeProductId: String?
     let stripePriceId: String?
+    let createdAt: String?
+    let updatedAt: String?
+    let specialization: Specialization?
     
     enum CodingKeys: String, CodingKey {
         case id
         case name
+        case code
         case description
         case price
         case duration
         case departmentId = "department_id"
+        case specializationId = "specialization_id"
+        case parentId = "parent_id"
         case status
         case billingType = "billing_type"
         case subscriptionRequired = "subscription_required"
+        case subscriptionQuotaMonthly = "subscription_quota_monthly"
+        case quotaScopedTo = "quota_scoped_to"
         case requiresDoctor = "requires_doctor"
         case bookableOnline = "bookable_online"
         case stripeProductId = "stripe_product_id"
         case stripePriceId = "stripe_price_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case specialization
     }
 }
 
@@ -225,12 +586,30 @@ public struct UserData: Codable, Hashable {
     let name: String
     let email: String
     let username: String?
+    let stripeId: String?
+    let pmType: String?
+    let pmLastFour: String?
+    let trialEndsAt: String?
+    let twoFactorSecret: String?
+    let twoFactorRecoveryCodes: String?
+    let twoFactorConfirmedAt: String?
+    let createdAt: String?
+    let updatedAt: String?
     
     enum CodingKeys: String, CodingKey {
         case id
         case name
         case email
         case username
+        case stripeId = "stripe_id"
+        case pmType = "pm_type"
+        case pmLastFour = "pm_last_four"
+        case trialEndsAt = "trial_ends_at"
+        case twoFactorSecret = "two_factor_secret"
+        case twoFactorRecoveryCodes = "two_factor_recovery_codes"
+        case twoFactorConfirmedAt = "two_factor_confirmed_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
     }
 }
 
@@ -432,7 +811,28 @@ public struct ServicesResponse: Codable {
 
 public struct DepartmentInfo: Codable {
     public let id: Int
+    public let code: String?
     public let name: String
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        do {
+            id = try container.decode(Int.self, forKey: .id)
+        } catch {
+            print("❌ [DepartmentInfo] Failed to decode 'id': \(error)")
+            throw error
+        }
+        
+        code = try? container.decode(String.self, forKey: .code)
+        
+        do {
+            name = try container.decode(String.self, forKey: .name)
+        } catch {
+            print("❌ [DepartmentInfo] Failed to decode 'name': \(error)")
+            throw error
+        }
+    }
 }
 
 public struct Service: Codable, Identifiable {

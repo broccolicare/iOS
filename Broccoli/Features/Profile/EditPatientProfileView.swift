@@ -358,8 +358,11 @@ struct EditPatientProfileView: View {
             if !appVM.isMetadataLoaded {
                 await appVM.loadMetadata()
             }
-        }
-        .onAppear {
+            
+            // Fetch profile data from API
+            await userVM.fetchProfileDetail()
+            
+            // Load profile data into form fields
             vm.loadProfileData(from: userVM.profileData, appViewModel: appVM)
         }
         .toast(

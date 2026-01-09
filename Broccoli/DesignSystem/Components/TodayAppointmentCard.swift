@@ -50,6 +50,7 @@ struct TodayAppointmentCard: View {
                         .background(theme.colors.primary)
                         .cornerRadius(8)
                 }
+                .buttonStyle(.plain)
                 
                 // Reject Button
                 Button(action: onReject) {
@@ -65,6 +66,7 @@ struct TodayAppointmentCard: View {
                                 .stroke(theme.colors.primary, lineWidth: 1)
                         )
                 }
+                .buttonStyle(.plain)
             }
         }
         .padding(16)

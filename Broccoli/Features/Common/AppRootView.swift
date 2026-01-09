@@ -19,17 +19,19 @@ struct AppRootView: View {
     @State private var isCheckingAuth = true
     
     var body: some View {
-        ZStack {
+        Group {
             if isCheckingAuth {
                 // Show loading view while checking authentication
-                theme.colors.background.ignoresSafeArea()
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                        .tint(theme.colors.primary)
-                    Text("Loading...")
-                        .font(theme.typography.caption)
-                        .foregroundColor(theme.colors.textSecondary)
+                ZStack {
+                    theme.colors.background.ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(theme.colors.primary)
+                        Text("Loading...")
+                            .font(theme.typography.caption)
+                            .foregroundColor(theme.colors.textSecondary)
+                    }
                 }
             } else if authVM.isAuthenticated {
                 // User is logged in - show appropriate home screen based on user type
@@ -60,6 +62,7 @@ struct AppRootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: authVM.isAuthenticated)
+        .animation(.easeInOut(duration: 0.3), value: authVM.currentUser?.primaryRole)
         .task {
             print("🚀 AppRootView: Starting auth check...")
             await authVM.checkAuthenticationStatus()
@@ -78,6 +81,12 @@ struct AppRootView: View {
             
             await MainActor.run {
                 isCheckingAuth = false
+            }
+        }
+        .onChange(of: authVM.isAuthenticated) { oldValue, newValue in
+            print("🔄 AppRootView: isAuthenticated changed from \(oldValue) to \(newValue)")
+            if newValue {
+                print("🏠 User authenticated, role: \(authVM.currentUser?.primaryRole?.rawValue ?? "unknown")")
             }
         }
     }

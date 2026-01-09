@@ -70,7 +70,7 @@ struct SignUpView: View {
                     )
                     
                     DropdownField(
-                        selectedValues: Binding(get: { vm.specializations ?? [] }, set: { vm.specializations = $0 }),
+                        selectedValue: $vm.specialization,
                         items: appVM.specializations,
                         placeholder: "Specialization",
                         title: nil,
@@ -273,8 +273,8 @@ struct SignUpView: View {
         guard vm.validateSignupFields() else { return }
         
         Task {
-            // Extract specialization IDs from the selected Specialization objects
-            let specializationIds = vm.specializations?.map { $0.id }
+            // Extract specialization ID from the selected Specialization object
+            let specializationId = vm.specialization?.id
             
             let request = SignUpRequest(
                 name: vm.name,
@@ -284,7 +284,7 @@ struct SignUpView: View {
                 countryCode: vm.countryCode,
                 phoneNumber: vm.phone,
                 medicalLicenseNumber: vm.medicalLicense,
-                specializations: specializationIds,
+                specialization_id: specializationId,
                 description: vm.description,
                 password: vm.password,
                 confirmPassword: vm.confirmPassword,

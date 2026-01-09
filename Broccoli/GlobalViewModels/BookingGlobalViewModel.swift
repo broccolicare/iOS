@@ -66,6 +66,21 @@ public final class BookingGlobalViewModel: ObservableObject {
     // Booking history
     @Published public var currentBookingId: String? = nil
     
+    // Upcoming appointments
+    @Published public var upcomingAppointments: [BookingData] = []
+    @Published public var currentPage: Int = 1
+    @Published public var lastPage: Int = 1
+    @Published public var totalAppointments: Int = 0
+    @Published public var isLoadingAppointments: Bool = false
+    
+    // Pending bookings for doctor
+    @Published public var pendingBookings: [BookingData] = []
+    @Published public var isLoadingPendingBookings: Bool = false
+    
+    // My/Accepted bookings for doctor
+    @Published public var myBookings: [BookingData] = []
+    @Published public var isLoadingMyBookings: Bool = false
+    
     public init(bookingService: BookingServiceProtocol) {
         self.bookingService = bookingService
     }
@@ -140,11 +155,11 @@ public final class BookingGlobalViewModel: ObservableObject {
                 date: date,
                 isGP: isGP,
                 departmentId: selectedDepartmentId,
-                serviceId: selectedService?.id != nil ? "\(selectedService?.id, default: "")" : nil
+                serviceId: selectedService?.id != nil ? "\(selectedService?.id ?? 0)" : nil
             )
             
             if response.success {
-                // Store slots by period
+                // Store slots by period from API response
                 morningSlots = response.slots?.morning ?? []
                 afternoonSlots = response.slots?.afternoon ?? []
                 eveningSlots = response.slots?.evening ?? []
@@ -155,6 +170,9 @@ public final class BookingGlobalViewModel: ObservableObject {
                 
                 // Store pricing info
                 pricingInfo = response.pricing
+                
+                // Store department info
+                currentDepartment = response.department
             } else {
                 errorMessage = response.message ?? "Failed to fetch available time slots"
                 showErrorToast = true
@@ -691,6 +709,159 @@ public final class BookingGlobalViewModel: ObservableObject {
             errorMessage = "Payment was canceled"
             showErrorToast = true
             return nil
+        }
+    }
+    
+    // MARK: - Upcoming Appointments
+    
+    /// Fetch upcoming confirmed appointments with pagination
+    public func fetchUpcomingConfirmedAppointments(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+        isLoadingAppointments = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.fetchUpcomingConfirmedAppointments(perPage: perPage, page: page)
+            
+            if loadMore {
+                // Append to existing appointments for pagination
+                self.upcomingAppointments.append(contentsOf: response.bookings)
+            } else {
+                // Replace appointments (for initial load or refresh)
+                self.upcomingAppointments = response.bookings
+            }
+            
+            self.currentPage = response.currentPage
+            self.lastPage = response.lastPage
+            self.totalAppointments = response.total
+            
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+        
+        isLoadingAppointments = false
+    }
+    
+    /// Load next page of appointments
+    public func loadMoreAppointments() async {
+        guard currentPage < lastPage else { return }
+        await fetchUpcomingConfirmedAppointments(perPage: 10, page: currentPage + 1, loadMore: true)
+    }
+    
+    /// Refresh appointments (reset to page 1)
+    public func refreshAppointments() async {
+        await fetchUpcomingConfirmedAppointments(perPage: 10, page: 1, loadMore: false)
+    }
+    
+    // MARK: - Pending Bookings For Doctor
+    
+    /// Fetch pending bookings for doctor
+    public func fetchPendingBookingsForDoctor() async {
+        isLoadingPendingBookings = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.fetchPendingBookingsForDoctor()
+            
+            if response.success {
+                self.pendingBookings = response.bookings
+            } else {
+                errorMessage = response.message ?? "Failed to fetch pending bookings"
+                showErrorToast = true
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+        
+        isLoadingPendingBookings = false
+    }
+    
+    /// Refresh pending bookings
+    public func refreshPendingBookings() async {
+        await fetchPendingBookingsForDoctor()
+    }
+    
+    // MARK: - My/Accepted Bookings For Doctor
+    
+    /// Fetch my/accepted bookings for doctor
+    public func fetchMyBookingsForDoctor() async {
+        isLoadingMyBookings = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.fetchMyBookingsForDoctor()
+            
+            if response.success {
+                self.myBookings = response.bookingsList
+            } else {
+                errorMessage = response.message ?? "Failed to fetch my bookings"
+                showErrorToast = true
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+        
+        isLoadingMyBookings = false
+    }
+    
+    /// Refresh my bookings
+    public func refreshMyBookings() async {
+        await fetchMyBookingsForDoctor()
+    }
+    
+    // MARK: - Accept/Reject Bookings For Doctor
+    
+    /// Accept a booking for doctor
+    public func acceptBooking(bookingId: Int) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.acceptBooking(bookingId: bookingId)
+            
+            if response.success {
+                showSuccessToast = true
+                isLoading = false
+                return true
+            } else {
+                errorMessage = response.message ?? "Failed to accept booking"
+                showErrorToast = true
+                isLoading = false
+                return false
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+            isLoading = false
+            return false
+        }
+    }
+    
+    /// Reject a booking for doctor
+    public func rejectBooking(bookingId: Int, reason: String) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.rejectBooking(bookingId: bookingId, reason: reason)
+            
+            if response.success {
+                showSuccessToast = true
+                isLoading = false
+                return true
+            } else {
+                errorMessage = response.message ?? "Failed to reject booking"
+                showErrorToast = true
+                isLoading = false
+                return false
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+            isLoading = false
+            return false
         }
     }
 }

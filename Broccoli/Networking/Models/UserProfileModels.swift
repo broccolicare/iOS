@@ -22,19 +22,29 @@ public struct UserProfileData: Codable {
     public let username: String
     public let roles: [String]
     public let profile: DetailedUserProfile?
+    
+    // Patient-specific fields
     public let medicalInfo: MedicalInfo?
     public let emergencyContact: EmergencyContact?
     public let allergies: [Allergy]?
     public let pendingAllergies: [Allergy]?
     public let insurances: [Insurance]?
-    public let specializations: [String]?
+    
+    // Doctor-specific fields
+    public let specialization: Specialization?
+    public let licenseNumber: String?
+    public let consultationFee: String?
+    public let availableTimeSlots: String?
     
     private enum CodingKeys: String, CodingKey {
-        case id, name, email, username, roles, profile, insurances, specializations
+        case id, name, email, username, roles, profile, insurances, specialization
         case medicalInfo = "medical_info"
         case emergencyContact = "emergency_contact"
         case allergies
         case pendingAllergies = "pending_allergies"
+        case licenseNumber = "license_number"
+        case consultationFee = "consultation_fee"
+        case availableTimeSlots = "available_time_slots"
     }
 }
 

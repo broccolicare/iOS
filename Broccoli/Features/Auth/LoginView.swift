@@ -35,14 +35,19 @@ struct LoginView: View {
             VStack(spacing: theme.spacing.lg) {
                 VStack(spacing: theme.spacing.md) {
                     // Username / Email
-                    TextField("Username/Email Address", text: $email)
-                        .textFieldStyle(CustomTextFieldStyle(theme: theme))
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
+                    TextInputField(
+                        placeholder: "Username/Email Address",
+                        text: $email,
+                        keyboardType: .emailAddress
+                    )
                     
                     // Password
-                    SecureField("Password", text: $password)
-                        .textFieldStyle(CustomTextFieldStyle(theme: theme))
+                    TextInputField(
+                        placeholder: "Password",
+                        text: $password,
+                        keyboardType: .default,
+                        isSecure: true
+                    )
                 }
                 
                 // Keep me login + Forgot
@@ -132,8 +137,12 @@ struct LoginView: View {
         }
         .onChange(of: authVM.isAuthenticated) { _, isAuthenticated in
             if isAuthenticated {
-                // User successfully logged in, navigate to home screen
-                router.popToRoot()
+                print("🔐 Login successful, popping to root...")
+                // User successfully logged in, pop all navigation to show AppRootView
+                // which will display the appropriate home screen based on user role
+                DispatchQueue.main.async {
+                    router.popToRoot()
+                }
             }
         }
     }

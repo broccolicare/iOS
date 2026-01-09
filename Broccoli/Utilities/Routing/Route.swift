@@ -36,5 +36,7 @@ enum Route: Hashable {
     case editPharmacy(pharmacy: Pharmacy)
     case bookPrescription
     case prescriptionQuestions
+    case settings
+    case appointmentDetailForDoctor(booking: BookingData)
     // add routes as needed
 }

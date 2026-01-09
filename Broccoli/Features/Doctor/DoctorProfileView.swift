@@ -41,6 +41,7 @@ struct DoctorProfileView: View {
                     
                     Button(action: {
                         // Settings action
+                        router.push(.settings)
                     }) {
                         Circle()
                             .fill(Color.white)
@@ -79,9 +80,8 @@ struct DoctorProfileView: View {
                                 }
                                 
                                 // Specialization
-                                if let profile = authVM.currentUser?.profile,
-                                   let specialization = getSpecialization(from: profile) {
-                                    Text(specialization)
+                                if let specialization = authVM.currentUser?.specialization {
+                                    Text(specialization.name)
                                         .font(theme.typography.bold20)
                                         .foregroundStyle(.white)
                                 }
@@ -97,15 +97,15 @@ struct DoctorProfileView: View {
                                             .foregroundStyle(.white)
                                     }
                                     Spacer()
-                                    HStack(spacing: 4) {
-                                        Image("dollar-symbol")
-                                        Text("€230")
-                                            .font(theme.typography.semiBold18)
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(Color.white.opacity(0.2))
-                                    .cornerRadius(20)
+                                    // HStack(spacing: 4) {
+                                    //     Image("dollar-symbol")
+                                    //     Text("€230")
+                                    //         .font(theme.typography.semiBold18)
+                                    // }
+                                    // .padding(.horizontal, 12)
+                                    // .padding(.vertical, 8)
+                                    // .background(Color.white.opacity(0.2))
+                                    // .cornerRadius(20)
                                 }
                                 .padding(.top, 8)
                             }
@@ -238,12 +238,6 @@ struct DoctorProfileView: View {
                 dismiss()
             }
         }
-    }
-    
-    private func getSpecialization(from profile: UserProfile) -> String? {
-        // For now, return a default value
-        // In the future, you can add specialization field to UserProfile
-        return "Cardiologist"
     }
     
     private func signOut() {

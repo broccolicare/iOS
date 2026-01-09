@@ -193,6 +193,7 @@ public struct User: Codable {
     public let name: String
     public let roles: [String]
     public let profile: UserProfile?
+    public let specialization: Specialization?
     
     // Computed property to get the primary role as UserType
     public var primaryRole: UserType? {
@@ -201,7 +202,7 @@ public struct User: Codable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, email, name, role, roles, profile
+        case id, email, name, role, roles, profile, specialization
     }
     
     // Custom decoder to handle both "role" (string) and "roles" (array)
@@ -212,6 +213,7 @@ public struct User: Codable {
         email = try container.decode(String.self, forKey: .email)
         name = try container.decode(String.self, forKey: .name)
         profile = try container.decodeIfPresent(UserProfile.self, forKey: .profile)
+        specialization = try container.decodeIfPresent(Specialization.self, forKey: .specialization)
         
         // Try to decode "roles" as array first (login API)
         if let rolesArray = try? container.decode([String].self, forKey: .roles) {
@@ -236,6 +238,7 @@ public struct User: Codable {
         try container.encode(name, forKey: .name)
         try container.encode(roles, forKey: .roles)
         try container.encodeIfPresent(profile, forKey: .profile)
+        try container.encodeIfPresent(specialization, forKey: .specialization)
     }
 }
 

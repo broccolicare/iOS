@@ -21,6 +21,11 @@ public protocol BookingServiceProtocol {
     func initializePayment(data: [String: Any]) async throws -> PaymentInitializeResponse
     func confirmPayment(data: [String: Any]) async throws -> PaymentConfirmResponse
     func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse
+    func fetchUpcomingConfirmedAppointments(perPage: Int, page: Int) async throws -> UpcomingAppointmentsResponse
+    func fetchPendingBookingsForDoctor() async throws -> PendingBookingsResponse
+    func fetchMyBookingsForDoctor() async throws -> MyBookingsResponse
+    func acceptBooking(bookingId: Int) async throws -> AcceptBookingResponse
+    func rejectBooking(bookingId: Int, reason: String) async throws -> RejectBookingResponse
 }
 
 public final class BookingService: BaseService, BookingServiceProtocol {
@@ -133,6 +138,46 @@ public final class BookingService: BaseService, BookingServiceProtocol {
     public func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse {
         return try await handleServiceError {
             let endpoint = BookingEndpoint.loadServices(departmentId)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Fetch upcoming confirmed appointments with pagination
+    public func fetchUpcomingConfirmedAppointments(perPage: Int = 10, page: Int = 1) async throws -> UpcomingAppointmentsResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.upcomingAppointments(perPage: perPage, page: page)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Fetch pending bookings for doctor
+    public func fetchPendingBookingsForDoctor() async throws -> PendingBookingsResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.pendingAppointmentsForDoctor
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Fetch accepted/my bookings for doctor
+    public func fetchMyBookingsForDoctor() async throws -> MyBookingsResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.myBookingsForDoctor
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Accept booking for doctor
+    public func acceptBooking(bookingId: Int) async throws -> AcceptBookingResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.acceptBooking(bookingId)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Reject booking for doctor
+    public func rejectBooking(bookingId: Int, reason: String) async throws -> RejectBookingResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.rejectBooking(bookingId: bookingId, reason: reason)
             return try await httpClient.request(endpoint)
         }
     }

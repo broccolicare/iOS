@@ -22,6 +22,12 @@ public enum BookingEndpoint: Endpoint {
     case initialisePrescriptionPayment(String)
     case confirmPrescriptionPayment(String)
     case loadServices(String)
+    case upcomingAppointments(perPage: Int, page: Int)
+    case pendingAppointmentsForDoctor
+    case myBookingsForDoctor
+    case acceptBooking(Int)
+    case rejectBooking(bookingId:Int, reason: String)
+    
     
     public var path: String {
         switch self {
@@ -51,14 +57,24 @@ public enum BookingEndpoint: Endpoint {
             return "/payments/prescriptions/\(prescription)/confirm"
         case .loadServices(let department):
             return "/global/departments/\(department)/services"
+        case .upcomingAppointments:
+            return "/bookings/upcoming/confirmed"
+        case .pendingAppointmentsForDoctor:
+            return "/doctor/bookings/pending"
+        case .myBookingsForDoctor:
+            return "/doctor/bookings/my-bookings"
+        case .acceptBooking(let bookingId):
+            return "/doctor/bookings/\(bookingId)/accept"
+        case .rejectBooking(let bookingId, _):
+            return "/doctor/bookings/\(bookingId)/reject"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices:
+        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .upcomingAppointments, .myBookingsForDoctor, .pendingAppointmentsForDoctor:
             return .GET
-        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment:
+        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking:
             return .POST
         case .cancelBooking:
             return .PUT
@@ -67,7 +83,7 @@ public enum BookingEndpoint: Endpoint {
     
     public var body: [String: Any]? {
         switch self {
-        case .createBooking(let data): 
+        case .createBooking(let data):
             return data
         case .paymentInitialize(let data):
             return data
@@ -75,7 +91,13 @@ public enum BookingEndpoint: Endpoint {
             return data
         case .createPrescriptionOrder(let data):
             return data
-        case .uploadDocument(_, let documentData, let fileName): 
+        case .acceptBooking:
+            return nil
+        case .rejectBooking(_, let reason):
+            return [
+                "reason": reason
+            ]
+        case .uploadDocument(_, let documentData, let fileName):
             return nil
         default:
             return nil
@@ -98,6 +120,11 @@ public enum BookingEndpoint: Endpoint {
                 items["service_id"] = serviceId
             }
             return items
+        case .upcomingAppointments(let perPage, let page):
+            return [
+                "per_page": String(perPage),
+                "page": String(page)
+            ]
         default:
             return nil
         }

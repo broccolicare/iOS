@@ -94,6 +94,11 @@ public final class AuthGlobalViewModel: ObservableObject {
         isLoading = false
     }
     
+    /// Force logout without API call - used for handling 401 errors
+    public func forceLogout() async {
+        await clearAuthState()
+    }
+    
     public func signInWithGoogle() async {
         isLoading = true
         errorMessage = nil
@@ -266,6 +271,11 @@ public final class AuthGlobalViewModel: ObservableObject {
         // Update UI state
         isAuthenticated = false
         currentUser = nil
+        
+        // Clear navigation stack
+        await MainActor.run {
+            Router.shared.popToRoot()
+        }
     }
     
     // Re-check tokens / session (initialization step)

@@ -92,7 +92,7 @@ struct DoctorProfileDetailView: View {
                             .multilineTextAlignment(.center)
                         
                         // License Number
-                        Text("License No: 06523456")
+                        Text(userVM.profileData?.licenseNumber ?? "N/A")
                             .font(theme.typography.bold16)
                             .foregroundStyle(theme.colors.profileDetailTextColor)
                     }
@@ -112,7 +112,7 @@ struct DoctorProfileDetailView: View {
                             VStack(spacing: 0) {
                                 DoctorInfoRow(
                                     label: "Gender",
-                                    value: userVM.profileData?.profile?.gender ?? "Male",
+                                    value: userVM.profileData?.profile?.gender?.capitalized ?? "Male",
                                     showDivider: false
                                 )
                                 
@@ -157,37 +157,37 @@ struct DoctorProfileDetailView: View {
                         }.padding(.horizontal, 20)
                         
                         // Pricing Section
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Pricing")
-                                .font(theme.typography.bold18)
-                                .foregroundStyle(theme.colors.textPrimary)
+                        // VStack(alignment: .leading, spacing: 16) {
+                        //     Text("Pricing")
+                        //         .font(theme.typography.bold18)
+                        //         .foregroundStyle(theme.colors.textPrimary)
                                 
                             
-                            HStack(spacing: 16) {
-                                // Clock Icon
-                                Rectangle()
-                                    .fill(theme.colors.background)
-                                    .frame(width: 48, height: 48)
-                                    .cornerRadius(8)
-                                    .overlay(
-                                        Image(systemName: "clock")
-                                            .font(.system(size: 20))
-                                            .foregroundStyle(theme.colors.textPrimary)
-                                    )
+                        //     HStack(spacing: 16) {
+                        //         // Clock Icon
+                        //         Rectangle()
+                        //             .fill(theme.colors.background)
+                        //             .frame(width: 48, height: 48)
+                        //             .cornerRadius(8)
+                        //             .overlay(
+                        //                 Image(systemName: "clock")
+                        //                     .font(.system(size: 20))
+                        //                     .foregroundStyle(theme.colors.textPrimary)
+                        //             )
                                 
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("€49")
-                                        .font(theme.typography.semiBold20)
-                                        .foregroundStyle(theme.colors.textPrimary)
+                        //         VStack(alignment: .leading, spacing: 4) {
+                        //             Text("€49")
+                        //                 .font(theme.typography.semiBold20)
+                        //                 .foregroundStyle(theme.colors.textPrimary)
                                     
-                                    Text("30 minutes")
-                                        .font(theme.typography.regular14)
-                                        .foregroundStyle(theme.colors.profileDetailTextColor)
-                                }
+                        //             Text("30 minutes")
+                        //                 .font(theme.typography.regular14)
+                        //                 .foregroundStyle(theme.colors.profileDetailTextColor)
+                        //         }
                                 
-                                Spacer()
-                            }
-                        }.padding(.horizontal, 20)
+                        //         Spacer()
+                        //     }
+                        // }.padding(.horizontal, 20)
                     }
                     .padding(.top, 20)
                     .padding(.bottom, 100)

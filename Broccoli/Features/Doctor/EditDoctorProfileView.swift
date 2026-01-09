@@ -18,17 +18,6 @@ struct EditDoctorProfileView: View {
     
     @StateObject private var vm = EditDoctorProfileViewModel()
     
-    // Available time slots
-    private let timeSlots = [
-        "9:00 AM", "10:00 AM", "11:00 AM",
-        "12:00 PM", "01:00 PM", "02:00 PM",
-        "03:00 PM", "04:00 PM", "05:00 PM",
-        "06:00 PM", "07:00 PM", "08:00 PM"
-    ]
-    
-    // Duration options
-    private let durations = ["15 min", "30 min", "45 min", "60 min"]
-    
     var body: some View {
         ZStack(alignment: .top) {
             // White background
@@ -122,10 +111,7 @@ struct EditDoctorProfileView: View {
                                 
                                 // Specialization Dropdown
                                 DropdownField(
-                                    selectedValues: Binding(
-                                        get: { vm.selectedSpecializations },
-                                        set: { vm.selectedSpecializations = $0 }
-                                    ),
+                                    selectedValue: $vm.selectedSpecialization,
                                     items: appVM.specializations,
                                     placeholder: "Specialization",
                                     title: nil,
@@ -190,104 +176,6 @@ struct EditDoctorProfileView: View {
                                 )
                             }
                             .padding(.horizontal, 20)
-                        }
-                        
-                        // Available Time Slots Section
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Available Time Slots")
-                                .font(theme.typography.semiBold18)
-                                .foregroundStyle(theme.colors.textPrimary)
-                                .padding(.horizontal, 20)
-                            
-                            // Time Slots Grid
-                            LazyVGrid(columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ], spacing: 12) {
-                                ForEach(timeSlots, id: \.self) { slot in
-                                    TimeSlotChip(
-                                        timeSlot: slot,
-                                        isSelected: vm.selectedTimeSlots.contains(slot),
-                                        action: {
-                                            toggleTimeSlot(slot)
-                                        }
-                                    )
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Pricing Section
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Pricing")
-                                .font(theme.typography.semiBold18)
-                                .foregroundStyle(theme.colors.textPrimary)
-                                .padding(.horizontal, 20)
-                            
-                            HStack(spacing: 12) {
-                                // Price Field
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "eurosign")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(theme.colors.textSecondary)
-                                        
-                                        TextField("49", text: $vm.price)
-                                            .font(theme.typography.regular16)
-                                            .keyboardType(.numberPad)
-                                    }
-                                    .padding(16)
-                                    .background(Color.white)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(vm.fieldErrors[.price] != nil ? Color.red : Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                                    
-                                    if let errorText = vm.fieldErrors[.price] {
-                                        Text(errorText)
-                                            .font(theme.typography.caption)
-                                            .foregroundStyle(.red)
-                                            .padding(.leading, 4)
-                                    }
-                                }
-                                
-                                // Duration Dropdown
-                                Menu {
-                                    ForEach(durations, id: \.self) { duration in
-                                        Button(action: {
-                                            vm.selectedDuration = duration
-                                        }) {
-                                            HStack {
-                                                Text(duration)
-                                                if vm.selectedDuration == duration {
-                                                    Image(systemName: "checkmark")
-                                                }
-                                            }
-                                        }
-                                    }
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "clock")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(theme.colors.textSecondary)
-                                        
-                                        Text(vm.selectedDuration.isEmpty ? "30 min" : vm.selectedDuration)
-                                            .font(theme.typography.regular16)
-                                            .foregroundStyle(theme.colors.textPrimary)
-                                        
-                                        Spacer()
-                                    }
-                                    .padding(16)
-                                    .background(Color.white)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
                         }
                     }
                 }
@@ -365,14 +253,6 @@ struct EditDoctorProfileView: View {
     
     // MARK: - Helper Functions
     
-    private func toggleTimeSlot(_ slot: String) {
-        if vm.selectedTimeSlots.contains(slot) {
-            vm.selectedTimeSlots.remove(slot)
-        } else {
-            vm.selectedTimeSlots.insert(slot)
-        }
-    }
-    
     private func updateProfile() async {
         // Validate fields using ViewModel
         guard vm.validateProfileFields() else {
@@ -396,31 +276,6 @@ struct EditDoctorProfileView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 router.pop()
             }
-        }
-    }
-}
-
-// MARK: - Time Slot Chip Component
-struct TimeSlotChip: View {
-    @Environment(\.appTheme) private var theme
-    
-    let timeSlot: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(timeSlot)
-                .font(theme.typography.regular14)
-                .foregroundStyle(isSelected ? .white : theme.colors.textPrimary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(isSelected ? theme.colors.primary : Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? theme.colors.primary : Color.gray.opacity(0.3), lineWidth: 1)
-                )
-                .cornerRadius(8)
         }
     }
 }

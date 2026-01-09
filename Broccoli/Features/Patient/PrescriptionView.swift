@@ -66,13 +66,23 @@ struct PrescriptionView: View {
                     
                     Spacer()
                     
-                    Button(action: {
-                        // Handle notifications
-                        router.push(.notifications)
-                    }) {
-                        Image("notification-icon")
-                            .resizable()
-                            .frame(width: 24, height: 24)
+                    Button {
+                        // navigate to notifications screen; if you use router:
+                        router.push(.notifications) // example; replace with .notifications route if defined
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(theme.colors.primary.opacity(0.1))
+                                .frame(width: 44, height: 44)
+                            
+                            Image("notification-icon").frame(width: 40, height: 40)
+                            
+                            // Notification badge
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 10, y: -10)
+                        }
                     }
                 }
                 .padding(.horizontal, 20)

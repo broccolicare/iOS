@@ -19,7 +19,7 @@ public enum PharmacyEndpoint: Endpoint {
     public var path: String {
         switch self {
         case .searchPharmacies:
-            return "/pharmacies/search"
+            return "/pharmacies/mine"
         case .createPharmacy:
             return "/pharmacies"
         case .updatePharmacy(let pharmacyId, _):

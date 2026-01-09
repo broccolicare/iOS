@@ -11,6 +11,7 @@ struct PatientHomeView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var authVM: AuthGlobalViewModel
     @EnvironmentObject private var appVM: AppGlobalViewModel
+    @EnvironmentObject private var bookingVM: BookingGlobalViewModel
     
     // screen state
     @State private var searchText: String = ""
@@ -20,17 +21,25 @@ struct PatientHomeView: View {
         ServiceItem(title: "Nutritionists", icon: "nutritionists-icon", color: Color("Tile3")),
         ServiceItem(title: "Blood Tests", icon: "blood-test-icon", color: Color("Tile4"))
     ]
-    @State private var appointments: [Appointment] = [
-        Appointment(doctorName: "Dr. Ethan Carter", specialty: "General Practitioner", date: "2nd Oct, 2025", time: "12:30 PM", avatar: "person.circle"),
-        Appointment(doctorName: "Dr. Laura Smith", specialty: "Dermatologist", date: "10th Oct, 2025", time: "09:00 AM", avatar: "person.circle.fill")
-    ]
+    
+    // Convert API BookingData to UI Appointment model
+    private var appointments: [Appointment] {
+        bookingVM.upcomingAppointments.map { booking in
+            Appointment(
+                doctorName: booking.service?.name ?? "Doctor",
+                specialty: booking.department?.name ?? "Specialist",
+                date: formatDate(booking.date),
+                time: booking.time,
+                avatar: "doctor-placeholder"
+            )
+        }
+    }
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                theme.colors.background.ignoresSafeArea()
-                
-                VStack(spacing: 0) {
+        ZStack {
+            theme.colors.background.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
                     // Nav / Greeting
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 6) {
@@ -104,20 +113,30 @@ struct PatientHomeView: View {
                                     .foregroundStyle(theme.colors.textPrimary)
                                     .padding(.horizontal, theme.spacing.lg)
                                 
-                                VerticalCarousel(items: appointments,
-                                                 visibleCount: 4,
-                                                 spacing: 12,
-                                                 scaleGap: 0.06,
-                                                 swipeThreshold: 90,
-                                                 maxRotationX: 16,
-                                                 perspective: 0.9,
-                                                 height: 160) { item in
-                                    ZStack {
-                                        AppointmentCard(appointment: item)
-                                            .padding(.horizontal, theme.spacing.lg)
-                                    }
-                                    .frame(height: 200)
-                                }.clipped()
+                                if appointments.isEmpty {
+                                    // Empty state message
+                                    Text("No upcoming appointments")
+                                        .font(theme.typography.body)
+                                        .foregroundStyle(theme.colors.textSecondary)
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .padding(.vertical, 40)
+                                        .padding(.horizontal, theme.spacing.lg)
+                                } else {
+                                    VerticalCarousel(items: appointments,
+                                                     visibleCount: 4,
+                                                     spacing: 12,
+                                                     scaleGap: 0.06,
+                                                     swipeThreshold: 90,
+                                                     maxRotationX: 16,
+                                                     perspective: 0.9,
+                                                     height: 160) { item in
+                                        ZStack {
+                                            AppointmentCard(appointment: item)
+                                                .padding(.horizontal, theme.spacing.lg)
+                                        }
+                                        .frame(height: 200)
+                                    }.clipped()
+                                }
                             }
                             
                             // bottom two boxes
@@ -151,13 +170,16 @@ struct PatientHomeView: View {
                 } // VStack
             }
             .navigationBarHidden(true)
-        } // NavigationStack
-        .navigationViewStyle(.stack)
-        .task {
-            if appVM.slidersData.isEmpty {
-                await appVM.loadSlidersData()
+            .task {
+                // Add a small delay to let navigation settle before triggering API calls
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+                
+                // Fetch data sequentially to avoid overwhelming the navigation system
+                if appVM.slidersData.isEmpty {
+                    await appVM.loadSlidersData()
+                }
+                await bookingVM.fetchUpcomingConfirmedAppointments()
             }
-        }
     }
     
     private func safeTop() -> CGFloat {
@@ -174,6 +196,20 @@ struct PatientHomeView: View {
             .flatMap { $0.windows }
             .first { $0.isKeyWindow }
         return window?.safeAreaInsets.bottom ?? 0
+    }
+    
+    // Format date from API (yyyy-MM-dd) to display format
+    private func formatDate(_ dateString: String) -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "yyyy-MM-dd"
+        
+        let outputFormatter = DateFormatter()
+        outputFormatter.dateFormat = "MMM d, yyyy"
+        
+        if let date = inputFormatter.date(from: dateString) {
+            return outputFormatter.string(from: date)
+        }
+        return dateString
     }
 }
 
