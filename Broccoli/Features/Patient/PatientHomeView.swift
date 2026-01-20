@@ -142,7 +142,7 @@ struct PatientHomeView: View {
                             // bottom two boxes
                             HStack(spacing: theme.spacing.md) {
                                 Button(action: {
-                                    router.push(.medicalTourisimForm)
+                                    router.push(.medicalTourismForm)
                                 }) {
                                     SmallActionTile(
                                         title: "Medical Tourism",

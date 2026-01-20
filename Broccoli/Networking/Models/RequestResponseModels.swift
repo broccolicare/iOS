@@ -650,11 +650,14 @@ public struct PaymentInitializeResponse: Codable {
     let covered: Bool?
     let message: String?
     let paymentIntent: PaymentIntentData?
+    let setupIntent: SetupIntentData?
     let ephemeralKey: EphemeralKeyData?
     let customer: CustomerData?
     let publishableKey: String?
     let amount: String?
     let currency: String?
+    let priceId: String?
+    let package: PackageData?
     
     // Alternative format for prescription payments (string format)
     let paymentIntentString: String?
@@ -666,11 +669,14 @@ public struct PaymentInitializeResponse: Codable {
         case covered
         case message
         case paymentIntent
+        case setupIntent
         case ephemeralKey
         case customer
         case publishableKey
         case amount
         case currency
+        case priceId
+        case package
     }
     
     public init(from decoder: Decoder) throws {
@@ -681,6 +687,8 @@ public struct PaymentInitializeResponse: Codable {
         message = try container.decodeIfPresent(String.self, forKey: .message)
         publishableKey = try container.decodeIfPresent(String.self, forKey: .publishableKey)
         currency = try container.decodeIfPresent(String.self, forKey: .currency)
+        priceId = try container.decodeIfPresent(String.self, forKey: .priceId)
+        package = try container.decodeIfPresent(PackageData.self, forKey: .package)
         
         // Handle amount as either String or Int
         if let amountString = try? container.decode(String.self, forKey: .amount) {
@@ -692,6 +700,9 @@ public struct PaymentInitializeResponse: Codable {
         } else {
             amount = nil
         }
+        
+        // Try to decode setupIntent (for subscriptions)
+        setupIntent = try? container.decode(SetupIntentData.self, forKey: .setupIntent)
         
         // Try to decode as objects first (booking format), then as strings (prescription format)
         if let paymentIntentObj = try? container.decode(PaymentIntentData.self, forKey: .paymentIntent) {
@@ -730,7 +741,7 @@ public struct PaymentInitializeResponse: Codable {
     
     // Helper to get client secret regardless of format
     var clientSecret: String? {
-        return paymentIntent?.clientSecret ?? paymentIntentString
+        return setupIntent?.clientSecret ?? paymentIntent?.clientSecret ?? paymentIntentString
     }
     
     // Helper to get customer ID regardless of format
@@ -747,6 +758,24 @@ public struct PaymentInitializeResponse: Codable {
 public struct PaymentIntentData: Codable {
     let clientSecret: String
     let id: String
+}
+
+public struct SetupIntentData: Codable {
+    let clientSecret: String
+    let id: String?
+}
+
+public struct PackageData: Codable {
+    let id: Int
+    let slug: String
+    let billingPeriod: String
+    let name: String
+    let price: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, slug, name, price
+        case billingPeriod = "billing_period"
+    }
 }
 
 public struct EphemeralKeyData: Codable {
@@ -766,9 +795,31 @@ public struct CustomerData: Codable {
 }
 
 public struct PaymentConfirmResponse: Codable {
-    let success: Bool
+    let success: Bool?
     let booking: BookingData?
     let message: String?
+    let subscription: SubscriptionData?
+    let package: PackageData?
+}
+
+public struct SubscriptionData: Codable {
+    let id: Int
+    let name: String?
+    let stripeId: String
+    let stripeStatus: String
+    let stripePrice: String
+    let quantity: Int
+    let trialEndsAt: String?
+    let endsAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, quantity
+        case stripeId = "stripe_id"
+        case stripeStatus = "stripe_status"
+        case stripePrice = "stripe_price"
+        case trialEndsAt = "trial_ends_at"
+        case endsAt = "ends_at"
+    }
 }
 
 // MARK: - Treatments Models
@@ -1067,6 +1118,181 @@ public struct AnsweredQuestion: Codable, Identifiable {
         case isRequired = "is_required"
         case order
         case validationRules = "validation_rules"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+// MARK: - Medical Tourism Models
+
+public struct MedicalTourismEnquiryRequest: Codable {
+    public let name: String
+    public let email: String
+    public let phone: String
+    public let password: String
+    public let desiredProcedure: String
+    public let preferredDestination: String
+    public let additionalInformation: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case name, email, phone, password
+        case desiredProcedure = "desired_procedure"
+        case preferredDestination = "preferred_destination"
+        case additionalInformation = "additional_information"
+    }
+    
+    public init(
+        name: String,
+        email: String,
+        phone: String,
+        password: String,
+        desiredProcedure: String,
+        preferredDestination: String,
+        additionalInformation: String?
+    ) {
+        self.name = name
+        self.email = email
+        self.phone = phone
+        self.password = password
+        self.desiredProcedure = desiredProcedure
+        self.preferredDestination = preferredDestination
+        self.additionalInformation = additionalInformation
+    }
+    
+    public func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "password": password,
+            "desired_procedure": desiredProcedure,
+            "preferred_destination": preferredDestination
+        ]
+        
+        if let additionalInfo = additionalInformation {
+            dict["additional_information"] = additionalInfo
+        }
+        
+        return dict
+    }
+}
+
+public struct MedicalTourismEnquiryResponse: Codable {
+    public let message: String
+    public let data: MedicalTourismEnquiry
+    
+    private enum CodingKeys: String, CodingKey {
+        case message, data
+    }
+    
+    // Computed property for backward compatibility
+    public var success: Bool {
+        return !message.isEmpty
+    }
+}
+
+public struct MedicalTourismEnquiry: Codable, Identifiable {
+    public let id: Int
+    public let name: String
+    public let email: String
+    public let phone: String
+    public let desiredProcedure: String
+    public let preferredDestination: String?
+    public let additionalInformation: String?
+    public let createdAt: String
+    public let updatedAt: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, email, phone
+        case desiredProcedure = "desired_procedure"
+        case preferredDestination = "preferred_destination"
+        case additionalInformation = "additional_information"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+// MARK: - Recovery Journey Models
+
+public struct RecoveryJourneyEnquiryRequest: Codable {
+    public let name: String
+    public let email: String
+    public let phone: String
+    public let drug: String
+    public let years: String
+    public let additionalInformation: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case name, email, phone
+        case drug = "drug_of_addiction"
+        case years = "years_of_addiction"
+        case additionalInformation = "additional_information"
+    }
+    
+    public init(
+        name: String,
+        email: String,
+        phone: String,
+        drug: String,
+        years: String,
+        additionalInformation: String?
+    ) {
+        self.name = name
+        self.email = email
+        self.phone = phone
+        self.drug = drug
+        self.years = years
+        self.additionalInformation = additionalInformation
+    }
+    
+    public func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [
+            "full_name": name,
+            "email": email,
+            "phone": phone,
+            "drug_of_addiction": drug,
+            "years_of_addiction": years,
+        ]
+        
+        if let additionalInfo = additionalInformation {
+            dict["additional_information"] = additionalInfo
+        }
+        
+        return dict
+    }
+}
+
+public struct RecoveryJourneyEnquiryResponse: Codable {
+    public let message: String
+    public let data: RecoveryJourneyEnquiry
+    
+    private enum CodingKeys: String, CodingKey {
+        case message, data
+    }
+    
+    // Computed property for backward compatibility
+    public var success: Bool {
+        return !message.isEmpty
+    }
+}
+
+public struct RecoveryJourneyEnquiry: Codable, Identifiable {
+    public let id: Int
+    public let fullName: String
+    public let email: String
+    public let phone: String
+    public let drugOfAddiction: String
+    public let yearsOfAddiction: Int
+    public let additionalInformation: String?
+    public let createdAt: String
+    public let updatedAt: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, email, phone
+        case fullName = "full_name"
+        case drugOfAddiction = "drug_of_addiction"
+        case yearsOfAddiction = "years_of_addiction"
+        case additionalInformation = "additional_information"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }

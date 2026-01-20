@@ -9,7 +9,8 @@ import Combine
 
 @MainActor
 public final class UserGlobalViewModel: ObservableObject {
-    private let userService: UserServiceProtocol
+    private let _userService: UserServiceProtocol
+    public var userService: UserServiceProtocol { _userService }
     private let secureStore: SecureStore
     
     @Published public var isLoading: Bool = false
@@ -19,7 +20,7 @@ public final class UserGlobalViewModel: ObservableObject {
     @Published public var profileData: UserProfileData? = nil
     
     public init(userService: UserServiceProtocol, secureStore: SecureStore = SecureStore()) {
-        self.userService = userService
+        self._userService = userService
         self.secureStore = secureStore
         
         // Load cached user data immediately from secure store

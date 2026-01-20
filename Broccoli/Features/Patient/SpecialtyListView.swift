@@ -116,7 +116,7 @@ struct SpecialtyListView: View {
                         // Save selected service to BookingGlobalViewModel
                         bookingViewModel.selectedService = selected
                         bookingViewModel.selectedDepartmentId = departmentId
-                        router.push(.specilistBookingForm)
+                        router.push(.specialistBookingForm)
                     }
                 }) {
                     Text("Next")

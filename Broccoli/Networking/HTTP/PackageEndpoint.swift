@@ -19,7 +19,7 @@ public enum PackageEndpoint: Endpoint {
     public var path: String {
         switch self {
         case .getPackages:
-            return "/packages"
+            return "/packages/featured"
         case .getServiceEligibility(let serviceId):
             return "/packages/services/\(serviceId)/eligibility"
         case .initializeSubscriptionPayment:

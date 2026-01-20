@@ -6,6 +6,21 @@
 //
 
 import SwiftUI
+@_spi(CustomerSessionBetaAccess) import StripePaymentSheet
+
+// MARK: - Helper to get root view controller
+extension UIApplication {
+    var keyWindow: UIWindow? {
+        connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+    }
+    
+    var rootViewController: UIViewController? {
+        keyWindow?.rootViewController
+    }
+}
 
 // MARK: - Package Model
 struct PricingPackage: Identifiable {
@@ -21,6 +36,9 @@ struct PackagesView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var packageViewModel: PackageGlobalViewModel
+    
+    @State private var selectedPackageForPurchase: Package? = nil
+    @State private var isShowingPaymentSheet = false
     
     // Package background colors (cycled through)
     private let packageColors: [Color] = [
@@ -126,7 +144,10 @@ struct PackagesView: View {
                                     ForEach(Array(packageViewModel.packages.enumerated()), id: \.element.id) { index, package in
                                         PackageCard(
                                             package: package,
-                                            backgroundColor: packageColors[index % packageColors.count]
+                                            backgroundColor: packageColors[index % packageColors.count],
+                                            isProcessing: selectedPackageForPurchase?.id == package.id && packageViewModel.isProcessingPayment,
+                                            isDisabled: packageViewModel.isProcessingPayment && selectedPackageForPurchase?.id != package.id,
+                                            onBuy: { handleBuyPackage(package) }
                                         )
                                     }
                                 }
@@ -145,6 +166,75 @@ struct PackagesView: View {
         .task {
             await packageViewModel.loadPackages()
         }
+        .onChange(of: packageViewModel.isPaymentReady) { _, isReady in
+            if isReady {
+                isShowingPaymentSheet = true
+            }
+        }
+        .paymentSheet(
+            isPresented: $isShowingPaymentSheet,
+            paymentSheet: packageViewModel.paymentSheet ?? PaymentSheet(setupIntentClientSecret: "", configuration: PaymentSheet.Configuration())
+        ) { result in
+            print("📱 [PackagesView] Payment sheet result: \(result)")
+            Task {
+                guard let package = selectedPackageForPurchase else {
+                    print("❌ [PackagesView] No package selected")
+                    return
+                }
+                
+                print("🔄 [PackagesView] Processing payment for package: \(package.name)")
+                
+                let success = await packageViewModel.onPaymentCompletion(
+                    result: result,
+                    priceId: package.stripePriceId,
+                    name: package.name
+                )
+                
+                if success {
+                    print("✅ [PackagesView] Payment successful, resetting state")
+                    // Reset state on success
+                    selectedPackageForPurchase = nil
+                    packageViewModel.resetPaymentState()
+                } else {
+                    print("❌ [PackagesView] Payment failed")
+                }
+            }
+        }
+        .alert("Success", isPresented: $packageViewModel.showSuccessToast) {
+            Button("OK", role: .cancel) {
+                packageViewModel.showSuccessToast = false
+            }
+        } message: {
+            Text("Package subscription successful!")
+        }
+        .alert("Error", isPresented: $packageViewModel.showErrorToast) {
+            Button("OK", role: .cancel) {
+                packageViewModel.showErrorToast = false
+                packageViewModel.errorMessage = nil
+            }
+        } message: {
+            if let errorMessage = packageViewModel.errorMessage {
+                Text(errorMessage)
+            }
+        }
+    }
+    
+    // Handle buy package action
+    private func handleBuyPackage(_ package: Package) {
+        selectedPackageForPurchase = package
+        
+        Task {
+            // Initialize payment
+            guard let paymentResponse = await packageViewModel.initializeSubscriptionPayment(
+                priceId: package.stripePriceId,
+                name: package.name
+            ) else {
+                return
+            }
+            
+            // Prepare payment sheet
+            packageViewModel.preparePaymentSheet(with: paymentResponse)
+        }
     }
 }
 
@@ -153,6 +243,9 @@ struct PackageCard: View {
     @Environment(\.appTheme) private var theme
     let package: Package
     let backgroundColor: Color
+    let isProcessing: Bool
+    let isDisabled: Bool
+    let onBuy: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -163,30 +256,36 @@ struct PackageCard: View {
                     .foregroundStyle(.white)
                 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(formatPrice(package.price, currency: package.currency))
+                    Text(formatPrice(package.price))
                         .font(theme.typography.bold32)
                         .foregroundStyle(.white)
                     
-                    if let billingPeriod = package.billingPeriod {
-                        Text("/ \(billingPeriod)")
-                            .font(theme.typography.regular14)
-                            .foregroundStyle(.white.opacity(0.9))
-                    }
+                    Text("/ \(package.billingPeriod)")
+                        .font(theme.typography.regular14)
+                        .foregroundStyle(.white.opacity(0.9))
                 }
                 
                 // Features List
                 VStack(alignment: .leading, spacing: 10) {
-                    ForEach(package.features, id: \.self) { feature in
+                    ForEach(package.features) { feature in
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 16))
                                 .foregroundStyle(.white)
                             
-                            Text(feature)
-                                .font(theme.typography.regular14)
-                                .foregroundStyle(.white)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(feature.name)
+                                    .font(theme.typography.semiBold14)
+                                    .foregroundStyle(.white)
+                                
+                                if let description = feature.description {
+                                    Text(description)
+                                        .font(theme.typography.regular12)
+                                        .foregroundStyle(.white.opacity(0.8))
+                                        .lineLimit(3)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
                         }
                     }
                 }
@@ -198,18 +297,29 @@ struct PackageCard: View {
             Spacer(minLength: 20)
             
             // Buy Now Button
-            Button(action: {
-                // Handle buy action
-                print("Buy package: \(package.name)")
-            }) {
-                Text("Buy Now")
-                    .font(theme.typography.semiBold16)
-                    .foregroundColor(.white)
+            Button(action: onBuy) {
+                if isProcessing {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.8)
+                        Text("Processing...")
+                            .font(theme.typography.semiBold16)
+                            .foregroundColor(.white)
+                    }
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-                    .background(Color.black.opacity(0.3))
-                    .cornerRadius(12)
+                } else {
+                    Text("Buy Now")
+                        .font(theme.typography.semiBold16)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                }
             }
+            .background(isDisabled ? Color.black.opacity(0.1) : Color.black.opacity(0.3))
+            .cornerRadius(12)
+            .disabled(isProcessing || isDisabled)
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
@@ -218,18 +328,12 @@ struct PackageCard: View {
         .background(backgroundColor)
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .opacity(isDisabled ? 0.6 : 1.0)
     }
     
-    // Helper function to format price
-    private func formatPrice(_ price: String, currency: String?) -> String {
-        let currencySymbol: String
-        switch currency {
-        case "EUR": currencySymbol = "€"
-        case "GBP": currencySymbol = "£"
-        case "USD": currencySymbol = "$"
-        default: currencySymbol = currency ?? "€"
-        }
-        return "\(currencySymbol)\(price)"
+    // Helper function to format price (defaults to EUR)
+    private func formatPrice(_ price: String) -> String {
+        return "€\(price)"
     }
 }
 

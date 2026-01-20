@@ -25,9 +25,9 @@ enum Route: Hashable {
     case gPAppointBookingForm
     case bookingConfirmation
     case specialistList(departmentId: String?)
-    case specilistBookingForm
+    case specialistBookingForm
     case paymentSuccess(booking: BookingData?)
-    case medicalTourisimForm
+    case medicalTourismForm
     case cureFromDrugForm
     case notifications
     case myAppointments

@@ -118,7 +118,7 @@ struct ProfileView: View {
                 Section {
                     MenuItemRow(
                         icon: "my-reviews-icon",
-                        title: "My Medications",
+                        title: "My Prescriptions",
                         action: {}
                     )
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))

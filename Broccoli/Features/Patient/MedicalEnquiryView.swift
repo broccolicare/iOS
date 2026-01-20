@@ -6,21 +6,13 @@
 //
 
 import SwiftUI
+import AlertToast
 
 struct MedicalEnquiryView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
-    
-    // Form fields
-    @State private var name: String = ""
-    @State private var email: String = ""
-    @State private var countryCode: String = "+353"
-    @State private var phoneNumber: String = ""
-    @State private var password: String = ""
-    @State private var selectedProcedure: String? = nil
-    @State private var selectedDestination: String? = nil
-    @State private var additionalInfo: String = ""
+    @StateObject private var viewModel: MedicalEnquiryViewModel
     
     // Sample data - will be replaced with actual data
     private let procedures = [
@@ -44,6 +36,10 @@ struct MedicalEnquiryView: View {
         "South Korea",
         "Mexico"
     ]
+    
+    init(userService: UserServiceProtocol) {
+        _viewModel = StateObject(wrappedValue: MedicalEnquiryViewModel(userService: userService))
+    }
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -77,49 +73,101 @@ struct MedicalEnquiryView: View {
                         // Form fields
                         VStack(spacing: 12) {
                             // Name field
-                            TextInputField(
-                                placeholder: "Name",
-                                text: $name,
-                                keyboardType: .default,
-                                autocapitalization: .words,
-                                disableAutocorrection: false
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                TextInputField(
+                                    placeholder: "Name",
+                                    text: $viewModel.name,
+                                    keyboardType: .default,
+                                    autocapitalization: .words,
+                                    disableAutocorrection: false
+                                )
+                                if let error = viewModel.fieldErrors[.name] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Email field
-                            TextInputField(
-                                placeholder: "Email address",
-                                text: $email,
-                                keyboardType: .emailAddress,
-                                autocapitalization: .never
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                TextInputField(
+                                    placeholder: "Email address",
+                                    text: $viewModel.email,
+                                    keyboardType: .emailAddress,
+                                    autocapitalization: .never
+                                )
+                                if let error = viewModel.fieldErrors[.email] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Phone number field
-                            CountryPhoneField(
-                                countryCode: $countryCode,
-                                phone: $phoneNumber
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                CountryPhoneField(
+                                    countryCode: $viewModel.countryCode,
+                                    phone: $viewModel.phoneNumber
+                                )
+                                if let error = viewModel.fieldErrors[.phoneNumber] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
+                            
+                            // Password field
+                            VStack(alignment: .leading, spacing: 4) {
+                                TextInputField(
+                                    placeholder: "Password",
+                                    text: $viewModel.password,
+                                    keyboardType: .default,
+                                    isSecure: true,
+                                    autocapitalization: .never,
+                                    disableAutocorrection: true
+                                )
+                                if let error = viewModel.fieldErrors[.password] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Desired Procedure dropdown
-                            DropdownField(
-                                selectedValue: $selectedProcedure,
-                                items: procedures,
-                                placeholder: "Desired Procedure",
-                                allowsSearch: true,
-                                showsChevron: true
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                DropdownField(
+                                    selectedValue: $viewModel.selectedProcedure,
+                                    items: procedures,
+                                    placeholder: "Desired Procedure",
+                                    allowsSearch: true,
+                                    showsChevron: true
+                                )
+                                if let error = viewModel.fieldErrors[.procedure] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Preferred Destination dropdown
-                            DropdownField(
-                                selectedValue: $selectedDestination,
-                                items: destinations,
-                                placeholder: "Preferred Destination",
-                                allowsSearch: true,
-                                showsChevron: true
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                DropdownField(
+                                    selectedValue: $viewModel.selectedDestination,
+                                    items: destinations,
+                                    placeholder: "Preferred Destination",
+                                    allowsSearch: true,
+                                    showsChevron: true
+                                )
+                                if let error = viewModel.fieldErrors[.destination] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Additional Information textarea
                             VStack(alignment: .leading, spacing: 8) {
-                                TextEditor(text: $additionalInfo)
+                                TextEditor(text: $viewModel.additionalInfo)
                                     .font(theme.typography.callout)
                                     .foregroundStyle(theme.colors.textPrimary)
                                     .frame(height: 120)
@@ -132,7 +180,7 @@ struct MedicalEnquiryView: View {
                                     .cornerRadius(theme.cornerRadius)
                                     .overlay(
                                         Group {
-                                            if additionalInfo.isEmpty {
+                                            if viewModel.additionalInfo.isEmpty {
                                                 Text("Additional Information")
                                                     .font(theme.typography.callout)
                                                     .foregroundStyle(theme.colors.textSecondary)
@@ -151,14 +199,23 @@ struct MedicalEnquiryView: View {
                         Button(action: {
                             submitEnquiry()
                         }) {
-                            Text("Submit Enquiry")
-                                .font(theme.typography.button)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(theme.colors.primary)
-                                .cornerRadius(12)
+                            ZStack {
+                                Text("Submit Enquiry")
+                                    .font(theme.typography.button)
+                                    .foregroundColor(.white)
+                                    .opacity(viewModel.isLoading ? 0 : 1)
+                                
+                                if viewModel.isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(viewModel.isLoading ? theme.colors.primary.opacity(0.6) : theme.colors.primary)
+                            .cornerRadius(12)
                         }
+                        .disabled(viewModel.isLoading)
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
                         
@@ -173,6 +230,27 @@ struct MedicalEnquiryView: View {
             }
         }
         .navigationBarHidden(true)
+        .toast(isPresenting: $viewModel.showSuccessToast) {
+            AlertToast(
+                displayMode: .hud,
+                type: .complete(theme.colors.success),
+                title: "Success!",
+                subTitle: viewModel.successMessage
+            )
+        }
+        .toast(isPresenting: $viewModel.showErrorToast) {
+            AlertToast(
+                displayMode: .hud,
+                type: .error(theme.colors.error),
+                title: "Error!",
+                subTitle: viewModel.errorMessage
+            )
+        }
+        .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
+            if shouldDismiss {
+                dismiss()
+            }
+        }
     }
     
     // MARK: - Helper Functions
@@ -184,33 +262,14 @@ struct MedicalEnquiryView: View {
     private func submitEnquiry() {
         hideKeyboard()
         
-        // Validate form
-        guard !name.isEmpty,
-              !email.isEmpty,
-              !phoneNumber.isEmpty,
-              !password.isEmpty,
-              selectedProcedure != nil,
-              selectedDestination != nil else {
-            print("Please fill all required fields")
-            return
+        Task {
+            await viewModel.submitEnquiry()
         }
-        
-        // Handle form submission
-        print("Submitting enquiry...")
-        print("Name: \(name)")
-        print("Email: \(email)")
-        print("Phone: \(phoneNumber)")
-        print("Procedure: \(selectedProcedure ?? "")")
-        print("Destination: \(selectedDestination ?? "")")
-        print("Additional Info: \(additionalInfo)")
-        
-        // Navigate to success screen or show confirmation
-        dismiss()
     }
 }
 
 // MARK: - Preview
 #Preview {
-    MedicalEnquiryView()
+    MedicalEnquiryView(userService: UserService(httpClient: HTTPClient()))
         .environment(\.appTheme, AppTheme.default)
 }

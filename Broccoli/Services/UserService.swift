@@ -11,6 +11,8 @@ public protocol UserServiceProtocol {
     func fetchUserProfile() async throws -> UserProfileResponse
     func updateProfile(data: [String: Any]) async throws -> UserProfileResponse
     func uploadAvatar(imageData: Data) async throws -> UserProfileResponse
+    func submitMedicalTourismEnquiry(request: MedicalTourismEnquiryRequest) async throws -> MedicalTourismEnquiryResponse
+    func submitRecoveryJourneyEnquiry(request: RecoveryJourneyEnquiryRequest) async throws -> RecoveryJourneyEnquiryResponse
 }
 
 public final class UserService: BaseService, UserServiceProtocol {
@@ -40,6 +42,20 @@ public final class UserService: BaseService, UserServiceProtocol {
     public func uploadAvatar(imageData: Data) async throws -> UserProfileResponse {
         return try await handleServiceError {
             let endpoint = UserEndpoint.uploadAvatar(imageData)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func submitMedicalTourismEnquiry(request: MedicalTourismEnquiryRequest) async throws -> MedicalTourismEnquiryResponse {
+        return try await handleServiceError {
+            let endpoint = UserEndpoint.medicalTourism(request.toDictionary())
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func submitRecoveryJourneyEnquiry(request: RecoveryJourneyEnquiryRequest) async throws -> RecoveryJourneyEnquiryResponse {
+        return try await handleServiceError {
+            let endpoint = UserEndpoint.recoveryJourney(request.toDictionary())
             return try await httpClient.request(endpoint)
         }
     }

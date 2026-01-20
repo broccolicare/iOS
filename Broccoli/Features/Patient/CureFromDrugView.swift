@@ -6,20 +6,13 @@
 //
 
 import SwiftUI
+import AlertToast
 
 struct CureFromDrugView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
-    
-    // Form fields
-    @State private var fullName: String = ""
-    @State private var email: String = ""
-    @State private var countryCode: String = "+353"
-    @State private var phoneNumber: String = ""
-    @State private var selectedDrug: String? = nil
-    @State private var selectedYears: String? = nil
-    @State private var additionalInfo: String = ""
+    @StateObject private var viewModel: CureFromDrugViewModel
     
     // Sample data - will be replaced with actual data
     private let drugsOfAddiction = [
@@ -33,13 +26,11 @@ struct CureFromDrugView: View {
         "Other"
     ]
     
-    private let yearsOfAddiction = [
-        "Less than 1 year",
-        "1-2 years",
-        "3-5 years",
-        "6-10 years",
-        "More than 10 years"
-    ]
+    private let yearsOfAddiction: [String] = (1...30).map { String($0) }
+    
+    init(userService: UserServiceProtocol) {
+        _viewModel = StateObject(wrappedValue: CureFromDrugViewModel(userService: userService))
+    }
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -51,7 +42,6 @@ struct CureFromDrugView: View {
                 HStack {
                     Button(action: { router.pop() }) {
                         Image("BackButton")
-                            .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(theme.colors.primary)
                     }
                     
@@ -65,7 +55,7 @@ struct CureFromDrugView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         // Title with icon background
                         Text("Your journey to recovery")
-                            .font(theme.typography.medium30)
+                            .font(theme.typography.medium28)
                             .foregroundStyle(theme.colors.textPrimary)
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
@@ -73,49 +63,84 @@ struct CureFromDrugView: View {
                         // Form fields
                         VStack(spacing: 20) {
                             // Full Name field
-                            TextInputField(
-                                placeholder: "Full Name",
-                                text: $fullName,
-                                keyboardType: .default,
-                                autocapitalization: .words,
-                                disableAutocorrection: false
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                TextInputField(
+                                    placeholder: "Full Name",
+                                    text: $viewModel.fullName,
+                                    keyboardType: .default,
+                                    autocapitalization: .words,
+                                    disableAutocorrection: false
+                                )
+                                if let error = viewModel.fieldErrors[.fullName] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Email field
-                            TextInputField(
-                                placeholder: "Email address",
-                                text: $email,
-                                keyboardType: .emailAddress,
-                                autocapitalization: .never
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                TextInputField(
+                                    placeholder: "Email address",
+                                    text: $viewModel.email,
+                                    keyboardType: .emailAddress,
+                                    autocapitalization: .never
+                                )
+                                if let error = viewModel.fieldErrors[.email] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Phone number field
-                            CountryPhoneField(
-                                countryCode: $countryCode,
-                                phone: $phoneNumber
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                CountryPhoneField(
+                                    countryCode: $viewModel.countryCode,
+                                    phone: $viewModel.phoneNumber
+                                )
+                                if let error = viewModel.fieldErrors[.phoneNumber] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Drug of addiction dropdown
-                            DropdownField(
-                                selectedValue: $selectedDrug,
-                                items: drugsOfAddiction,
-                                placeholder: "Drug of addiction",
-                                allowsSearch: true,
-                                showsChevron: true
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                DropdownField(
+                                    selectedValue: $viewModel.selectedDrug,
+                                    items: drugsOfAddiction,
+                                    placeholder: "Drug of addiction",
+                                    allowsSearch: true,
+                                    showsChevron: true
+                                )
+                                if let error = viewModel.fieldErrors[.selectedDrug] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Years of addiction dropdown
-                            DropdownField(
-                                selectedValue: $selectedYears,
-                                items: yearsOfAddiction,
-                                placeholder: "Years of",
-                                allowsSearch: false,
-                                showsChevron: true
-                            )
+                            VStack(alignment: .leading, spacing: 4) {
+                                DropdownField(
+                                    selectedValue: $viewModel.selectedYears,
+                                    items: yearsOfAddiction,
+                                    placeholder: "Years of addiction",
+                                    allowsSearch: false,
+                                    showsChevron: true
+                                )
+                                if let error = viewModel.fieldErrors[.selectedYears] {
+                                    Text(error)
+                                        .font(theme.typography.caption)
+                                        .foregroundStyle(theme.colors.error)
+                                }
+                            }
                             
                             // Additional Information textarea
                             VStack(alignment: .leading, spacing: 8) {
-                                TextEditor(text: $additionalInfo)
+                                TextEditor(text: $viewModel.additionalInfo)
                                     .font(theme.typography.callout)
                                     .foregroundStyle(theme.colors.textPrimary)
                                     .frame(height: 120)
@@ -128,7 +153,7 @@ struct CureFromDrugView: View {
                                     .cornerRadius(theme.cornerRadius)
                                     .overlay(
                                         Group {
-                                            if additionalInfo.isEmpty {
+                                            if viewModel.additionalInfo.isEmpty {
                                                 Text("Additional Information")
                                                     .font(theme.typography.callout)
                                                     .foregroundStyle(theme.colors.textSecondary)
@@ -147,14 +172,23 @@ struct CureFromDrugView: View {
                         Button(action: {
                             requestConsultant()
                         }) {
-                            Text("Request a consultant")
-                                .font(theme.typography.button)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(theme.colors.primary)
-                                .cornerRadius(12)
+                            ZStack {
+                                Text("Request a consultant")
+                                    .font(theme.typography.button)
+                                    .foregroundColor(.white)
+                                    .opacity(viewModel.isLoading ? 0 : 1)
+                                
+                                if viewModel.isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(viewModel.isLoading ? theme.colors.primary.opacity(0.6) : theme.colors.primary)
+                            .cornerRadius(12)
                         }
+                        .disabled(viewModel.isLoading)
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
                         
@@ -169,6 +203,27 @@ struct CureFromDrugView: View {
             }
         }
         .navigationBarHidden(true)
+        .toast(isPresenting: $viewModel.showSuccessToast) {
+            AlertToast(
+                displayMode: .hud,
+                type: .complete(theme.colors.success),
+                title: "Success!",
+                subTitle: viewModel.successMessage
+            )
+        }
+        .toast(isPresenting: $viewModel.showErrorToast) {
+            AlertToast(
+                displayMode: .hud,
+                type: .error(theme.colors.error),
+                title: "Error!",
+                subTitle: viewModel.errorMessage
+            )
+        }
+        .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
+            if shouldDismiss {
+                dismiss()
+            }
+        }
     }
     
     // MARK: - Helper Functions
@@ -180,32 +235,14 @@ struct CureFromDrugView: View {
     private func requestConsultant() {
         hideKeyboard()
         
-        // Validate form
-        guard !fullName.isEmpty,
-              !email.isEmpty,
-              !phoneNumber.isEmpty,
-              selectedDrug != nil,
-              selectedYears != nil else {
-            print("Please fill all required fields")
-            return
+        Task {
+            await viewModel.submitEnquiry()
         }
-        
-        // Handle form submission
-        print("Requesting consultant...")
-        print("Full Name: \(fullName)")
-        print("Email: \(email)")
-        print("Phone: \(phoneNumber)")
-        print("Drug: \(selectedDrug ?? "")")
-        print("Years: \(selectedYears ?? "")")
-        print("Additional Info: \(additionalInfo)")
-        
-        // Navigate to success screen or show confirmation
-        dismiss()
     }
 }
 
 // MARK: - Preview
 #Preview {
-    CureFromDrugView()
+    CureFromDrugView(userService: UserService(httpClient: HTTPClient()))
         .environment(\.appTheme, AppTheme.default)
 }

@@ -10,9 +10,7 @@ import Foundation
 // MARK: - Package Response Models
 
 public struct PackagesResponse: Codable {
-    public let success: Bool
-    public let packages: [Package]
-    public let message: String?
+    public let data: [Package]
 }
 
 public struct PackageEligibilityResponse: Codable {
@@ -33,20 +31,42 @@ public struct Package: Codable, Identifiable, Hashable {
     public let id: Int
     public let name: String
     public let description: String?
+    public let slug: String
     public let price: String
-    public let currency: String?
-    public let billingPeriod: String?
-    public let features: [String]
-    public let isActive: Bool?
-    public let createdAt: String?
-    public let updatedAt: String?
+    public let stripeProductId: String
+    public let stripePriceId: String
+    public let billingPeriod: String
+    public let status: String
+    public let isFeatured: Bool
+    public let features: [PackageFeature]
+    public let createdAt: String
+    public let updatedAt: String
     
     private enum CodingKeys: String, CodingKey {
-        case id, name, description, price, currency, features
+        case id, name, description, slug, price, status, features
+        case stripeProductId = "stripe_product_id"
+        case stripePriceId = "stripe_price_id"
         case billingPeriod = "billing_period"
-        case isActive = "is_active"
+        case isFeatured = "is_featured"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+}
+
+public struct PackageFeature: Codable, Identifiable, Hashable {
+    public let id: Int
+    public let name: String
+    public let description: String?
+    public let featureType: String
+    public let featureTypeLabel: String
+    public let quantity: Int
+    public let isUnlimited: Bool
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, description, quantity
+        case featureType = "feature_type"
+        case featureTypeLabel = "feature_type_label"
+        case isUnlimited = "is_unlimited"
     }
 }
 

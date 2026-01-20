@@ -113,14 +113,14 @@ struct BroccoliApp: App {
                             BookingConfirmationView()
                         case .specialistList(departmentId: let departmentId):
                             SpecialtyListView(departmentId: departmentId)
-                        case .specilistBookingForm
+                        case .specialistBookingForm
                             : SpecialistBookingFormView()
                         case .paymentSuccess(booking: let booking):
                             PaymentSuccessView(booking: booking)
-                        case .medicalTourisimForm:
-                            MedicalEnquiryView()
+                        case .medicalTourismForm:
+                            MedicalEnquiryView(userService: userViewModel.userService)
                         case .cureFromDrugForm:
-                            CureFromDrugView()
+                            CureFromDrugView(userService: userViewModel.userService)
                         case .notifications:
                             NotificationsView()
                         case .myAppointments:

@@ -527,7 +527,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         do {
             let response = try await bookingService.confirmPayment(data: confirmData)
             
-            if response.success, let booking = response.booking {
+            if response.success == true, let booking = response.booking {
                 currentBookingId = String(booking.id)
                 showSuccessToast = true
                 isLoading = false
