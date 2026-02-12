@@ -19,10 +19,12 @@ public enum BookingEndpoint: Endpoint {
     case activeTreatments
     case treatmentDetails(String)
     case createPrescriptionOrder([String: Any])
+    case prescriptionList(perPage: Int, page: Int)
     case initialisePrescriptionPayment(String)
     case confirmPrescriptionPayment(String)
     case loadServices(String)
     case upcomingAppointments(perPage: Int, page: Int)
+    case pastBookings(perPage: Int, page: Int)
     case pendingAppointmentsForDoctor
     case myBookingsForDoctor
     case acceptBooking(Int)
@@ -51,6 +53,8 @@ public enum BookingEndpoint: Endpoint {
             return "/prescriptions/treatments/\(treatment)/questionnaire"
         case .createPrescriptionOrder:
             return "/prescriptions"
+        case .prescriptionList:
+            return "/prescriptions"
         case .initialisePrescriptionPayment(let prescription):
             return "/payments/prescriptions/\(prescription)/initialize"
         case .confirmPrescriptionPayment(let prescription):
@@ -67,12 +71,14 @@ public enum BookingEndpoint: Endpoint {
             return "/doctor/bookings/\(bookingId)/accept"
         case .rejectBooking(let bookingId, _):
             return "/doctor/bookings/\(bookingId)/reject"
+        case .pastBookings:
+            return "/bookings/past"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .upcomingAppointments, .myBookingsForDoctor, .pendingAppointmentsForDoctor:
+        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .upcomingAppointments, .myBookingsForDoctor, .pendingAppointmentsForDoctor, .pastBookings, .prescriptionList:
             return .GET
         case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking:
             return .POST
@@ -121,6 +127,16 @@ public enum BookingEndpoint: Endpoint {
             }
             return items
         case .upcomingAppointments(let perPage, let page):
+            return [
+                "per_page": String(perPage),
+                "page": String(page)
+            ]
+        case .pastBookings(let perPage, let page):
+            return [
+                "per_page": String(perPage),
+                "page": String(page)
+            ]
+        case .prescriptionList(let perPage, let page):
             return [
                 "per_page": String(perPage),
                 "page": String(page)

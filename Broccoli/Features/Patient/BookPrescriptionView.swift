@@ -78,8 +78,24 @@ struct BookPrescriptionView: View {
                                 .padding(.leading, 8)
                             }
                             
-                            // Description Section
-                            if let description = treatment.description, !description.isEmpty {
+                            // Description/Details Section
+                            if let details = treatment.details, !details.isEmpty {
+                                // Show HTML details
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Treatment Information")
+                                        .font(theme.typography.semiBold18)
+                                        .foregroundStyle(theme.colors.textPrimary)
+                                        .padding(.top, 8)
+                                    
+                                    HTMLTextView(
+                                        htmlString: details,
+                                        font: UIFont.systemFont(ofSize: 14),
+                                        textColor: UIColor(theme.colors.textPrimary)
+                                    )
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            } else if let description = treatment.description, !description.isEmpty {
+                                // Fallback to plain text description
                                 VStack(alignment: .leading, spacing: 12) {
                                     Text("What is \(extractTreatmentType(from: treatment.name))?")
                                         .font(theme.typography.semiBold18)

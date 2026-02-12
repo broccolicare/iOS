@@ -32,9 +32,20 @@ public enum StaticPageType: String {
 
     var title: String {
         switch self {
-        case .terms: return "Terms & Conditions"
+        case .terms: return "Terms and Conditions"
         case .privacy: return "Privacy Policy"
-        case .about: return "About"
+        case .about: return "About Broccoli"
+        }
+    }
+    
+    var url: URL? {
+        switch self {
+        case .about:
+            return URL(string: "https://broccolicare.ie/")
+        case .privacy:
+            return URL(string: "https://broccolicare.ie/privacy-policy/")
+        case .terms:
+            return URL(string: "https://broccolicare.ie/terms-conditions/")
         }
     }
 }
@@ -104,6 +115,94 @@ public struct SpecializationsResponse: Codable {
     public let message: String?
 }
 
+// MARK: - Medical Procedure Models
+public struct MedicalProcedure: Codable, Identifiable, Hashable, CustomStringConvertible {
+    public let id: Int
+    public let name: String
+    public let procedureDescription: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name
+        case procedureDescription = "description"
+    }
+    
+    // CustomStringConvertible conformance - this is what will be displayed in the dropdown
+    public var description: String {
+        return name
+    }
+}
+
+public struct MedicalProceduresResponse: Codable {
+    public let data: [MedicalProcedure]
+    public let message: String?
+}
+
+// MARK: - Medical Destination Models
+public struct MedicalDestination: Codable, Identifiable, Hashable, CustomStringConvertible {
+    public let id: Int
+    public let name: String
+    public let country: String
+    public let destinationDescription: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, country
+        case destinationDescription = "description"
+    }
+    
+    // CustomStringConvertible conformance - this is what will be displayed in the dropdown
+    public var description: String {
+        return name
+    }
+}
+
+public struct MedicalDestinationsResponse: Codable {
+    public let data: [MedicalDestination]
+    public let message: String?
+}
+
+// MARK: - Recovery Drug Models
+public struct RecoveryDrug: Codable, Identifiable, Hashable, CustomStringConvertible {
+    public let id: Int
+    public let name: String
+    public let drugDescription: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name
+        case drugDescription = "description"
+    }
+    
+    // CustomStringConvertible conformance - this is what will be displayed in the dropdown
+    public var description: String {
+        return name
+    }
+}
+
+public struct RecoveryDrugsResponse: Codable {
+    public let data: [RecoveryDrug]
+    public let message: String?
+}
+
+// MARK: - Recovery Addiction Year Models
+public struct RecoveryAddictionYear: Codable, Identifiable, Hashable, CustomStringConvertible {
+    public let id: Int
+    public let label: String
+    public let years: Int
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, label, years
+    }
+    
+    // CustomStringConvertible conformance - this is what will be displayed in the dropdown
+    public var description: String {
+        return label
+    }
+}
+
+public struct RecoveryAddictionYearsResponse: Codable {
+    public let data: [RecoveryAddictionYear]
+    public let message: String?
+}
+
 // MARK: - Core Models
 //public struct Appointment: Codable, Identifiable {
 //    public let id: String
@@ -130,7 +229,7 @@ public struct SpecializationsResponse: Codable {
 //}
 
 public struct Doctor: Codable, Identifiable {
-    public let id: String
+    public let id: Int
     public let firstName: String
     public let lastName: String
     public let email: String
@@ -140,10 +239,23 @@ public struct Doctor: Codable, Identifiable {
     public let rating: Double
     public let yearsOfExperience: Int
     public let isAvailable: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case email
+        case specialization
+        case licenseNumber = "license_number"
+        case avatar
+        case rating
+        case yearsOfExperience = "years_of_experience"
+        case isAvailable = "is_available"
+    }
 }
 
 public struct Patient: Codable, Identifiable {
-    public let id: String
+    public let id: Int
     public let firstName: String
     public let lastName: String
     public let email: String
@@ -151,6 +263,17 @@ public struct Patient: Codable, Identifiable {
     public let gender: Gender
     public let avatar: String?
     public let emergencyContact: EmergencyContact?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case email
+        case dateOfBirth = "date_of_birth"
+        case gender
+        case avatar
+        case emergencyContact = "emergency_contact"
+    }
     
     public enum Gender: String, Codable, CaseIterable {
         case male = "male"
@@ -162,8 +285,8 @@ public struct Patient: Codable, Identifiable {
 
 public struct MedicalRecord: Codable, Identifiable {
     public let id: String
-    public let patientId: String
-    public let doctorId: String
+    public let patientId: Int
+    public let doctorId: Int
     public let diagnosis: String
     public let prescription: String?
     public let notes: String?

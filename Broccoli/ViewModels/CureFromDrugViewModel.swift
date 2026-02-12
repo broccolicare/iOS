@@ -19,7 +19,9 @@ final class CureFromDrugViewModel: ObservableObject {
     @Published var countryCode: String = "+353"
     @Published var phoneNumber: String = ""
     @Published var selectedDrug: String? = nil
+    @Published var selectedDrugId: Int? = nil
     @Published var selectedYears: String? = nil
+    @Published var selectedYearsId: Int? = nil
     @Published var additionalInfo: String = ""
     
     // Validation errors
@@ -82,18 +84,18 @@ final class CureFromDrugViewModel: ObservableObject {
             fieldErrors[.phoneNumber] = "Phone number must not exceed 20 characters."
         }
         
-        // Drug validation - required, max 255 characters
+        // Drug validation - required
         if selectedDrug == nil || selectedDrug?.isEmpty == true {
             fieldErrors[.selectedDrug] = "Please select a drug of addiction."
-        } else if let drug = selectedDrug, drug.count > 255 {
-            fieldErrors[.selectedDrug] = "Drug must not exceed 255 characters."
+        } else if selectedDrugId == nil {
+            fieldErrors[.selectedDrug] = "Invalid drug selection."
         }
         
-        // Years validation - required, max 255 characters
+        // Years validation - required
         if selectedYears == nil || selectedYears?.isEmpty == true {
             fieldErrors[.selectedYears] = "Please select years of addiction."
-        } else if let years = selectedYears, years.count > 255 {
-            fieldErrors[.selectedYears] = "Years must not exceed 255 characters."
+        } else if selectedYearsId == nil {
+            fieldErrors[.selectedYears] = "Invalid years selection."
         }
         
         return fieldErrors.isEmpty
@@ -121,8 +123,8 @@ final class CureFromDrugViewModel: ObservableObject {
             name: fullName.trimmingCharacters(in: .whitespacesAndNewlines),
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             phone: fullPhoneNumber,
-            drug: selectedDrug ?? "",
-            years: selectedYears ?? "1",
+            recoveryDrugId: selectedDrugId ?? 0,
+            recoveryAddictionYearId: selectedYearsId ?? 0,
             additionalInformation: additionalInfo.isEmpty ? nil : additionalInfo.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
@@ -173,7 +175,9 @@ final class CureFromDrugViewModel: ObservableObject {
         countryCode = "+353"
         phoneNumber = ""
         selectedDrug = nil
+        selectedDrugId = nil
         selectedYears = nil
+        selectedYearsId = nil
         additionalInfo = ""
         fieldErrors = [:]
     }

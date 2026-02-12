@@ -11,57 +11,10 @@ struct MyAppointmentsView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
     
     @State private var selectedTab: AppointmentTab = .upcoming
-    
-    // Sample data - will be replaced with actual data
-    @State private var upcomingAppointments: [AppointmentItemData] = [
-        AppointmentItemData(
-            id: "1",
-            specialty: "Oncologist",
-            doctorName: "Dr. Emily Carter",
-            dateTime: "Tomorrow, 10:00 AM",
-            status: nil
-        ),
-        AppointmentItemData(
-            id: "2",
-            specialty: "Orthopedist",
-            doctorName: "Dr. Michael Chen",
-            dateTime: "Next Week, 2:00 PM",
-            status: nil
-        ),
-        AppointmentItemData(
-            id: "3",
-            specialty: "ENT",
-            doctorName: "Dr. Olivia Reed",
-            dateTime: "In 2 Weeks, 11:30 AM",
-            status: nil
-        )
-    ]
-    
-    @State private var historyAppointments: [AppointmentItemData] = [
-        AppointmentItemData(
-            id: "4",
-            specialty: "Oncologist",
-            doctorName: "Dr. Emily Carter",
-            dateTime: "12 Jun 25, 10:00 AM",
-            status: .completed
-        ),
-        AppointmentItemData(
-            id: "5",
-            specialty: "Orthopedist",
-            doctorName: "Dr. Michael Chen",
-            dateTime: "06 Feb 25, 02:00 PM",
-            status: .completed
-        ),
-        AppointmentItemData(
-            id: "6",
-            specialty: "ENT",
-            doctorName: "Dr. Olivia Reed",
-            dateTime: "26 Dec 24, 04:30 PM",
-            status: .cancelled
-        )
-    ]
+    @State private var isRefreshing: Bool = false
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -102,37 +55,146 @@ struct MyAppointmentsView: View {
                 .padding(.horizontal, 20)
                 
                 // Content based on selected tab
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 12) {
-                        if selectedTab == .upcoming {
-                            ForEach(upcomingAppointments) { appointment in
+                List {
+                    if selectedTab == .upcoming {
+                        // Loading state
+                        if bookingViewModel.isLoadingAppointments && bookingViewModel.upcomingAppointments.isEmpty {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                Spacer()
+                            }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                        }
+                        // Empty state
+                        else if bookingViewModel.upcomingAppointments.isEmpty && !bookingViewModel.isLoadingAppointments {
+                            EmptyAppointmentsView(
+                                title: "No Upcoming Appointments",
+                                message: "You don't have any upcoming appointments scheduled."
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                        }
+                        // Appointments list
+                        else {
+                            ForEach(bookingViewModel.upcomingAppointments) { appointment in
                                 AppointmentListRow(
-                                    appointment: appointment,
+                                    booking: appointment,
                                     showStatus: false
-                                ) {
-                                    print("Tapped appointment: \(appointment.specialty)")
+                                )
+                                .onTapGesture {
+                                    router.push(.appointmentDetailForPatient(booking: appointment))
+                                }
+                                .listRowSeparator(.visible)
+                                .listRowBackground(Color.clear)
+                            }
+                            
+                            // Load more indicator
+                            if bookingViewModel.currentPage < bookingViewModel.lastPage {
+                                HStack {
+                                    Spacer()
+                                    ProgressView()
+                                    Spacer()
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .onAppear {
+                                    Task {
+                                        await bookingViewModel.loadMoreAppointments()
+                                    }
                                 }
                             }
-                        } else {
-                            ForEach(historyAppointments) { appointment in
+                        }
+                    } else {
+                        // History tab
+                        // Loading state
+                        if bookingViewModel.isLoadingPastAppointments && bookingViewModel.pastAppointments.isEmpty {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                Spacer()
+                            }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                        }
+                        // Empty state
+                        else if bookingViewModel.pastAppointments.isEmpty && !bookingViewModel.isLoadingPastAppointments {
+                            EmptyAppointmentsView(
+                                title: "No Past Appointments",
+                                message: "You don't have any past appointments yet."
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                        }
+                        // Past appointments list
+                        else {
+                            ForEach(bookingViewModel.pastAppointments) { appointment in
                                 AppointmentListRow(
-                                    appointment: appointment,
+                                    booking: appointment,
                                     showStatus: true
-                                ) {
-                                    print("Tapped appointment: \(appointment.specialty)")
+                                )
+                                .onTapGesture {
+                                    router.push(.appointmentDetailForPatient(booking: appointment))
+                                }
+                                .listRowSeparator(.visible)
+                                .listRowBackground(Color.clear)
+                            }
+                            
+                            // Load more indicator
+                            if bookingViewModel.pastCurrentPage < bookingViewModel.pastLastPage {
+                                HStack {
+                                    Spacer()
+                                    ProgressView()
+                                    Spacer()
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .onAppear {
+                                    Task {
+                                        await bookingViewModel.loadMorePastAppointments()
+                                    }
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 40)
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .refreshable {
+                    await handleRefresh()
                 }
                 
                 Spacer()
             }
         }
         .navigationBarHidden(true)
+        .task {
+            // Load appointments when view appears
+            if bookingViewModel.upcomingAppointments.isEmpty {
+                await bookingViewModel.fetchUpcomingConfirmedAppointments()
+            }
+        }
+        .onChange(of: selectedTab) { _, newTab in
+            // Load past appointments when history tab is selected
+            if newTab == .history && bookingViewModel.pastAppointments.isEmpty {
+                Task {
+                    await bookingViewModel.fetchPastBookings()
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func handleRefresh() async {
+        isRefreshing = true
+        if selectedTab == .upcoming {
+            await bookingViewModel.refreshAppointments()
+        } else {
+            await bookingViewModel.refreshPastAppointments()
+        }
+        isRefreshing = false
     }
 }
 
@@ -140,14 +202,6 @@ struct MyAppointmentsView: View {
 enum AppointmentTab {
     case upcoming
     case history
-}
-
-struct AppointmentItemData: Identifiable {
-    let id: String
-    let specialty: String
-    let doctorName: String
-    let dateTime: String
-    let status: AppointmentStatus?
 }
 
 // MARK: - Segmented Control Component
@@ -213,83 +267,120 @@ struct SegmentedControl: View {
 // MARK: - Appointment List Row Component
 struct AppointmentListRow: View {
     @Environment(\.appTheme) private var theme
-    let appointment: AppointmentItemData
+    let booking: BookingData
     let showStatus: Bool
-    let onTap: () -> Void
+    
+    private var formattedDate: String {
+        let date = booking.date
+        let time = booking.time
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        guard let appointmentDate = dateFormatter.date(from: date) else {
+            return "\(date) \(time)"
+        }
+        
+        // Output format
+        dateFormatter.dateFormat = "dd MMM yy"
+        let formattedDateStr = dateFormatter.string(from: appointmentDate)
+        
+        // Format time
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm"
+        guard let timeDate = timeFormatter.date(from: time) else {
+            return "\(formattedDateStr), \(time)"
+        }
+        
+        timeFormatter.dateFormat = "hh:mm a"
+        let formattedTime = timeFormatter.string(from: timeDate)
+        
+        return "\(formattedDateStr), \(formattedTime)"
+    }
     
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 16) {
-                // Icon container
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(red: 0.93, green: 0.96, blue: 0.98))
-                        .frame(width: 56, height: 56)
+        HStack(spacing: 16) {
+            // Icon container
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(theme.colors.profileDetailSectionBackground)
+                    .frame(width: 56, height: 56)
+                
+                Image("calendar-icon-appointment")
+                    .font(.system(size: 24))
+                    .foregroundStyle(theme.colors.primary)
+            }
+            
+            // Text content
+            VStack(alignment: .leading, spacing: 2) {
+                // Row 1: Service name
+                Text(booking.service?.name ?? "Appointment")
+                    .font(theme.typography.semiBold18)
+                    .foregroundStyle(theme.colors.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Row 2: Doctor name and Status
+                HStack {
+                    if let doctor = booking.assignedDoctor {
+                        Text("Dr. \(doctor.name)")
+                            .font(theme.typography.regular14)
+                            .foregroundStyle(theme.colors.profileDetailTextColor)
+                    } else {
+                        Text(booking.department?.name ?? "General")
+                            .font(theme.typography.regular14)
+                            .foregroundStyle(theme.colors.profileDetailTextColor)
+                    }
                     
-                    Image(systemName: "calendar")
-                        .font(.system(size: 24))
-                        .foregroundStyle(theme.colors.primary)
+                    Spacer()
+                    
+                    if showStatus {
+                        StatusBadge(status: booking.status, theme: theme)
+                    }
                 }
                 
-                // Text content
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack{
-                        Text(appointment.specialty)
-                            .font(theme.typography.semiBold18)
-                            .foregroundStyle(theme.colors.textPrimary)
-                        Spacer()
-                        Text(appointment.dateTime)
-                            .font(theme.typography.regular14)
-                            .foregroundStyle(theme.colors.textSecondary)
-                            .multilineTextAlignment(.trailing)
-                        
-                    }
-                    HStack{
-                        Text(appointment.doctorName)
-                            .font(theme.typography.regular14)
-                            .foregroundStyle(theme.colors.textPrimary)
-                        Spacer()
-                        
-                        if showStatus, let status = appointment.status {
-                            StatusBadge(status: status, theme: theme)
-                        }
-                    }
-                }
+                // Row 3: Date and time
+                Text(formattedDate)
+                    .font(theme.typography.regular14)
+                    .foregroundStyle(theme.colors.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .background(Color.white)
         }
-        .buttonStyle(PlainButtonStyle())
+        .background(Color.white)
     }
 }
 
 // MARK: - Status Badge Component
 struct StatusBadge: View {
-    let status: AppointmentStatus
+    let status: String
     let theme: AppThemeProtocol
     
     var statusText: String {
-        switch status {
-        case .completed:
+        switch status.lowercased() {
+        case "completed":
             return "Completed"
-        case .cancelled:
+        case "cancelled":
             return "Cancelled"
-        case .pending:
+        case "pending":
             return "Pending"
-        case .scheduled:
+        case "scheduled":
             return "Upcoming"
+        default:
+            return status.capitalized
         }
     }
     
     var statusColor: Color {
-        switch status {
-        case .completed:
+        switch status.lowercased() {
+        case "completed":
             return Color(red: 0.8, green: 0.72, blue: 0.32) // Yellow/Gold
-        case .cancelled:
+        case "cancelled":
             return theme.colors.error
-        case .pending:
+        case "pending":
             return theme.colors.primary
-        case .scheduled:
+        case "scheduled":
             return theme.colors.primary
+        default:
+            return theme.colors.textSecondary
         }
     }
     
@@ -298,7 +389,7 @@ struct StatusBadge: View {
             .font(theme.typography.regular12)
             .foregroundStyle(statusColor)
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 2)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(statusColor, lineWidth: 1)
@@ -306,8 +397,38 @@ struct StatusBadge: View {
     }
 }
 
+// MARK: - Empty State Component
+struct EmptyAppointmentsView: View {
+    @Environment(\.appTheme) private var theme
+    let title: String
+    let message: String
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .font(.system(size: 60))
+                .foregroundStyle(theme.colors.textSecondary.opacity(0.5))
+                .padding(.top, 60)
+            
+            Text(title)
+                .font(theme.typography.semiBold18)
+                .foregroundStyle(theme.colors.textPrimary)
+            
+            Text(message)
+                .font(theme.typography.regular14)
+                .foregroundStyle(theme.colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+}
+
 // MARK: - Preview
 #Preview {
     MyAppointmentsView()
         .environment(\.appTheme, AppTheme.default)
+        .environmentObject(Router.shared)
+        .environmentObject(BookingGlobalViewModel(bookingService: BookingService(httpClient: HTTPClient())))
 }

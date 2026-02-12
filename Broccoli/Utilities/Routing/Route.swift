@@ -31,12 +31,15 @@ enum Route: Hashable {
     case cureFromDrugForm
     case notifications
     case myAppointments
+    case myPrescriptions
     case myPharmacies
     case addPharmacy
     case editPharmacy(pharmacy: Pharmacy)
     case bookPrescription
     case prescriptionQuestions
     case settings
+    case contactUs
     case appointmentDetailForDoctor(booking: BookingData)
+    case appointmentDetailForPatient(booking: BookingData)
     // add routes as needed
 }

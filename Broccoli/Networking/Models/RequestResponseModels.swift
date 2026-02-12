@@ -352,6 +352,30 @@ public struct UpcomingAppointmentsResponse: Codable {
     var total: Int { pagination.total }
 }
 
+public struct PrescriptionsListResponse: Codable {
+    let success: Bool
+    let prescriptions: [PrescriptionOrder]
+    let meta: PrescriptionsMeta?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case prescriptions
+        case meta
+    }
+}
+
+public struct PrescriptionsMeta: Codable {
+    let perPage: Int
+    let total: Int
+    let currentPage: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case perPage = "per_page"
+        case total
+        case currentPage = "current_page"
+    }
+}
+
 public struct PaginationInfo: Codable {
     let currentPage: Int
     let lastPage: Int
@@ -461,8 +485,13 @@ public struct RejectBookingResponse: Codable {
     var booking: BookingData? { data }
 }
 
-public struct BookingData: Codable, Hashable {
+public struct AssignedDoctorData: Codable, Hashable {
     let id: Int
+    let name: String
+}
+
+public struct BookingData: Codable, Hashable, Identifiable {
+    public let id: Int
     let userId: Int?
     let departmentId: Int?
     let serviceId: Int?
@@ -485,6 +514,7 @@ public struct BookingData: Codable, Hashable {
     let service: ServiceData?
     let department: DepartmentData?
     let user: UserData?
+    let assignedDoctor: AssignedDoctorData?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -510,6 +540,7 @@ public struct BookingData: Codable, Hashable {
         case service
         case department
         case user
+        case assignedDoctor = "assigned_doctor"
     }
 }
 
@@ -664,51 +695,54 @@ public struct PaymentInitializeResponse: Codable {
     let ephemeralKeyString: String?
     let customerString: String?
     
-    enum CodingKeys: String, CodingKey {
-        case success
-        case covered
-        case message
-        case paymentIntent
-        case setupIntent
-        case ephemeralKey
-        case customer
-        case publishableKey
-        case amount
-        case currency
-        case priceId
-        case package
-    }
-    
     public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Try to get container with dynamic keys
+        guard let container = try? decoder.container(keyedBy: AnyCodingKey.self) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Cannot decode container"))
+        }
         
-        success = try container.decodeIfPresent(Bool.self, forKey: .success)
-        covered = try container.decodeIfPresent(Bool.self, forKey: .covered)
-        message = try container.decodeIfPresent(String.self, forKey: .message)
-        publishableKey = try container.decodeIfPresent(String.self, forKey: .publishableKey)
-        currency = try container.decodeIfPresent(String.self, forKey: .currency)
-        priceId = try container.decodeIfPresent(String.self, forKey: .priceId)
-        package = try container.decodeIfPresent(PackageData.self, forKey: .package)
+        // Decode simple fields - try both snake_case and camelCase
+        success = try? container.decodeIfPresent(Bool.self, forKey: AnyCodingKey("success"))
+        covered = try? container.decodeIfPresent(Bool.self, forKey: AnyCodingKey("covered"))
+        message = try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("message"))
+        currency = try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("currency"))
+        
+        // publishableKey - try camelCase then snake_case
+        publishableKey = (try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("publishableKey"))) 
+            ?? (try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("publishable_key")))
+        
+        // priceId - try camelCase then snake_case
+        priceId = (try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("priceId")))
+            ?? (try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("price_id")))
+        
+        package = try? container.decodeIfPresent(PackageData.self, forKey: AnyCodingKey("package"))
         
         // Handle amount as either String or Int
-        if let amountString = try? container.decode(String.self, forKey: .amount) {
+        if let amountString = try? container.decode(String.self, forKey: AnyCodingKey("amount")) {
             amount = amountString
-        } else if let amountInt = try? container.decode(Int.self, forKey: .amount) {
+        } else if let amountInt = try? container.decode(Int.self, forKey: AnyCodingKey("amount")) {
             amount = String(amountInt)
-        } else if let amountDouble = try? container.decode(Double.self, forKey: .amount) {
+        } else if let amountDouble = try? container.decode(Double.self, forKey: AnyCodingKey("amount")) {
             amount = String(format: "%.2f", amountDouble)
         } else {
             amount = nil
         }
         
-        // Try to decode setupIntent (for subscriptions)
-        setupIntent = try? container.decode(SetupIntentData.self, forKey: .setupIntent)
+        // setupIntent - try camelCase then snake_case
+        setupIntent = (try? container.decode(SetupIntentData.self, forKey: AnyCodingKey("setupIntent")))
+            ?? (try? container.decode(SetupIntentData.self, forKey: AnyCodingKey("setup_intent")))
         
-        // Try to decode as objects first (booking format), then as strings (prescription format)
-        if let paymentIntentObj = try? container.decode(PaymentIntentData.self, forKey: .paymentIntent) {
+        // paymentIntent - try camelCase object, then snake_case object, then string formats
+        if let paymentIntentObj = try? container.decode(PaymentIntentData.self, forKey: AnyCodingKey("paymentIntent")) {
             paymentIntent = paymentIntentObj
             paymentIntentString = nil
-        } else if let paymentIntentStr = try? container.decode(String.self, forKey: .paymentIntent) {
+        } else if let paymentIntentObj = try? container.decode(PaymentIntentData.self, forKey: AnyCodingKey("payment_intent")) {
+            paymentIntent = paymentIntentObj
+            paymentIntentString = nil
+        } else if let paymentIntentStr = try? container.decode(String.self, forKey: AnyCodingKey("paymentIntent")) {
+            paymentIntent = nil
+            paymentIntentString = paymentIntentStr
+        } else if let paymentIntentStr = try? container.decode(String.self, forKey: AnyCodingKey("payment_intent")) {
             paymentIntent = nil
             paymentIntentString = paymentIntentStr
         } else {
@@ -716,10 +750,17 @@ public struct PaymentInitializeResponse: Codable {
             paymentIntentString = nil
         }
         
-        if let ephemeralKeyObj = try? container.decode(EphemeralKeyData.self, forKey: .ephemeralKey) {
+        // ephemeralKey - try camelCase object, then snake_case object, then string formats
+        if let ephemeralKeyObj = try? container.decode(EphemeralKeyData.self, forKey: AnyCodingKey("ephemeralKey")) {
             ephemeralKey = ephemeralKeyObj
             ephemeralKeyString = nil
-        } else if let ephemeralKeyStr = try? container.decode(String.self, forKey: .ephemeralKey) {
+        } else if let ephemeralKeyObj = try? container.decode(EphemeralKeyData.self, forKey: AnyCodingKey("ephemeral_key")) {
+            ephemeralKey = ephemeralKeyObj
+            ephemeralKeyString = nil
+        } else if let ephemeralKeyStr = try? container.decode(String.self, forKey: AnyCodingKey("ephemeralKey")) {
+            ephemeralKey = nil
+            ephemeralKeyString = ephemeralKeyStr
+        } else if let ephemeralKeyStr = try? container.decode(String.self, forKey: AnyCodingKey("ephemeral_key")) {
             ephemeralKey = nil
             ephemeralKeyString = ephemeralKeyStr
         } else {
@@ -727,10 +768,11 @@ public struct PaymentInitializeResponse: Codable {
             ephemeralKeyString = nil
         }
         
-        if let customerObj = try? container.decode(CustomerData.self, forKey: .customer) {
+        // customer - try object then string formats (both key formats)
+        if let customerObj = try? container.decode(CustomerData.self, forKey: AnyCodingKey("customer")) {
             customer = customerObj
             customerString = nil
-        } else if let customerStr = try? container.decode(String.self, forKey: .customer) {
+        } else if let customerStr = try? container.decode(String.self, forKey: AnyCodingKey("customer")) {
             customer = nil
             customerString = customerStr
         } else {
@@ -752,6 +794,27 @@ public struct PaymentInitializeResponse: Codable {
     // Helper to get ephemeral key secret regardless of format
     var ephemeralKeySecret: String? {
         return ephemeralKey?.secret ?? ephemeralKeyString
+    }
+}
+
+// Helper struct for dynamic coding keys
+private struct AnyCodingKey: CodingKey {
+    var stringValue: String
+    var intValue: Int?
+    
+    init(_ stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = nil
+    }
+    
+    init?(stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = nil
+    }
+    
+    init?(intValue: Int) {
+        self.stringValue = String(intValue)
+        self.intValue = intValue
     }
 }
 
@@ -834,6 +897,7 @@ public struct Treatment: Codable, Identifiable {
     public let id: Int
     public let name: String
     public let description: String?
+    public let details: String?
     public let category: String?
     public let price: String?
     public let isActive: Bool
@@ -843,7 +907,7 @@ public struct Treatment: Codable, Identifiable {
     public let updatedAt: String?
     
     private enum CodingKeys: String, CodingKey {
-        case id, name, description, category, price
+        case id, name, description, details, category, price
         case isActive = "is_active"
         case requiresQuestionnaire = "requires_questionnaire"
         case stripeProductId = "stripe_product_id"
@@ -1049,6 +1113,69 @@ public struct PrescriptionOrderResponse: Codable {
     }
 }
 
+// MARK: - Prescription Patient Models (for list response)
+
+public struct PrescriptionPatient: Codable, Identifiable {
+    public let id: Int
+    public let name: String
+    public let email: String
+    public let username: String?
+    public let emailVerifiedAt: String?
+    public let status: String?
+    public let createdAt: String?
+    public let roles: [String]?
+    public let profile: PatientProfile?
+    public let subscriptions: [PatientSubscription]?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, email, username, status, roles, profile, subscriptions
+        case emailVerifiedAt = "email_verified_at"
+        case createdAt = "created_at"
+    }
+}
+
+public struct PatientProfile: Codable {
+    public let phoneCode: String?
+    public let phone: String?
+    public let description: String?
+    public let gender: String?
+    public let bloodGroup: String?
+    public let bloodGroupId: Int?
+    public let dateOfBirth: String?
+    public let address: String?
+    public let city: String?
+    public let state: String?
+    public let country: String?
+    public let postalCode: String?
+    public let profileImage: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case phoneCode = "phone_code"
+        case phone, description, gender
+        case bloodGroup = "blood_group"
+        case bloodGroupId = "blood_group_id"
+        case dateOfBirth = "date_of_birth"
+        case address, city, state, country
+        case postalCode = "postal_code"
+        case profileImage = "profile_image"
+    }
+}
+
+public struct PatientSubscription: Codable, Identifiable {
+    public let id: Int
+    public let type: String
+    public let stripeStatus: String
+    public let stripePrice: String
+    public let endsAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, type
+        case stripeStatus = "stripe_status"
+        case stripePrice = "stripe_price"
+        case endsAt = "ends_at"
+    }
+}
+
 public struct PrescriptionOrder: Codable, Identifiable {
     public let id: Int
     public let status: String
@@ -1056,6 +1183,7 @@ public struct PrescriptionOrder: Codable, Identifiable {
     public let amount: String
     public let validUntil: String
     public let notes: String?
+    public let adminNotes: String?
     public let rejectionReason: String?
     public let createdAt: String
     public let updatedAt: String
@@ -1065,14 +1193,18 @@ public struct PrescriptionOrder: Codable, Identifiable {
     public let sentAt: String?
     public let completedAt: String?
     public let treatment: Treatment
-    public let answers: [PrescriptionAnswerDetail]
+    public let patient: PrescriptionPatient?
+    public let doctor: Doctor?
+    public let pharmacy: Pharmacy?
+    public let answers: [PrescriptionAnswerDetail]?
     
     private enum CodingKeys: String, CodingKey {
-        case id, status, notes, treatment, answers
+        case id, status, notes, treatment, answers, patient, doctor, pharmacy
         case paymentStatus = "payment_status"
         case amount
         case validUntil = "valid_until"
         case rejectionReason = "rejection_reason"
+        case adminNotes = "admin_notes"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case approvedAt = "approved_at"
@@ -1130,14 +1262,14 @@ public struct MedicalTourismEnquiryRequest: Codable {
     public let email: String
     public let phone: String
     public let password: String
-    public let desiredProcedure: String
-    public let preferredDestination: String
+    public let medicalProcedureId: Int
+    public let medicalDestinationId: Int
     public let additionalInformation: String?
     
     private enum CodingKeys: String, CodingKey {
         case name, email, phone, password
-        case desiredProcedure = "desired_procedure"
-        case preferredDestination = "preferred_destination"
+        case medicalProcedureId = "medical_procedure_id"
+        case medicalDestinationId = "medical_destination_id"
         case additionalInformation = "additional_information"
     }
     
@@ -1146,16 +1278,16 @@ public struct MedicalTourismEnquiryRequest: Codable {
         email: String,
         phone: String,
         password: String,
-        desiredProcedure: String,
-        preferredDestination: String,
+        medicalProcedureId: Int,
+        medicalDestinationId: Int,
         additionalInformation: String?
     ) {
         self.name = name
         self.email = email
         self.phone = phone
         self.password = password
-        self.desiredProcedure = desiredProcedure
-        self.preferredDestination = preferredDestination
+        self.medicalProcedureId = medicalProcedureId
+        self.medicalDestinationId = medicalDestinationId
         self.additionalInformation = additionalInformation
     }
     
@@ -1165,8 +1297,8 @@ public struct MedicalTourismEnquiryRequest: Codable {
             "email": email,
             "phone": phone,
             "password": password,
-            "desired_procedure": desiredProcedure,
-            "preferred_destination": preferredDestination
+            "medical_procedure_id": medicalProcedureId,
+            "medical_destination_id": medicalDestinationId
         ]
         
         if let additionalInfo = additionalInformation {
@@ -1218,14 +1350,14 @@ public struct RecoveryJourneyEnquiryRequest: Codable {
     public let name: String
     public let email: String
     public let phone: String
-    public let drug: String
-    public let years: String
+    public let recoveryDrugId: Int
+    public let recoveryAddictionYearId: Int
     public let additionalInformation: String?
     
     private enum CodingKeys: String, CodingKey {
         case name, email, phone
-        case drug = "drug_of_addiction"
-        case years = "years_of_addiction"
+        case recoveryDrugId = "recovery_drug_id"
+        case recoveryAddictionYearId = "recovery_addiction_year_id"
         case additionalInformation = "additional_information"
     }
     
@@ -1233,15 +1365,15 @@ public struct RecoveryJourneyEnquiryRequest: Codable {
         name: String,
         email: String,
         phone: String,
-        drug: String,
-        years: String,
+        recoveryDrugId: Int,
+        recoveryAddictionYearId: Int,
         additionalInformation: String?
     ) {
         self.name = name
         self.email = email
         self.phone = phone
-        self.drug = drug
-        self.years = years
+        self.recoveryDrugId = recoveryDrugId
+        self.recoveryAddictionYearId = recoveryAddictionYearId
         self.additionalInformation = additionalInformation
     }
     
@@ -1250,8 +1382,8 @@ public struct RecoveryJourneyEnquiryRequest: Codable {
             "full_name": name,
             "email": email,
             "phone": phone,
-            "drug_of_addiction": drug,
-            "years_of_addiction": years,
+            "recovery_drug_id": recoveryDrugId,
+            "recovery_addiction_year_id": recoveryAddictionYearId,
         ]
         
         if let additionalInfo = additionalInformation {

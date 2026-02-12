@@ -13,6 +13,10 @@ public protocol AppServiceProtocol {
     func fetchSpecializations() async throws -> [Specialization]
     func fetchMetaData() async throws -> MetadataResponse
     func fetchSlidersData() async throws -> SlidersResponse
+    func fetchMedicalProcedures() async throws -> [MedicalProcedure]
+    func fetchMedicalDestinations() async throws -> [MedicalDestination]
+    func fetchRecoveryDrugs() async throws -> [RecoveryDrug]
+    func fetchRecoveryAddictionYears() async throws -> [RecoveryAddictionYear]
 }
 
 public final class AppService: BaseService, AppServiceProtocol {
@@ -54,6 +58,38 @@ public final class AppService: BaseService, AppServiceProtocol {
         return try await handleServiceError {
             let endpoint = AppEndpoint.banners
             return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func fetchMedicalProcedures() async throws -> [MedicalProcedure] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.medicalProcedures
+            let response: MedicalProceduresResponse = try await httpClient.request(endpoint)
+            return response.data
+        }
+    }
+    
+    public func fetchMedicalDestinations() async throws -> [MedicalDestination] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.medicalDestinations
+            let response: MedicalDestinationsResponse = try await httpClient.request(endpoint)
+            return response.data
+        }
+    }
+    
+    public func fetchRecoveryDrugs() async throws -> [RecoveryDrug] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.recoveryDrugs
+            let response: RecoveryDrugsResponse = try await httpClient.request(endpoint)
+            return response.data
+        }
+    }
+    
+    public func fetchRecoveryAddictionYears() async throws -> [RecoveryAddictionYear] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.recoveryAddictionYears
+            let response: RecoveryAddictionYearsResponse = try await httpClient.request(endpoint)
+            return response.data
         }
     }
 }

@@ -22,6 +22,9 @@ public protocol BookingServiceProtocol {
     func confirmPayment(data: [String: Any]) async throws -> PaymentConfirmResponse
     func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse
     func fetchUpcomingConfirmedAppointments(perPage: Int, page: Int) async throws -> UpcomingAppointmentsResponse
+    func fetchPastBookings(perPage: Int, page: Int) async throws -> UpcomingAppointmentsResponse
+    func fetchPrescriptions(perPage: Int, page: Int) async throws -> PrescriptionsListResponse
+    func fetchPrescriptionHistory(perPage: Int, page: Int) async throws -> PrescriptionsListResponse
     func fetchPendingBookingsForDoctor() async throws -> PendingBookingsResponse
     func fetchMyBookingsForDoctor() async throws -> MyBookingsResponse
     func acceptBooking(bookingId: Int) async throws -> AcceptBookingResponse
@@ -146,6 +149,31 @@ public final class BookingService: BaseService, BookingServiceProtocol {
     public func fetchUpcomingConfirmedAppointments(perPage: Int = 10, page: Int = 1) async throws -> UpcomingAppointmentsResponse {
         return try await handleServiceError {
             let endpoint = BookingEndpoint.upcomingAppointments(perPage: perPage, page: page)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Fetch past bookings with pagination
+    public func fetchPastBookings(perPage: Int = 10, page: Int = 1) async throws -> UpcomingAppointmentsResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.pastBookings(perPage: perPage, page: page)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Fetch prescriptions list for patient
+    public func fetchPrescriptions(perPage: Int = 10, page: Int = 1) async throws -> PrescriptionsListResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.prescriptionList(perPage: perPage, page: page)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Fetch prescription history for patient (using same endpoint for now)
+    public func fetchPrescriptionHistory(perPage: Int = 10, page: Int = 1) async throws -> PrescriptionsListResponse {
+        return try await handleServiceError {
+            // TODO: Update endpoint when prescription history endpoint is available
+            let endpoint = BookingEndpoint.prescriptionList(perPage: perPage, page: page)
             return try await httpClient.request(endpoint)
         }
     }

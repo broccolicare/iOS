@@ -160,6 +160,10 @@ struct PrescriptionView: View {
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            // Reset prescription flow when returning to prescription list
+            bookingViewModel.resetPrescriptionFlow()
+        }
         .task {
             // Fetch treatments when view appears
             if bookingViewModel.treatments.isEmpty {

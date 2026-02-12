@@ -12,30 +12,17 @@ struct MedicalEnquiryView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var appGlobalViewModel: AppGlobalViewModel
     @StateObject private var viewModel: MedicalEnquiryViewModel
     
-    // Sample data - will be replaced with actual data
-    private let procedures = [
-        "Cardiac Surgery",
-        "Orthopedic Surgery",
-        "Cosmetic Surgery",
-        "Dental Procedures",
-        "Eye Surgery",
-        "Cancer Treatment",
-        "Organ Transplant",
-        "Fertility Treatment"
-    ]
+    // Computed properties for dropdown data
+    private var procedures: [String] {
+        appGlobalViewModel.medicalProcedures.map { $0.name }
+    }
     
-    private let destinations = [
-        "India",
-        "Thailand",
-        "Singapore",
-        "Turkey",
-        "UAE",
-        "Malaysia",
-        "South Korea",
-        "Mexico"
-    ]
+    private var destinations: [String] {
+        appGlobalViewModel.medicalDestinations.map { $0.name }
+    }
     
     init(userService: UserServiceProtocol) {
         _viewModel = StateObject(wrappedValue: MedicalEnquiryViewModel(userService: userService))
@@ -73,95 +60,73 @@ struct MedicalEnquiryView: View {
                         // Form fields
                         VStack(spacing: 12) {
                             // Name field
-                            VStack(alignment: .leading, spacing: 4) {
-                                TextInputField(
-                                    placeholder: "Name",
-                                    text: $viewModel.name,
-                                    keyboardType: .default,
-                                    autocapitalization: .words,
-                                    disableAutocorrection: false
-                                )
-                                if let error = viewModel.fieldErrors[.name] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
-                                }
-                            }
+                            TextInputField(
+                                placeholder: "Name",
+                                text: $viewModel.name,
+                                keyboardType: .default,
+                                autocapitalization: .words,
+                                disableAutocorrection: false,
+                                errorText: viewModel.fieldErrors[.name]
+                            )
                             
                             // Email field
-                            VStack(alignment: .leading, spacing: 4) {
-                                TextInputField(
-                                    placeholder: "Email address",
-                                    text: $viewModel.email,
-                                    keyboardType: .emailAddress,
-                                    autocapitalization: .never
-                                )
-                                if let error = viewModel.fieldErrors[.email] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
-                                }
-                            }
+                            TextInputField(
+                                placeholder: "Email address",
+                                text: $viewModel.email,
+                                keyboardType: .emailAddress,
+                                autocapitalization: .never,
+                                errorText: viewModel.fieldErrors[.email]
+                            )
                             
                             // Phone number field
-                            VStack(alignment: .leading, spacing: 4) {
-                                CountryPhoneField(
-                                    countryCode: $viewModel.countryCode,
-                                    phone: $viewModel.phoneNumber
-                                )
-                                if let error = viewModel.fieldErrors[.phoneNumber] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
-                                }
-                            }
+                            CountryPhoneField(
+                                countryCode: $viewModel.countryCode,
+                                phone: $viewModel.phoneNumber,
+                                errorText: viewModel.fieldErrors[.phoneNumber]
+                            )
                             
                             // Password field
-                            VStack(alignment: .leading, spacing: 4) {
-                                TextInputField(
-                                    placeholder: "Password",
-                                    text: $viewModel.password,
-                                    keyboardType: .default,
-                                    isSecure: true,
-                                    autocapitalization: .never,
-                                    disableAutocorrection: true
-                                )
-                                if let error = viewModel.fieldErrors[.password] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
-                                }
-                            }
+                            TextInputField(
+                                placeholder: "Password",
+                                text: $viewModel.password,
+                                keyboardType: .default,
+                                isSecure: true,
+                                autocapitalization: .never,
+                                disableAutocorrection: true,
+                                errorText: viewModel.fieldErrors[.password]
+                            )
                             
                             // Desired Procedure dropdown
-                            VStack(alignment: .leading, spacing: 4) {
-                                DropdownField(
-                                    selectedValue: $viewModel.selectedProcedure,
-                                    items: procedures,
-                                    placeholder: "Desired Procedure",
-                                    allowsSearch: true,
-                                    showsChevron: true
-                                )
-                                if let error = viewModel.fieldErrors[.procedure] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
+                            DropdownField(
+                                selectedValue: $viewModel.selectedProcedure,
+                                items: procedures,
+                                placeholder: "Desired Procedure",
+                                allowsSearch: true,
+                                showsChevron: true,
+                                errorText: viewModel.fieldErrors[.procedure]
+                            )
+                            .onChange(of: viewModel.selectedProcedure) { _, newValue in
+                                if let procedureName = newValue {
+                                    viewModel.selectedProcedureId = appGlobalViewModel.medicalProcedures.first { $0.name == procedureName }?.id
+                                } else {
+                                    viewModel.selectedProcedureId = nil
                                 }
                             }
                             
                             // Preferred Destination dropdown
-                            VStack(alignment: .leading, spacing: 4) {
-                                DropdownField(
-                                    selectedValue: $viewModel.selectedDestination,
-                                    items: destinations,
-                                    placeholder: "Preferred Destination",
-                                    allowsSearch: true,
-                                    showsChevron: true
-                                )
-                                if let error = viewModel.fieldErrors[.destination] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
+                            DropdownField(
+                                selectedValue: $viewModel.selectedDestination,
+                                items: destinations,
+                                placeholder: "Preferred Destination",
+                                allowsSearch: true,
+                                showsChevron: true,
+                                errorText: viewModel.fieldErrors[.destination]
+                            )
+                            .onChange(of: viewModel.selectedDestination) { _, newValue in
+                                if let destinationName = newValue {
+                                    viewModel.selectedDestinationId = appGlobalViewModel.medicalDestinations.first { $0.name == destinationName }?.id
+                                } else {
+                                    viewModel.selectedDestinationId = nil
                                 }
                             }
                             
@@ -251,9 +216,17 @@ struct MedicalEnquiryView: View {
                 dismiss()
             }
         }
+        .task {
+            await loadData()
+        }
     }
     
     // MARK: - Helper Functions
+    
+    private func loadData() async {
+        await appGlobalViewModel.loadMedicalProcedures()
+        await appGlobalViewModel.loadMedicalDestinations()
+    }
     
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)

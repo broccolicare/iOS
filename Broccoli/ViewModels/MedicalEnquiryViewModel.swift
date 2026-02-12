@@ -20,7 +20,9 @@ final class MedicalEnquiryViewModel: ObservableObject {
     @Published var phoneNumber: String = ""
     @Published var password: String = ""
     @Published var selectedProcedure: String? = nil
+    @Published var selectedProcedureId: Int? = nil
     @Published var selectedDestination: String? = nil
+    @Published var selectedDestinationId: Int? = nil
     @Published var additionalInfo: String = ""
     
     // Validation errors
@@ -94,15 +96,15 @@ final class MedicalEnquiryViewModel: ObservableObject {
         // Procedure validation - required, max 255 characters
         if selectedProcedure == nil || selectedProcedure?.isEmpty == true {
             fieldErrors[.procedure] = "Please select a procedure."
-        } else if let procedure = selectedProcedure, procedure.count > 255 {
-            fieldErrors[.procedure] = "Procedure must not exceed 255 characters."
+        } else if selectedProcedureId == nil {
+            fieldErrors[.procedure] = "Invalid procedure selection."
         }
         
-        // Destination validation - optional, max 255 characters
-        if let destination = selectedDestination, !destination.isEmpty {
-            if destination.count > 255 {
-                fieldErrors[.destination] = "Destination must not exceed 255 characters."
-            }
+        // Destination validation - required
+        if selectedDestination == nil || selectedDestination?.isEmpty == true {
+            fieldErrors[.destination] = "Please select a destination."
+        } else if selectedDestinationId == nil {
+            fieldErrors[.destination] = "Invalid destination selection."
         }
         
         return fieldErrors.isEmpty
@@ -131,8 +133,8 @@ final class MedicalEnquiryViewModel: ObservableObject {
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             phone: fullPhoneNumber,
             password: password,
-            desiredProcedure: selectedProcedure ?? "",
-            preferredDestination: selectedDestination ?? "",
+            medicalProcedureId: selectedProcedureId ?? 0,
+            medicalDestinationId: selectedDestinationId ?? 0,
             additionalInformation: additionalInfo.isEmpty ? nil : additionalInfo.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
@@ -184,7 +186,9 @@ final class MedicalEnquiryViewModel: ObservableObject {
         phoneNumber = ""
         password = ""
         selectedProcedure = nil
+        selectedProcedureId = nil
         selectedDestination = nil
+        selectedDestinationId = nil
         additionalInfo = ""
         fieldErrors = [:]
     }

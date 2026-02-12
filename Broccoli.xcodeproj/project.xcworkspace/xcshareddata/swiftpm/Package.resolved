@@ -1,5 +1,5 @@
 {
-  "originHash" : "3ec492c12b9c561f133b552c298aed0ec558f7f6ba5bcb4d55d7c44fe91d9b16",
+  "originHash" : "f90874182b97de7baad981154df019a4395a8133292984c63b7db28ec80ca190",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -8,6 +8,24 @@
       "state" : {
         "revision" : "bbe8b69694d7873315fd3a4ad41efe043e1c07c5",
         "version" : "1.2024072200.0"
+      }
+    },
+    {
+      "identity" : "agorainfra_ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AgoraIO/AgoraInfra_iOS.git",
+      "state" : {
+        "revision" : "0c21b485af8e64b2716632f2f7badab8705343b1",
+        "version" : "1.3.5"
+      }
+    },
+    {
+      "identity" : "agorartcengine_ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AgoraIO/AgoraRtcEngine_iOS.git",
+      "state" : {
+        "revision" : "94a477c69f9ad730e2225f54948e87f9f4d77c24",
+        "version" : "4.6.2"
       }
     },
     {
@@ -170,6 +188,15 @@
       "state" : {
         "revision" : "540318ecedd63d883069ae7f1ed811a2df00b6ac",
         "version" : "2.4.0"
+      }
+    },
+    {
+      "identity" : "stripe-ios-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/stripe/stripe-ios-spm",
+      "state" : {
+        "revision" : "a6c3e95198fde712b420a448f591f1a365ffafe0",
+        "version" : "25.6.2"
       }
     },
     {

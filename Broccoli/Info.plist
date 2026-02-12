@@ -2,6 +2,27 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.771175078095-ufeguqsd10jjban23t5hjln6nclt39ur</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>Broccoli Stripe Payment</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>broccoli</string>
+			</array>
+		</dict>
+	</array>
+	<key>GIDClientID</key>
+	<string>771175078095-ufeguqsd10jjban23t5hjln6nclt39ur.apps.googleusercontent.com</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Figtree-Black.ttf</string>
@@ -19,26 +40,5 @@
 		<string>Figtree-SemiBold.ttf</string>
 		<string>Figtree-SemiBoldItalic.ttf</string>
 	</array>
-    <key>GIDClientID</key>
-    <string>771175078095-ufeguqsd10jjban23t5hjln6nclt39ur.apps.googleusercontent.com</string>
-    <key>CFBundleURLTypes</key>
-    <array>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>com.googleusercontent.apps.771175078095-ufeguqsd10jjban23t5hjln6nclt39ur</string>
-        </array>
-      </dict>
-      <dict>
-        <key>CFBundleTypeRole</key>
-        <string>Editor</string>
-        <key>CFBundleURLName</key>
-        <string>Broccoli Stripe Payment</string>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>broccoli</string>
-        </array>
-      </dict>
-    </array>
 </dict>
 </plist>

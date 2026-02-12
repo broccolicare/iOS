@@ -15,6 +15,7 @@ struct PrescriptionQuestionsView: View {
     
     @State private var currentStep: Int = 1
     @State private var showPaymentSheet = false
+    @State private var questionValidationErrors: Set<Int> = []
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -25,15 +26,9 @@ struct PrescriptionQuestionsView: View {
                 // Header
                 HStack {
                     Button(action: { handleBackButton() }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color(red: 0.95, green: 0.95, blue: 0.95))
-                                .frame(width: 40, height: 40)
-                            
-                            Image(systemName: "arrow.left")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(theme.colors.textPrimary)
-                        }
+                        Image("BackButton")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(theme.colors.primary)
                     }
                     
                     Spacer()
@@ -117,13 +112,28 @@ struct PrescriptionQuestionsView: View {
                                         textAnswer: Binding(
                                             get: { bookingViewModel.questionnaireTextAnswers[question.id] ?? "" },
                                             set: { bookingViewModel.questionnaireTextAnswers[question.id] = $0 }
-                                        )
+                                        ),
+                                        hasError: questionValidationErrors.contains(question.id)
                                     )
                                 }
                             }
                             
+                            // Next/Submit Button
+                            Button(action: {
+                                handleSubmit()
+                            }) {
+                                Text(currentStep < totalSteps ? "Next" : "Submit")
+                                    .font(theme.typography.button)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(theme.colors.primary)
+                                    .cornerRadius(12)
+                            }
+                            .padding(.top, 32)
+                            
                             // Bottom spacing
-                            Color.clear.frame(height: 100)
+                            Color.clear.frame(height: 20)
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
@@ -135,29 +145,6 @@ struct PrescriptionQuestionsView: View {
                         .foregroundStyle(theme.colors.textSecondary)
                     Spacer()
                 }
-            }
-            
-            // Fixed Bottom Button
-            VStack {
-                Spacer()
-                
-                Button(action: {
-                    handleSubmit()
-                }) {
-                    Text(currentStep < totalSteps ? "Next" : "Submit")
-                        .font(theme.typography.button)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(theme.colors.primary)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .background(
-                    Color.white
-                        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: -5)
-                )
             }
         }
         .navigationBarHidden(true)
@@ -220,25 +207,75 @@ struct PrescriptionQuestionsView: View {
     }
     
     private func handleSubmit() {
+        // Validate current step before proceeding
+        if !validateCurrentStep() {
+            return
+        }
+        
         if currentStep < totalSteps {
             // Move to next step
             currentStep += 1
         } else {
             // Final submission - create prescription order
             Task {
+                print("📝 [View] Submitting prescription order...")
                 let success = await bookingViewModel.createPrescriptionOrder()
+                print("📝 [View] Prescription order result: \(success)")
+                print("📝 [View] isPaymentReady: \(bookingViewModel.isPaymentReady)")
+                print("📝 [View] requiresPayment: \(bookingViewModel.requiresPayment)")
+                
                 if success {
                     // Check if payment sheet is ready (payment required and not covered by subscription)
                     if bookingViewModel.isPaymentReady && bookingViewModel.requiresPayment {
                         // Show payment sheet
+                        print("📝 [View] Showing payment sheet")
                         showPaymentSheet = true
                     } else {
                         // No payment required or covered by subscription - navigate to success
+                        print("📝 [View] Navigating to success (no payment needed)")
                         router.push(.paymentSuccess(booking: nil))
                     }
+                } else {
+                    print("📝 [View] Prescription order failed")
                 }
             }
         }
+    }
+    
+    private func validateCurrentStep() -> Bool {
+        guard let questionnaire = bookingViewModel.currentQuestionnaire,
+              let currentGroup = questionnaire.questionnaireGroups.first(where: { $0.order == currentStep }) else {
+            return true
+        }
+        
+        // Clear previous validation errors
+        questionValidationErrors.removeAll()
+        
+        // Check all required questions in current step
+        for question in currentGroup.questions where question.isRequired {
+            let questionType = question.questionType.lowercased()
+            
+            switch questionType {
+            case "single_choice", "singlechoice", "multiple_choice", "multiplechoice":
+                // Check if option is selected
+                let selectedOptions = bookingViewModel.questionnaireAnswers[question.id] ?? []
+                if selectedOptions.isEmpty {
+                    questionValidationErrors.insert(question.id)
+                }
+                
+            case "text", "text_input", "textinput":
+                // Check if text is not empty
+                let textAnswer = bookingViewModel.questionnaireTextAnswers[question.id] ?? ""
+                if textAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    questionValidationErrors.insert(question.id)
+                }
+                
+            default:
+                break
+            }
+        }
+        
+        return questionValidationErrors.isEmpty
     }
 }
 
@@ -249,6 +286,7 @@ struct QuestionnaireQuestionView: View {
     let question: QuestionnaireQuestion
     @Binding var selectedOptions: [Int]
     @Binding var textAnswer: String
+    let hasError: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -256,7 +294,7 @@ struct QuestionnaireQuestionView: View {
             HStack(spacing: 4) {
                 Text("\(number). \(question.questionText)")
                     .font(theme.typography.regular16)
-                    .foregroundStyle(theme.colors.textPrimary)
+                    .foregroundStyle(hasError ? .red : theme.colors.textPrimary)
                 
                 if question.isRequired {
                     Text("*")
@@ -268,8 +306,8 @@ struct QuestionnaireQuestionView: View {
             // Answer Options based on question type
             switch question.questionType.lowercased() {
             case "multiple_choice", "multiplechoice":
-                // Multiple selection - checkboxes
-                VStack(spacing: 12) {
+                // Multiple selection - button group
+                FlowLayout(spacing: 12) {
                     ForEach(question.options.sorted(by: { $0.order < $1.order })) { option in
                         MultipleChoiceOption(
                             option: option,
@@ -281,8 +319,8 @@ struct QuestionnaireQuestionView: View {
                 }
                 
             case "single_choice", "singlechoice":
-                // Single selection - radio buttons
-                VStack(spacing: 12) {
+                // Single selection - button group
+                FlowLayout(spacing: 12) {
                     ForEach(question.options.sorted(by: { $0.order < $1.order })) { option in
                         SingleChoiceOption(
                             option: option,
@@ -312,6 +350,14 @@ struct QuestionnaireQuestionView: View {
                     .font(theme.typography.regular14)
                     .foregroundStyle(theme.colors.textSecondary)
             }
+            
+            // Error Message
+            if hasError {
+                Text("Please answer this question")
+                    .font(theme.typography.regular12)
+                    .foregroundStyle(.red)
+                    .padding(.top, 4)
+            }
         }
     }
     
@@ -333,34 +379,19 @@ struct MultipleChoiceOption: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                // Checkbox
-                ZStack {
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(isSelected ? theme.colors.primary : Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 2)
-                        .frame(width: 20, height: 20)
-                    
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(theme.colors.primary)
-                            .frame(width: 12, height: 12)
-                    }
-                }
-                
-                Text(option.optionText)
-                    .font(theme.typography.regular14)
-                    .foregroundStyle(theme.colors.textPrimary)
-                
-                Spacer()
-            }
-            .padding(12)
-            .background(Color.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? theme.colors.primary : Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
-            )
-            .cornerRadius(8)
+            Text(option.optionText)
+                .font(theme.typography.regular14)
+                .foregroundStyle(isSelected ? .white : theme.colors.textPrimary)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(isSelected ? theme.colors.primary : .white)
+                .cornerRadius(25)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 25)
+                        .stroke(isSelected ? theme.colors.primary : Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
+                )
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -373,34 +404,19 @@ struct SingleChoiceOption: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                // Radio button
-                ZStack {
-                    Circle()
-                        .stroke(isSelected ? theme.colors.primary : Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 2)
-                        .frame(width: 20, height: 20)
-                    
-                    if isSelected {
-                        Circle()
-                            .fill(theme.colors.primary)
-                            .frame(width: 10, height: 10)
-                    }
-                }
-                
-                Text(option.optionText)
-                    .font(theme.typography.regular14)
-                    .foregroundStyle(theme.colors.textPrimary)
-                
-                Spacer()
-            }
-            .padding(12)
-            .background(Color.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? theme.colors.primary : Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
-            )
-            .cornerRadius(8)
+            Text(option.optionText)
+                .font(theme.typography.regular14)
+                .foregroundStyle(isSelected ? .white : theme.colors.textPrimary)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(isSelected ? theme.colors.primary : .white)
+                .cornerRadius(25)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 25)
+                        .stroke(isSelected ? theme.colors.primary : Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
+                )
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

@@ -73,6 +73,13 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var totalAppointments: Int = 0
     @Published public var isLoadingAppointments: Bool = false
     
+    // Past appointments
+    @Published public var pastAppointments: [BookingData] = []
+    @Published public var pastCurrentPage: Int = 1
+    @Published public var pastLastPage: Int = 1
+    @Published public var pastTotalAppointments: Int = 0
+    @Published public var isLoadingPastAppointments: Bool = false
+    
     // Pending bookings for doctor
     @Published public var pendingBookings: [BookingData] = []
     @Published public var isLoadingPendingBookings: Bool = false
@@ -80,6 +87,20 @@ public final class BookingGlobalViewModel: ObservableObject {
     // My/Accepted bookings for doctor
     @Published public var myBookings: [BookingData] = []
     @Published public var isLoadingMyBookings: Bool = false
+    
+    // Prescriptions
+    @Published public var prescriptions: [PrescriptionOrder] = []
+    @Published public var isLoadingPrescriptions: Bool = false
+    @Published public var prescriptionsCurrentPage: Int = 1
+    @Published public var prescriptionsPerPage: Int = 15
+    @Published public var prescriptionsTotal: Int = 0
+    
+    // Prescription History
+    @Published public var prescriptionHistory: [PrescriptionOrder] = []
+    @Published public var isLoadingPrescriptionHistory: Bool = false
+    @Published public var prescriptionHistoryCurrentPage: Int = 1
+    @Published public var prescriptionHistoryPerPage: Int = 15
+    @Published public var prescriptionHistoryTotal: Int = 0
     
     public init(bookingService: BookingServiceProtocol) {
         self.bookingService = bookingService
@@ -137,6 +158,27 @@ public final class BookingGlobalViewModel: ObservableObject {
         selectedService = nil
         services = []
         currentDepartment = nil
+    }
+    
+    /// Reset prescription flow to initial state
+    public func resetPrescriptionFlow() {
+        print("🔄 [Prescription] Resetting prescription flow")
+        selectedPrescription = nil
+        currentQuestionnaire = nil
+        questionnaireAnswers = [:]
+        questionnaireTextAnswers = [:]
+        currentPrescriptionOrder = nil
+        requiresPayment = false
+        promptAddPharmacy = false
+        
+        // Reset payment-related state
+        paymentSheet = nil
+        paymentResult = nil
+        isPaymentReady = false
+        currentPaymentIntentId = nil
+        
+        errorMessage = nil
+        print("✅ [Prescription] Reset complete")
     }
     
     /// Fetch available time slots for the selected date
@@ -316,37 +358,48 @@ public final class BookingGlobalViewModel: ObservableObject {
                 
                 // If payment is required, initialize payment automatically
                 if response.requiresPayment {
+                    print("💰 [Prescription Order] Payment required, initializing...")
                     if let paymentResponse = await initializePrescriptionPayment() {
-                        // Check response success and if payment is covered by subscription
-                        if paymentResponse.success == true {
-                            // Check if subscription covers the cost
-                            if paymentResponse.covered == true {
-                                // Subscription covers the cost - no payment needed
-                                // Directly confirm the payment
-                                if let confirmResponse = await confirmPrescriptionPayment() {
-                                    showSuccessToast = true
-                                    isLoading = false
-                                    return true
-                                } else {
-                                    isLoading = false
-                                    return false
-                                }
-                            } else {
-                                // Payment required - prepare Stripe payment sheet
-                                // The payment sheet will be shown in the view when isPaymentReady is true
-                                preparePaymentSheet(with: paymentResponse)
-                                isLoading = false
-                                return true
-                            }
-                        } else {
+                        print("💰 [Prescription Order] Payment response received")
+                        print("  - success: \(paymentResponse.success ?? false)")
+                        print("  - covered: \(paymentResponse.covered ?? false)")
+                        
+                        // Check if payment initialization failed explicitly
+                        if paymentResponse.success == false {
                             // Payment initialization failed
                             errorMessage = paymentResponse.message ?? "Failed to initialize payment"
                             showErrorToast = true
                             isLoading = false
                             return false
                         }
+                        
+                        // Check if subscription covers the cost
+                        if paymentResponse.covered == true {
+                            print("💰 [Prescription Order] Covered by subscription, confirming...")
+                            // Subscription covers the cost - no payment needed
+                            // Directly confirm the payment
+                            if let confirmResponse = await confirmPrescriptionPayment() {
+                                showSuccessToast = true
+                                isLoading = false
+                                return true
+                            } else {
+                                isLoading = false
+                                return false
+                            }
+                        } else {
+                            print("💰 [Prescription Order] Not covered, preparing payment sheet...")
+                            // Payment required - prepare Stripe payment sheet
+                            // The payment sheet will be shown in the view when isPaymentReady is true
+                            preparePaymentSheet(with: paymentResponse)
+                            print("💰 [Prescription Order] Payment sheet prepared, isPaymentReady: \(isPaymentReady)")
+                            isLoading = false
+                            return true
+                        }
                     } else {
                         // Failed to initialize payment
+                        print("❌ [Prescription Order] Failed to initialize payment")
+                        errorMessage = "Failed to initialize payment. Please try again."
+                        showErrorToast = true
                         isLoading = false
                         return false
                     }
@@ -388,15 +441,37 @@ public final class BookingGlobalViewModel: ObservableObject {
             return nil
         }
         
+        print("💰 [Prescription Payment] Initializing payment:")
+        print("  - Prescription ID: \(prescription.id)")
+        print("  - Amount: \(prescription.amount)")
+        print("  - Treatment price: \(prescription.treatment.price)")
+        
         isLoading = true
         errorMessage = nil
         
         do {
             let response = try await bookingService.initializePrescriptionPayment(prescriptionId: String(prescription.id))
             
+            print("💰 [Prescription Payment] Response received:")
+            print("  - Success: \(response.success ?? false)")
+            print("  - Covered: \(response.covered ?? false)")
+            print("  - Amount: \(response.amount ?? "nil")")
+            print("  - Currency: \(response.currency ?? "nil")")
+            print("  - publishableKey: \(response.publishableKey ?? "nil")")
+            print("  - paymentIntent (object): \(response.paymentIntent != nil ? "exists" : "nil")")
+            print("  - paymentIntentString: \(response.paymentIntentString ?? "nil")")
+            print("  - ephemeralKey (object): \(response.ephemeralKey != nil ? "exists" : "nil")")
+            print("  - ephemeralKeyString: \(response.ephemeralKeyString ?? "nil")")
+            print("  - customer (object): \(response.customer != nil ? "exists" : "nil")")
+            print("  - customerString: \(response.customerString ?? "nil")")
+            print("  - clientSecret (computed): \(response.clientSecret ?? "nil")")
+            print("  - customerId (computed): \(response.customerId ?? "nil")")
+            print("  - ephemeralKeySecret (computed): \(response.ephemeralKeySecret ?? "nil")")
+            
             isLoading = false
             return response
         } catch {
+            print("❌ [Prescription Payment] Error: \(error.localizedDescription)")
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             showErrorToast = true
             isLoading = false
@@ -621,37 +696,50 @@ public final class BookingGlobalViewModel: ObservableObject {
         
         // Get client secret from either format (object or string)
         guard let clientSecret = response.clientSecret else {
+            print("❌ [Payment Sheet] ERROR: clientSecret is nil")
             errorMessage = "Invalid payment response from server - clientSecret is nil"
             showErrorToast = true
+            isPaymentReady = false
             return
         }
+        
+        print("✅ [Payment Sheet] Client secret found: \(clientSecret.prefix(30))...")
+        
+        print("✅ [Payment Sheet] Client secret found: \(clientSecret.prefix(30))...")
         
         // Configure Stripe with publishable key from environment or backend
         let publishableKey = response.publishableKey ?? AppEnvironment.current.stripePublishableKey
         STPAPIClient.shared.publishableKey = publishableKey
+        print("✅ [Payment Sheet] Publishable key configured: \(publishableKey.prefix(20))...")
         
         // Create PaymentSheet configuration
         var configuration = PaymentSheet.Configuration()
         configuration.merchantDisplayName = "Broccoli Care"
         configuration.allowsDelayedPaymentMethods = true
         configuration.returnURL = "broccoli://stripe-redirect"
+        print("✅ [Payment Sheet] Configuration created")
         
         // If customer info is provided, add it to configuration (works with both formats)
         if let customerId = response.customerId,
            let ephemeralKeySecret = response.ephemeralKeySecret {
+            print("✅ [Payment Sheet] Setting customer: \(customerId)")
             configuration.customer = .init(
                 id: customerId,
                 ephemeralKeySecret: ephemeralKeySecret
             )
+        } else {
+            print("⚠️ [Payment Sheet] No customer info provided")
         }
         
         // Store payment intent ID for later use (extract from client secret if needed)
         if let paymentIntent = response.paymentIntent {
             self.currentPaymentIntentId = paymentIntent.id
+            print("✅ [Payment Sheet] Payment intent ID: \(paymentIntent.id)")
         } else if let paymentIntentString = response.paymentIntentString {
             // Extract payment intent ID from the client secret string (format: pi_xxx_secret_yyy)
             let components = paymentIntentString.components(separatedBy: "_secret_")
             self.currentPaymentIntentId = components.first
+            print("✅ [Payment Sheet] Payment intent ID (from string): \(components.first ?? "nil")")
         }
         
         // Initialize PaymentSheet with the payment intent client secret
@@ -660,6 +748,10 @@ public final class BookingGlobalViewModel: ObservableObject {
             configuration: configuration
         )
         self.isPaymentReady = true
+        
+        print("✅ [Payment Sheet] Prepared successfully")
+        print("  - Client Secret: \(clientSecret.prefix(20))...")
+        print("  - isPaymentReady: true")
     }
     
     /// Handle payment completion callback
@@ -697,17 +789,20 @@ public final class BookingGlobalViewModel: ObservableObject {
             let response = await confirmPrescriptionPayment()
             if response?.success == true {
                 showSuccessToast = true
+                print("✅ [Prescription Payment] Success - will reset on return to prescription list")
             }
             return response
             
         case .failed(let error):
             errorMessage = "Payment failed: \(error.localizedDescription)"
             showErrorToast = true
+            print("❌ [Prescription Payment] Failed - will reset on return to prescription list")
             return nil
             
         case .canceled:
             errorMessage = "Payment was canceled"
             showErrorToast = true
+            print("⚠️ [Prescription Payment] Canceled - will reset on return to prescription list")
             return nil
         }
     }
@@ -751,6 +846,47 @@ public final class BookingGlobalViewModel: ObservableObject {
     /// Refresh appointments (reset to page 1)
     public func refreshAppointments() async {
         await fetchUpcomingConfirmedAppointments(perPage: 10, page: 1, loadMore: false)
+    }
+    
+    // MARK: - Past Appointments
+    
+    /// Fetch past bookings with pagination
+    public func fetchPastBookings(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+        isLoadingPastAppointments = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.fetchPastBookings(perPage: perPage, page: page)
+            
+            if loadMore {
+                // Append to existing appointments for pagination
+                self.pastAppointments.append(contentsOf: response.bookings)
+            } else {
+                // Replace appointments (for initial load or refresh)
+                self.pastAppointments = response.bookings
+            }
+            
+            self.pastCurrentPage = response.currentPage
+            self.pastLastPage = response.lastPage
+            self.pastTotalAppointments = response.total
+            
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+        
+        isLoadingPastAppointments = false
+    }
+    
+    /// Load next page of past appointments
+    public func loadMorePastAppointments() async {
+        guard pastCurrentPage < pastLastPage else { return }
+        await fetchPastBookings(perPage: 10, page: pastCurrentPage + 1, loadMore: true)
+    }
+    
+    /// Refresh past appointments (reset to page 1)
+    public func refreshPastAppointments() async {
+        await fetchPastBookings(perPage: 10, page: 1, loadMore: false)
     }
     
     // MARK: - Pending Bookings For Doctor
@@ -809,6 +945,108 @@ public final class BookingGlobalViewModel: ObservableObject {
     /// Refresh my bookings
     public func refreshMyBookings() async {
         await fetchMyBookingsForDoctor()
+    }
+    
+    // MARK: - Prescriptions
+    
+    /// Fetch prescriptions list for patient
+    public func fetchPrescriptions(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+        isLoadingPrescriptions = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.fetchPrescriptions(perPage: perPage, page: page)
+            
+            if response.success {
+                if loadMore {
+                    // Append to existing prescriptions for pagination
+                    self.prescriptions.append(contentsOf: response.prescriptions)
+                } else {
+                    // Replace prescriptions (for initial load or refresh)
+                    self.prescriptions = response.prescriptions
+                }
+                
+                // Store pagination metadata
+                if let meta = response.meta {
+                    self.prescriptionsCurrentPage = meta.currentPage
+                    self.prescriptionsPerPage = meta.perPage
+                    self.prescriptionsTotal = meta.total
+                    print("✅ Loaded \(response.prescriptions.count) prescriptions (Page \(meta.currentPage), Total: \(meta.total))")
+                } else {
+                    print("✅ Loaded \(response.prescriptions.count) prescriptions")
+                }
+            } else {
+                errorMessage = "Failed to fetch prescriptions"
+                showErrorToast = true
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+        
+        isLoadingPrescriptions = false
+    }
+    
+    /// Load next page of prescriptions
+    public func loadMorePrescriptions() async {
+        guard prescriptionsCurrentPage < (prescriptionsTotal / prescriptionsPerPage + (prescriptionsTotal % prescriptionsPerPage > 0 ? 1 : 0)) else { return }
+        await fetchPrescriptions(perPage: prescriptionsPerPage, page: prescriptionsCurrentPage + 1, loadMore: true)
+    }
+    
+    /// Refresh prescriptions
+    public func refreshPrescriptions() async {
+        await fetchPrescriptions(perPage: 10, page: 1, loadMore: false)
+    }
+    
+    // MARK: - Prescription History
+    
+    /// Fetch prescription history for patient
+    public func fetchPrescriptionHistory(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+        isLoadingPrescriptionHistory = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.fetchPrescriptionHistory(perPage: perPage, page: page)
+            
+            if response.success {
+                if loadMore {
+                    // Append to existing prescription history for pagination
+                    self.prescriptionHistory.append(contentsOf: response.prescriptions)
+                } else {
+                    // Replace prescription history (for initial load or refresh)
+                    self.prescriptionHistory = response.prescriptions
+                }
+                
+                // Store pagination metadata
+                if let meta = response.meta {
+                    self.prescriptionHistoryCurrentPage = meta.currentPage
+                    self.prescriptionHistoryPerPage = meta.perPage
+                    self.prescriptionHistoryTotal = meta.total
+                    print("✅ Loaded \(response.prescriptions.count) prescription history (Page \(meta.currentPage), Total: \(meta.total))")
+                } else {
+                    print("✅ Loaded \(response.prescriptions.count) prescription history")
+                }
+            } else {
+                errorMessage = "Failed to fetch prescription history"
+                showErrorToast = true
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+        
+        isLoadingPrescriptionHistory = false
+    }
+    
+    /// Load next page of prescription history
+    public func loadMorePrescriptionHistory() async {
+        guard prescriptionHistoryCurrentPage < (prescriptionHistoryTotal / prescriptionHistoryPerPage + (prescriptionHistoryTotal % prescriptionHistoryPerPage > 0 ? 1 : 0)) else { return }
+        await fetchPrescriptionHistory(perPage: prescriptionHistoryPerPage, page: prescriptionHistoryCurrentPage + 1, loadMore: true)
+    }
+    
+    /// Refresh prescription history
+    public func refreshPrescriptionHistory() async {
+        await fetchPrescriptionHistory(perPage: 10, page: 1, loadMore: false)
     }
     
     // MARK: - Accept/Reject Bookings For Doctor

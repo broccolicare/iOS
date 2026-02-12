@@ -119,7 +119,9 @@ struct ProfileView: View {
                     MenuItemRow(
                         icon: "my-reviews-icon",
                         title: "My Prescriptions",
-                        action: {}
+                        action: {
+                            router.push(.myPrescriptions)
+                        }
                     )
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color.white)
@@ -157,7 +159,9 @@ struct ProfileView: View {
                     MenuItemRow(
                         icon: "about-icon",
                         title: "About Broccoli",
-                        action: {}
+                        action: {
+                            router.push(.staticPage(type: .about))
+                        }
                     )
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color.white)
@@ -165,7 +169,9 @@ struct ProfileView: View {
                     MenuItemRow(
                         icon: "contact-us-icon",
                         title: "Contact Us",
-                        action: {}
+                        action: {
+                            router.push(.contactUs)
+                        }
                     )
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color.white)
@@ -173,7 +179,9 @@ struct ProfileView: View {
                     MenuItemRow(
                         icon: "privacy-icon",
                         title: "Privacy Policy",
-                        action: {}
+                        action: {
+                            router.push(.staticPage(type: .privacy))
+                        }
                     )
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color.white)
@@ -181,7 +189,9 @@ struct ProfileView: View {
                     MenuItemRow(
                         icon: "terms-icon",
                         title: "Terms and Conditions",
-                        action: {},
+                        action: {
+                            router.push(.staticPage(type: .terms))
+                        },
                         isLast: true
                     )
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))

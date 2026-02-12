@@ -19,6 +19,10 @@ public final class AppGlobalViewModel: ObservableObject {
     @Published var countryCodes: [CountryCode] = []
     @Published var specializations: [Specialization] = []
     @Published var slidersData: [Slider] = []
+    @Published var medicalProcedures: [MedicalProcedure] = []
+    @Published var medicalDestinations: [MedicalDestination] = []
+    @Published var recoveryDrugs: [RecoveryDrug] = []
+    @Published var recoveryAddictionYears: [RecoveryAddictionYear] = []
     
     // Metadata from API
     @Published public var bloodGroups: [BloodGroup] = []
@@ -161,6 +165,54 @@ public final class AppGlobalViewModel: ObservableObject {
             errorMessage = "Failed to load sliders data: \(error.localizedDescription)"
             print("❌ Failed to load sliders data: \(error)")
             slidersData = []
+        }
+    }
+    
+    public func loadMedicalProcedures() async {
+        do {
+            let procedures = try await appService.fetchMedicalProcedures()
+            medicalProcedures = procedures
+            print("✅ Medical procedures loaded successfully: \(procedures.count) items")
+        } catch {
+            errorMessage = "Failed to load medical procedures: \(error.localizedDescription)"
+            print("❌ Failed to load medical procedures: \(error)")
+            medicalProcedures = []
+        }
+    }
+    
+    public func loadMedicalDestinations() async {
+        do {
+            let destinations = try await appService.fetchMedicalDestinations()
+            medicalDestinations = destinations
+            print("✅ Medical destinations loaded successfully: \(destinations.count) items")
+        } catch {
+            errorMessage = "Failed to load medical destinations: \(error.localizedDescription)"
+            print("❌ Failed to load medical destinations: \(error)")
+            medicalDestinations = []
+        }
+    }
+    
+    public func loadRecoveryDrugs() async {
+        do {
+            let drugs = try await appService.fetchRecoveryDrugs()
+            recoveryDrugs = drugs
+            print("✅ Recovery drugs loaded successfully: \(drugs.count) items")
+        } catch {
+            errorMessage = "Failed to load recovery drugs: \(error.localizedDescription)"
+            print("❌ Failed to load recovery drugs: \(error)")
+            recoveryDrugs = []
+        }
+    }
+    
+    public func loadRecoveryAddictionYears() async {
+        do {
+            let years = try await appService.fetchRecoveryAddictionYears()
+            recoveryAddictionYears = years
+            print("✅ Recovery addiction years loaded successfully: \(years.count) items")
+        } catch {
+            errorMessage = "Failed to load recovery addiction years: \(error.localizedDescription)"
+            print("❌ Failed to load recovery addiction years: \(error)")
+            recoveryAddictionYears = []
         }
     }
 }

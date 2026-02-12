@@ -12,21 +12,17 @@ struct CureFromDrugView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var appGlobalViewModel: AppGlobalViewModel
     @StateObject private var viewModel: CureFromDrugViewModel
     
-    // Sample data - will be replaced with actual data
-    private let drugsOfAddiction = [
-        "Alcohol",
-        "Cannabis (Marijuana)",
-        "Cocaine",
-        "Heroin",
-        "Methamphetamine",
-        "Prescription Opioids",
-        "Benzodiazepines",
-        "Other"
-    ]
+    // Computed properties for dropdown data
+    private var drugsOfAddiction: [String] {
+        appGlobalViewModel.recoveryDrugs.map { $0.name }
+    }
     
-    private let yearsOfAddiction: [String] = (1...30).map { String($0) }
+    private var yearsOfAddiction: [String] {
+        appGlobalViewModel.recoveryAddictionYears.map { $0.label }
+    }
     
     init(userService: UserServiceProtocol) {
         _viewModel = StateObject(wrappedValue: CureFromDrugViewModel(userService: userService))
@@ -63,78 +59,62 @@ struct CureFromDrugView: View {
                         // Form fields
                         VStack(spacing: 20) {
                             // Full Name field
-                            VStack(alignment: .leading, spacing: 4) {
-                                TextInputField(
-                                    placeholder: "Full Name",
-                                    text: $viewModel.fullName,
-                                    keyboardType: .default,
-                                    autocapitalization: .words,
-                                    disableAutocorrection: false
-                                )
-                                if let error = viewModel.fieldErrors[.fullName] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
-                                }
-                            }
+                            TextInputField(
+                                placeholder: "Full Name",
+                                text: $viewModel.fullName,
+                                keyboardType: .default,
+                                autocapitalization: .words,
+                                disableAutocorrection: false,
+                                errorText: viewModel.fieldErrors[.fullName]
+                            )
                             
                             // Email field
-                            VStack(alignment: .leading, spacing: 4) {
-                                TextInputField(
-                                    placeholder: "Email address",
-                                    text: $viewModel.email,
-                                    keyboardType: .emailAddress,
-                                    autocapitalization: .never
-                                )
-                                if let error = viewModel.fieldErrors[.email] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
-                                }
-                            }
+                            TextInputField(
+                                placeholder: "Email address",
+                                text: $viewModel.email,
+                                keyboardType: .emailAddress,
+                                autocapitalization: .never,
+                                errorText: viewModel.fieldErrors[.email]
+                            )
                             
                             // Phone number field
-                            VStack(alignment: .leading, spacing: 4) {
-                                CountryPhoneField(
-                                    countryCode: $viewModel.countryCode,
-                                    phone: $viewModel.phoneNumber
-                                )
-                                if let error = viewModel.fieldErrors[.phoneNumber] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
-                                }
-                            }
+                            CountryPhoneField(
+                                countryCode: $viewModel.countryCode,
+                                phone: $viewModel.phoneNumber,
+                                errorText: viewModel.fieldErrors[.phoneNumber]
+                            )
                             
                             // Drug of addiction dropdown
-                            VStack(alignment: .leading, spacing: 4) {
-                                DropdownField(
-                                    selectedValue: $viewModel.selectedDrug,
-                                    items: drugsOfAddiction,
-                                    placeholder: "Drug of addiction",
-                                    allowsSearch: true,
-                                    showsChevron: true
-                                )
-                                if let error = viewModel.fieldErrors[.selectedDrug] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
+                            DropdownField(
+                                selectedValue: $viewModel.selectedDrug,
+                                items: drugsOfAddiction,
+                                placeholder: "Drug of addiction",
+                                allowsSearch: true,
+                                showsChevron: true,
+                                errorText: viewModel.fieldErrors[.selectedDrug]
+                            )
+                            .onChange(of: viewModel.selectedDrug) { _, newValue in
+                                if let drugName = newValue {
+                                    viewModel.selectedDrugId = appGlobalViewModel.recoveryDrugs.first { $0.name == drugName }?.id
+                                } else {
+                                    viewModel.selectedDrugId = nil
                                 }
                             }
                             
                             // Years of addiction dropdown
-                            VStack(alignment: .leading, spacing: 4) {
-                                DropdownField(
-                                    selectedValue: $viewModel.selectedYears,
-                                    items: yearsOfAddiction,
-                                    placeholder: "Years of addiction",
-                                    allowsSearch: false,
-                                    showsChevron: true
-                                )
-                                if let error = viewModel.fieldErrors[.selectedYears] {
-                                    Text(error)
-                                        .font(theme.typography.caption)
-                                        .foregroundStyle(theme.colors.error)
+                            DropdownField(
+                                selectedValue: $viewModel.selectedYears,
+                                items: yearsOfAddiction,
+                                placeholder: "Years of addiction",
+                                allowsSearch: false,
+                                showsChevron: true,
+                                errorText: viewModel.fieldErrors[.selectedYears]
+                            )
+                            .onChange(of: viewModel.selectedYears) { _, newValue in
+                                if let yearLabel = newValue {
+                                    viewModel.selectedYearsId = appGlobalViewModel.recoveryAddictionYears.first { $0.label == yearLabel }?.id
+                                } else {
+                                    viewModel.selectedYearsId = nil
                                 }
                             }
                             
@@ -224,9 +204,17 @@ struct CureFromDrugView: View {
                 dismiss()
             }
         }
+        .task {
+            await loadData()
+        }
     }
     
     // MARK: - Helper Functions
+    
+    private func loadData() async {
+        await appGlobalViewModel.loadRecoveryDrugs()
+        await appGlobalViewModel.loadRecoveryAddictionYears()
+    }
     
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)

@@ -60,72 +60,120 @@ struct PaymentSuccessView: View {
             Color.white.ignoresSafeArea()
             
             VStack(spacing: 0) {
+                // Header
+                if booking == nil {
+                    Text("Confirmation")
+                        .font(theme.typography.semiBold20)
+                        .foregroundStyle(theme.colors.textPrimary)
+                        .padding(.top, 16)
+                        .padding(.bottom, 20)
+                }
+                
                 Spacer()
                 
                 // Success Icon
-                Image(systemName: "checkmark.seal.fill")
+                ZStack {
+                    Image(systemName: "checkmark.seal.fill")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 80, height: 80)
                     .foregroundStyle(theme.colors.lightGreen)
                     .padding(.bottom, theme.spacing.lg)
-                
-                // Congratulations Text
-                Text("Congratulations")
-                    .font(theme.typography.bold34)
-                    .foregroundStyle(theme.colors.textPrimary)
-                    .padding(.bottom, 16)
-                
-                // Confirmation Message
-                VStack(spacing: 8) {
-                    Text("Your \(serviceName) appointment")
-                        .font(theme.typography.medium18)
-                        .foregroundStyle(theme.colors.textPrimary)
-                        .multilineTextAlignment(.center)
-                    
-                    Text("at \(departmentName)")
-                        .font(theme.typography.regular16)
-                        .foregroundStyle(theme.colors.textSecondary)
-                        .multilineTextAlignment(.center)
-                    
-                    HStack(spacing: 4) {
-                        Text("on")
-                        Text(appointmentDate)
-                            .fontWeight(.semibold)
-                        Text("at")
-                        Text(appointmentTime)
-                            .fontWeight(.semibold)
-                    }
-                    .font(theme.typography.regular16)
-                    .foregroundStyle(theme.colors.textPrimary)
-                    .padding(.top, 4)
-                    
-                    Text("has been confirmed.")
-                        .font(theme.typography.regular16)
-                        .foregroundStyle(theme.colors.textPrimary)
-                    
-                    Text("Booking ID: \(bookingId)")
-                        .font(theme.typography.medium16)
-                        .foregroundStyle(theme.colors.primary)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 12)
                 }
-                .padding(.horizontal, 32)
-                Spacer().frame(height: 40)
-                // Go Home Button
-                Button(action: {
-                    router.popToRoot()
-                }) {
-                    Text("Go Home")
-                        .font(theme.typography.button)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(theme.colors.primary)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 20)
                 .padding(.bottom, 40)
+                
+                // Different content based on booking type
+                if booking == nil {
+                    // Prescription Success Layout
+                    VStack(spacing: 16) {
+                        Text("Your prescription service\nis booked")
+                            .font(theme.typography.bold24)
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("Your prescription service has been successfully booked. You will receive a confirmation email shortly.")
+                            .font(theme.typography.regular14)
+                            .foregroundStyle(theme.colors.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    }
+                    
+                    Spacer().frame(height: 60)
+                    
+                    // View Details Button
+                    Button(action: {
+                        router.popToRoot()
+                    }) {
+                        Text("View Details")
+                            .font(theme.typography.button)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(theme.colors.primary)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 20)
+                    
+                } else {
+                    // Appointment Booking Success Layout
+                    Text("Congratulations")
+                        .font(theme.typography.bold34)
+                        .foregroundStyle(theme.colors.textPrimary)
+                        .padding(.bottom, 16)
+                    
+                    VStack(spacing: 8) {
+                        Text("Your \(serviceName) appointment")
+                            .font(theme.typography.medium18)
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("at \(departmentName)")
+                            .font(theme.typography.regular16)
+                            .foregroundStyle(theme.colors.textSecondary)
+                            .multilineTextAlignment(.center)
+                        
+                        HStack(spacing: 4) {
+                            Text("on")
+                            Text(appointmentDate)
+                                .fontWeight(.semibold)
+                            Text("at")
+                            Text(appointmentTime)
+                                .fontWeight(.semibold)
+                        }
+                        .font(theme.typography.regular16)
+                        .foregroundStyle(theme.colors.textPrimary)
+                        .padding(.top, 4)
+                        
+                        Text("has been confirmed.")
+                            .font(theme.typography.regular16)
+                            .foregroundStyle(theme.colors.textPrimary)
+                        
+                        Text("Booking ID: \(bookingId)")
+                            .font(theme.typography.medium16)
+                            .foregroundStyle(theme.colors.primary)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 12)
+                    }
+                    .padding(.horizontal, 32)
+                    
+                    Spacer().frame(height: 40)
+                    
+                    // Go Home Button
+                    Button(action: {
+                        router.popToRoot()
+                    }) {
+                        Text("Go Home")
+                            .font(theme.typography.button)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(theme.colors.primary)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
+                }
+                
                 Spacer()
             }
         }

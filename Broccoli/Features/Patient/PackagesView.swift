@@ -36,6 +36,7 @@ struct PackagesView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var packageViewModel: PackageGlobalViewModel
+    @EnvironmentObject private var userViewModel: UserGlobalViewModel
     
     @State private var selectedPackageForPurchase: Package? = nil
     @State private var isShowingPaymentSheet = false
@@ -147,6 +148,7 @@ struct PackagesView: View {
                                             backgroundColor: packageColors[index % packageColors.count],
                                             isProcessing: selectedPackageForPurchase?.id == package.id && packageViewModel.isProcessingPayment,
                                             isDisabled: packageViewModel.isProcessingPayment && selectedPackageForPurchase?.id != package.id,
+                                            isActive: isPackageActive(package),
                                             onBuy: { handleBuyPackage(package) }
                                         )
                                     }
@@ -165,6 +167,8 @@ struct PackagesView: View {
         .navigationBarHidden(true)
         .task {
             await packageViewModel.loadPackages()
+            // Refresh user profile to get latest subscriptions
+            await userViewModel.fetchProfileDetail()
         }
         .onChange(of: packageViewModel.isPaymentReady) { _, isReady in
             if isReady {
@@ -195,6 +199,8 @@ struct PackagesView: View {
                     // Reset state on success
                     selectedPackageForPurchase = nil
                     packageViewModel.resetPaymentState()
+                    // Refresh user profile to get updated subscriptions
+                    await userViewModel.fetchProfileDetail()
                 } else {
                     print("❌ [PackagesView] Payment failed")
                 }
@@ -236,6 +242,17 @@ struct PackagesView: View {
             packageViewModel.preparePaymentSheet(with: paymentResponse)
         }
     }
+    
+    // Check if package has active subscription
+    private func isPackageActive(_ package: Package) -> Bool {
+        guard let subscriptions = userViewModel.profileData?.subscriptions else {
+            return false
+        }
+        
+        return subscriptions.contains { subscription in
+            subscription.stripePrice == package.stripePriceId && subscription.stripeStatus == "active"
+        }
+    }
 }
 
 // MARK: - Package Card Component
@@ -245,6 +262,7 @@ struct PackageCard: View {
     let backgroundColor: Color
     let isProcessing: Bool
     let isDisabled: Bool
+    let isActive: Bool
     let onBuy: () -> Void
     
     var body: some View {
@@ -252,16 +270,16 @@ struct PackageCard: View {
             // Package Info
             VStack(alignment: .leading, spacing: 12) {
                 Text(package.name)
-                    .font(theme.typography.semiBold22)
+                    .font(theme.typography.regular24)
                     .foregroundStyle(.white)
                 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(formatPrice(package.price))
-                        .font(theme.typography.bold32)
+                        .font(theme.typography.extraBold30)
                         .foregroundStyle(.white)
                     
                     Text("/ \(package.billingPeriod)")
-                        .font(theme.typography.regular14)
+                        .font(theme.typography.regular16)
                         .foregroundStyle(.white.opacity(0.9))
                 }
                 
@@ -269,7 +287,7 @@ struct PackageCard: View {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(package.features) { feature in
                         HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
+                            Image("check-mark")
                                 .font(.system(size: 16))
                                 .foregroundStyle(.white)
                             
@@ -280,7 +298,7 @@ struct PackageCard: View {
                                 
                                 if let description = feature.description {
                                     Text(description)
-                                        .font(theme.typography.regular12)
+                                        .font(theme.typography.regular14)
                                         .foregroundStyle(.white.opacity(0.8))
                                         .lineLimit(3)
                                         .fixedSize(horizontal: false, vertical: true)
@@ -296,32 +314,38 @@ struct PackageCard: View {
             
             Spacer(minLength: 20)
             
-            // Buy Now Button
-            Button(action: onBuy) {
-                if isProcessing {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.8)
-                        Text("Processing...")
-                            .font(theme.typography.semiBold16)
-                            .foregroundColor(.white)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                } else {
-                    Text("Buy Now")
+            // Buy Now / Active Plan Button
+            if isProcessing {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: theme.colors.primary))
+                        .scaleEffect(0.8)
+                    Text("Processing...")
                         .font(theme.typography.semiBold16)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .foregroundColor(theme.colors.primary)
                 }
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(.white)
+                .cornerRadius(12)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            } else if isActive {
+                OutlinePackageButton(
+                    title: "Active Plan",
+                    action: nil
+                )
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            } else {
+                PrimaryPackageButton(
+                    title: "Buy Now",
+                    isDisabled: isDisabled,
+                    action: onBuy
+                )
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .background(isDisabled ? Color.black.opacity(0.1) : Color.black.opacity(0.3))
-            .cornerRadius(12)
-            .disabled(isProcessing || isDisabled)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
         }
         .frame(width: 280)
         .frame(minHeight: 480)
@@ -334,6 +358,51 @@ struct PackageCard: View {
     // Helper function to format price (defaults to EUR)
     private func formatPrice(_ price: String) -> String {
         return "€\(price)"
+    }
+}
+
+// MARK: - Primary Package Button Component
+struct PrimaryPackageButton: View {
+    @Environment(\.appTheme) private var theme
+    let title: String
+    let isDisabled: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(theme.typography.semiBold16)
+                .foregroundColor(theme.colors.primary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(.white)
+                .cornerRadius(12)
+        }
+        .disabled(isDisabled)
+    }
+}
+
+// MARK: - Outline Package Button Component
+struct OutlinePackageButton: View {
+    @Environment(\.appTheme) private var theme
+    let title: String
+    let action: (() -> Void)?
+    
+    var body: some View {
+        Button(action: { action?() }) {
+            Text(title)
+                .font(theme.typography.semiBold16)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(.white, lineWidth: 2)
+                )
+                .cornerRadius(12)
+        }
+        .disabled(action == nil)
     }
 }
 

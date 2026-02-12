@@ -125,6 +125,8 @@ struct BroccoliApp: App {
                             NotificationsView()
                         case .myAppointments:
                             MyAppointmentsView()
+                        case .myPrescriptions:
+                            MyPrescriptionsView()
                         case .myPharmacies:
                             MyPharmaciesView()
                         case .addPharmacy:
@@ -137,8 +139,12 @@ struct BroccoliApp: App {
                             PrescriptionQuestionsView()
                         case .settings:
                             SettingsView()
+                        case .contactUs:
+                            ContactUsView()
                         case .appointmentDetailForDoctor(let booking):
                             AppointmentDetailForDoctorView(booking: booking)
+                        case .appointmentDetailForPatient(let booking):
+                            AppointmentDetailForPatientView(booking: booking)
                         }
                     }
             }

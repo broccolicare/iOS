@@ -335,7 +335,8 @@ struct MedicationRow: View {
             twoFactorConfirmedAt: nil,
             createdAt: nil,
             updatedAt: nil
-        )
+        ),
+        assignedDoctor: nil
     )
     
     NavigationStack {

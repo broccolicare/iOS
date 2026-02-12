@@ -29,6 +29,7 @@ public struct UserProfileData: Codable {
     public let allergies: [Allergy]?
     public let pendingAllergies: [Allergy]?
     public let insurances: [Insurance]?
+    public let subscriptions: [Subscription]?
     
     // Doctor-specific fields
     public let specialization: Specialization?
@@ -37,7 +38,7 @@ public struct UserProfileData: Codable {
     public let availableTimeSlots: String?
     
     private enum CodingKeys: String, CodingKey {
-        case id, name, email, username, roles, profile, insurances, specialization
+        case id, name, email, username, roles, profile, insurances, specialization, subscriptions
         case medicalInfo = "medical_info"
         case emergencyContact = "emergency_contact"
         case allergies
@@ -134,4 +135,19 @@ public struct EmergencyContact: Codable {
     public let name: String?
     public let phone: String?
     public let relationship: String?
+}
+
+public struct Subscription: Codable, Identifiable {
+    public let id: Int
+    public let type: String
+    public let stripeStatus: String
+    public let stripePrice: String
+    public let endsAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, type
+        case stripeStatus = "stripe_status"
+        case stripePrice = "stripe_price"
+        case endsAt = "ends_at"
+    }
 }
