@@ -152,7 +152,7 @@ struct DoctorProfileView: View {
                             MenuItemRow(
                                 icon: "appointment-history-icon",
                                 title: "Appointment History",
-                                action: {}
+                                action: { router.push(.doctorAppointmentHistory) }
                             )
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowBackground(theme.colors.background)
@@ -160,7 +160,7 @@ struct DoctorProfileView: View {
                             MenuItemRow(
                                 icon: "about-icon",
                                 title: "About Broccoli",
-                                action: {},
+                                action: { router.push(.staticPage(type: .about)) },
                                 isLast: true
                             )
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -178,7 +178,7 @@ struct DoctorProfileView: View {
                             MenuItemRow(
                                 icon: "contact-us-icon",
                                 title: "Contact Us",
-                                action: {}
+                                action: { router.push(.contactUs) }
                             )
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowBackground(theme.colors.background)
@@ -186,7 +186,7 @@ struct DoctorProfileView: View {
                             MenuItemRow(
                                 icon: "privacy-icon",
                                 title: "Privacy Policy",
-                                action: {}
+                                action: { router.push(.staticPage(type: .privacy)) }
                             )
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowBackground(theme.colors.background)
@@ -194,7 +194,7 @@ struct DoctorProfileView: View {
                             MenuItemRow(
                                 icon: "terms-icon",
                                 title: "Terms and Conditions",
-                                action: {},
+                                action: { router.push(.staticPage(type: .terms)) },
                                 isLast: true
                             )
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))

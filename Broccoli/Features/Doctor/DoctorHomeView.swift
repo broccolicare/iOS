@@ -13,6 +13,7 @@ struct DoctorHomeView: View {
                 id: booking.id,
                 patientName: booking.user?.name ?? "Patient",
                 patientAvatar: "doctor-placeholder",
+                date: booking.date,
                 startTime: booking.time,
                 endTime: calculateEndTime(from: booking.time, duration: booking.service?.duration ?? 30),
                 status: .pending
@@ -27,6 +28,7 @@ struct DoctorHomeView: View {
                 id: booking.id,
                 patientName: booking.user?.name ?? "Patient",
                 patientAvatar: "doctor-placeholder",
+                date: booking.date,
                 startTime: booking.time,
                 endTime: calculateEndTime(from: booking.time, duration: booking.service?.duration ?? 30),
                 status: .scheduled

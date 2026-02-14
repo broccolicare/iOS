@@ -39,7 +39,9 @@ enum Route: Hashable {
     case prescriptionQuestions
     case settings
     case contactUs
+    case search
     case appointmentDetailForDoctor(booking: BookingData)
     case appointmentDetailForPatient(booking: BookingData)
+    case doctorAppointmentHistory
     // add routes as needed
 }

@@ -30,6 +30,10 @@ struct TodayAppointmentCard: View {
                         .font(theme.typography.semiBold22)
                         .foregroundStyle(.black)
                     
+                    Text(formatDate(appointment.date))
+                        .font(theme.typography.regular14)
+                        .foregroundStyle(theme.colors.textSecondary)
+                    
                     Text("\(appointment.startTime) - \(appointment.endTime)")
                         .font(theme.typography.regular14)
                         .foregroundStyle(theme.colors.primary)
@@ -77,6 +81,17 @@ struct TodayAppointmentCard: View {
                 .stroke(theme.colors.border, lineWidth: 1)
         )
     }
+    
+    private func formatDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        
+        if let date = formatter.date(from: dateString) {
+            formatter.dateFormat = "MMMM dd, yyyy"
+            return formatter.string(from: date)
+        }
+        return dateString
+    }
 }
 
 #Preview {
@@ -85,6 +100,7 @@ struct TodayAppointmentCard: View {
             id: 1,
             patientName: "Sophia Carter",
             patientAvatar: "patient-avatar-1",
+            date: "2026-02-14",
             startTime: "10:00 AM",
             endTime: "10:30 AM",
             status: .pending

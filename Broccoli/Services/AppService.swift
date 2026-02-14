@@ -17,6 +17,7 @@ public protocol AppServiceProtocol {
     func fetchMedicalDestinations() async throws -> [MedicalDestination]
     func fetchRecoveryDrugs() async throws -> [RecoveryDrug]
     func fetchRecoveryAddictionYears() async throws -> [RecoveryAddictionYear]
+    func fetchAllServices() async throws -> [Service]
 }
 
 public final class AppService: BaseService, AppServiceProtocol {
@@ -89,6 +90,14 @@ public final class AppService: BaseService, AppServiceProtocol {
         return try await handleServiceError {
             let endpoint = AppEndpoint.recoveryAddictionYears
             let response: RecoveryAddictionYearsResponse = try await httpClient.request(endpoint)
+            return response.data
+        }
+    }
+    
+    public func fetchAllServices() async throws -> [Service] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.allServices
+            let response: AllServicesResponse = try await httpClient.request(endpoint)
             return response.data
         }
     }

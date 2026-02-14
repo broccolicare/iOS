@@ -141,10 +141,14 @@ struct BroccoliApp: App {
                             SettingsView()
                         case .contactUs:
                             ContactUsView()
+                        case .search:
+                            SearchView()
                         case .appointmentDetailForDoctor(let booking):
                             AppointmentDetailForDoctorView(booking: booking)
                         case .appointmentDetailForPatient(let booking):
                             AppointmentDetailForPatientView(booking: booking)
+                        case .doctorAppointmentHistory:
+                            DoctorAppointmentHistory()
                         }
                     }
             }

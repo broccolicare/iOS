@@ -203,6 +203,12 @@ public struct RecoveryAddictionYearsResponse: Codable {
     public let message: String?
 }
 
+// MARK: - Services Models
+public struct AllServicesResponse: Codable {
+    public let success: Bool
+    public let data: [Service]
+}
+
 // MARK: - Core Models
 //public struct Appointment: Codable, Identifiable {
 //    public let id: String

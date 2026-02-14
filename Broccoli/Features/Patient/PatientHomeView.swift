@@ -217,20 +217,27 @@ struct PatientHomeView: View {
 
 private struct SearchBar: View {
     @Environment(\.appTheme) private var theme
+    @EnvironmentObject private var router: Router
     @Binding var text: String
     
     var body: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(theme.colors.textSecondary)
-            TextField("Search for services", text: $text)
-                .font(theme.typography.body)
-                .foregroundStyle(theme.colors.textPrimary)
+        Button(action: {
+            router.push(.search)
+        }) {
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(theme.colors.textSecondary)
+                Text("Search for services")
+                    .font(theme.typography.body)
+                    .foregroundStyle(theme.colors.textSecondary)
+                Spacer()
+            }
+            .padding(14)
+            .background(theme.colors.surface)
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.colors.border))
         }
-        .padding(14)
-        .background(theme.colors.surface)
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.colors.border))
+        .buttonStyle(.plain)
     }
 }
 

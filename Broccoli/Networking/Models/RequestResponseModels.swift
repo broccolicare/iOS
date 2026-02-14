@@ -957,12 +957,24 @@ public struct Service: Codable, Identifiable {
     public let price: String
     public let duration: Int
     public let requiresDoctor: Int
+    public let bookableOnline: Int
+    public let department: ServiceDepartment?
     public let subServices: [SubService]
     
     private enum CodingKeys: String, CodingKey {
-        case id, name, description, price, duration
+        case id, name, description, price, duration, department
         case requiresDoctor = "requires_doctor"
+        case bookableOnline = "bookable_online"
         case subServices = "sub_services"
+    }
+}
+
+public struct ServiceDepartment: Codable, Identifiable {
+    public let id: Int
+    public let name: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name
     }
 }
 

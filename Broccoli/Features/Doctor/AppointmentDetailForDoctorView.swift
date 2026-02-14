@@ -21,13 +21,15 @@ struct AppointmentDetailForDoctorView: View {
                 // Gradient background
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(red: 0.38, green: 0.73, blue: 0.42),
-                        Color(red: 0.26, green: 0.65, blue: 0.58)
+                        theme.colors.gradientStart,
+                        theme.colors.gradientEnd
                     ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
-                .frame(height: 220)
+                .frame(height: 170)
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .top)
                 
                 VStack(spacing: 0) {
                     // Back button
@@ -35,14 +37,9 @@ struct AppointmentDetailForDoctorView: View {
                         Button(action: {
                             router.pop()
                         }) {
-                            Circle()
-                                .fill(Color.white.opacity(0.3))
-                                .frame(width: 44, height: 44)
-                                .overlay(
-                                    Image(systemName: "arrow.left")
-                                        .font(.system(size: 18, weight: .medium))
-                                        .foregroundColor(.white)
-                                )
+                            Image("back-icon-white")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(theme.colors.primary)
                         }
                         
                         Spacer()
@@ -50,8 +47,11 @@ struct AppointmentDetailForDoctorView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     
+                    Spacer()
+                        .frame(height: 24)
+                    
                     // Patient info
-                    VStack(spacing: 8) {
+                    HStack(alignment: .top, spacing: 10) {
                         // Profile image
                         Circle()
                             .fill(Color.white)
@@ -64,140 +64,217 @@ struct AppointmentDetailForDoctorView: View {
                                     .clipShape(Circle())
                             )
                         
-                        // Patient name
-                        Text(booking.user?.name ?? "Patient")
-                            .font(theme.typography.semiBold24)
-                            .foregroundColor(.white)
-                        
-                        // Patient ID
-                        Text("Patient ID: \(booking.userId ?? 0)")
-                            .font(theme.typography.regular14)
-                            .foregroundColor(.white.opacity(0.9))
+                        VStack(alignment: .leading, spacing: 6) {
+                            // Patient name
+                            Text(booking.user?.name ?? "Patient")
+                                .font(theme.typography.bold30)
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            
+                            // Service name
+                            Text(booking.service?.name ?? "Consultation")
+                                .font(theme.typography.bold18)
+                                .foregroundStyle(theme.colors.profileDetailTextColor)
+                                .padding(.top, 6)
+                            
+                            // Patient ID
+                            Text("Patient ID: \(booking.userId ?? 0)")
+                                .font(theme.typography.regular16)
+                                .foregroundStyle(theme.colors.profileDetailTextColor)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
             }
             
-            // Main content
-            ScrollView {
+            // Content Section
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
-                    // Appointment Details Section
+                    // Appointment Details
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Appointment Details")
-                            .font(theme.typography.semiBold18)
+                            .font(theme.typography.bold20)
                             .foregroundStyle(theme.colors.textPrimary)
                         
-                        VStack(spacing: 12) {
-                            DetailRow(
-                                label: "Date",
-                                value: formatDate(booking.date)
-                            )
-                            
-                            Divider()
-                            
-                            DetailRow(
-                                label: "Time",
-                                value: formatTimeRange(booking.time, duration: booking.service?.duration ?? 30)
-                            )
+                        // Date
+                        HStack {
+                            Text("Date")
+                                .font(theme.typography.regular16)
+                                .foregroundStyle(theme.colors.textPrimary)
+                            Spacer()
+                            Text(formatDate(booking.date))
+                                .font(theme.typography.regular16)
+                                .foregroundStyle(theme.colors.profileDetailTextColor)
                         }
+                        
+                        // Time
+                        HStack {
+                            Text("Time")
+                                .font(theme.typography.regular16)
+                                .foregroundStyle(theme.colors.textPrimary)
+                            Spacer()
+                            Text(formatTimeRange(booking.time, duration: booking.service?.duration ?? 30))
+                                .font(theme.typography.regular16)
+                                .foregroundStyle(theme.colors.profileDetailTextColor)
+                        }
+                        
+                        Divider()
                     }
-                    .padding(20)
-                    .background(Color.white)
-                    .cornerRadius(12)
+                    .padding(.top, 12)
                     
-                    // Medication Summary Section
+                    // Medication Summary
+                    // VStack(alignment: .leading, spacing: 16) {
+                    //     HStack(spacing: 12) {
+                    //         // Icon
+                    //         ZStack {
+                    //             RoundedRectangle(cornerRadius: 12)
+                    //                 .fill(theme.colors.profileDetailSectionBackground)
+                    //                 .frame(width: 48, height: 48)
+                                
+                    //             Image(systemName: "pills.fill")
+                    //                 .font(.system(size: 24))
+                    //                 .foregroundStyle(theme.colors.primary)
+                    //         }
+                            
+                    //         VStack(alignment: .leading, spacing: 2) {
+                    //             Text("Medication Summary")
+                    //                 .font(theme.typography.bold18)
+                    //                 .foregroundStyle(theme.colors.textPrimary)
+                                
+                    //             Text("Prescribed medications")
+                    //                 .font(theme.typography.regular14)
+                    //                 .foregroundStyle(theme.colors.textSecondary)
+                    //         }
+                            
+                    //         Spacer()
+                    //     }
+                        
+                    //     // Medication A
+                    //     VStack(alignment: .leading, spacing: 8) {
+                    //         Text("Medication A")
+                    //             .font(theme.typography.regular12)
+                    //             .foregroundStyle(theme.colors.textSecondary)
+                            
+                    //         Text("100mg, twice daily")
+                    //             .font(theme.typography.bold18)
+                    //             .foregroundStyle(theme.colors.textPrimary)
+                    //     }
+                        
+                    //     // Medication B
+                    //     VStack(alignment: .leading, spacing: 8) {
+                    //         Text("Medication B")
+                    //             .font(theme.typography.regular12)
+                    //             .foregroundStyle(theme.colors.textSecondary)
+                            
+                    //         Text("50mg, once daily")
+                    //             .font(theme.typography.bold18)
+                    //             .foregroundStyle(theme.colors.textPrimary)
+                    //     }
+                    // }
+                    // .padding(.vertical, 16)
+                    
+                    // Treatment Details
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Medication Summary")
-                            .font(theme.typography.semiBold18)
-                            .foregroundStyle(theme.colors.textPrimary)
+                        HStack(spacing: 12) {
+                            // Icon
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(theme.colors.profileDetailSectionBackground)
+                                    .frame(width: 48, height: 48)
+                                
+                                Image("treatement-icon")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(theme.colors.primary)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Treatment Details")
+                                    .font(theme.typography.bold18)
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                
+                                Text("Clinical notes")
+                                    .font(theme.typography.regular14)
+                                    .foregroundStyle(theme.colors.textSecondary)
+                            }
+                            
+                            Spacer()
+                        }
                         
-                        VStack(spacing: 12) {
-                            MedicationRow(
-                                name: "Medication A",
-                                dosage: "100mg, twice daily"
-                            )
+                        // Description
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Notes")
+                                .font(theme.typography.regular12)
+                                .foregroundStyle(theme.colors.textSecondary)
                             
-                            Divider()
-                            
-                            MedicationRow(
-                                name: "Medication B",
-                                dosage: "50mg, once daily"
-                            )
+                            Text("Patient requires a follow-up appointment to discuss treatment progress and adjust medication dosage.")
+                                .font(theme.typography.regular14)
+                                .foregroundStyle(theme.colors.textPrimary)
+                                .lineSpacing(4)
                         }
                     }
-                    .padding(20)
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    
-                    // Treatment Details Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Treatment Details")
-                            .font(theme.typography.semiBold18)
-                            .foregroundStyle(theme.colors.textPrimary)
-                        
-                        Text("Patient requires a follow-up appointment to discuss treatment progress and adjust medication dosage.")
-                            .font(theme.typography.regular16)
-                            .foregroundStyle(theme.colors.textSecondary)
-                            .lineSpacing(4)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(20)
-                    .background(Color.white)
-                    .cornerRadius(12)
+                    .padding(.vertical, 16)
                 }
-                .padding(20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 100)
             }
-            .background(Color(red: 0.96, green: 0.97, blue: 0.98))
+            .frame(maxHeight: .infinity)
             
-            // Bottom action buttons
-            HStack(spacing: 12) {
-                // Accept button
-                Button(action: {
-                    Task {
-                        let success = await bookingVM.acceptBooking(bookingId: booking.id)
-                        if success {
-                            router.pop()
+            // Bottom Action Buttons
+            VStack {
+                HStack(spacing: 12) {
+                    // Accept button
+                    Button(action: {
+                        Task {
+                            let success = await bookingVM.acceptBooking(bookingId: booking.id)
+                            if success {
+                                router.pop()
+                            }
                         }
+                    }) {
+                        Text("Accept")
+                            .font(theme.typography.semiBold16)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(theme.colors.primary)
+                            .cornerRadius(12)
                     }
-                }) {
-                    Text("Accept")
-                        .font(theme.typography.semiBold16)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(theme.colors.primary)
-                        .cornerRadius(12)
-                }
-                
-                // Reject button
-                Button(action: {
-                    Task {
-                        let success = await bookingVM.rejectBooking(bookingId: booking.id, reason: "Rejected by doctor")
-                        if success {
-                            router.pop()
+                    
+                    // Reject button
+                    Button(action: {
+                        Task {
+                            let success = await bookingVM.rejectBooking(bookingId: booking.id, reason: "Rejected by doctor")
+                            if success {
+                                router.pop()
+                            }
                         }
+                    }) {
+                        Text("Reject")
+                            .font(theme.typography.semiBold16)
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
+                            )
                     }
-                }) {
-                    Text("Reject")
-                        .font(theme.typography.semiBold16)
-                        .foregroundColor(theme.colors.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(theme.colors.border, lineWidth: 1)
-                        )
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: -2)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color.white)
-            .shadow(color: Color.black.opacity(0.05), radius: 8, y: -2)
         }
         .navigationBarHidden(true)
-        .edgesIgnoringSafeArea(.top)
+        .onAppear {
+            print("Booking Detail: -- \(booking)")
+        }
     }
     
     // MARK: - Helper Functions
@@ -218,59 +295,15 @@ struct AppointmentDetailForDoctorView: View {
         formatter.dateFormat = "HH:mm"
         
         if let startTime = formatter.date(from: time) {
-            let endTime = Calendar.current.date(byAdding: .minute, value: duration, to: startTime)
+            let endTime = Calendar.current.date(byAdding: .minute, value: duration, to: startTime) ?? startTime
             
-            formatter.dateFormat = "h:mm a"
+            formatter.dateFormat = "hh:mm a"
             let startString = formatter.string(from: startTime)
-            let endString = endTime != nil ? formatter.string(from: endTime!) : ""
+            let endString = formatter.string(from: endTime)
             
             return "\(startString) - \(endString)"
         }
         return time
-    }
-}
-
-// MARK: - Detail Row Component
-struct DetailRow: View {
-    @Environment(\.appTheme) private var theme
-    
-    let label: String
-    let value: String
-    
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(theme.typography.regular16)
-                .foregroundStyle(theme.colors.textSecondary)
-            
-            Spacer()
-            
-            Text(value)
-                .font(theme.typography.semiBold16)
-                .foregroundStyle(theme.colors.primary)
-        }
-    }
-}
-
-// MARK: - Medication Row Component
-struct MedicationRow: View {
-    @Environment(\.appTheme) private var theme
-    
-    let name: String
-    let dosage: String
-    
-    var body: some View {
-        HStack {
-            Text(name)
-                .font(theme.typography.regular16)
-                .foregroundStyle(theme.colors.textSecondary)
-            
-            Spacer()
-            
-            Text(dosage)
-                .font(theme.typography.semiBold16)
-                .foregroundStyle(theme.colors.primary)
-        }
     }
 }
 

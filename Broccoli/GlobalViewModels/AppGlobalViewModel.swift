@@ -23,6 +23,7 @@ public final class AppGlobalViewModel: ObservableObject {
     @Published var medicalDestinations: [MedicalDestination] = []
     @Published var recoveryDrugs: [RecoveryDrug] = []
     @Published var recoveryAddictionYears: [RecoveryAddictionYear] = []
+    @Published var allServices: [Service] = []
     
     // Metadata from API
     @Published public var bloodGroups: [BloodGroup] = []
@@ -213,6 +214,18 @@ public final class AppGlobalViewModel: ObservableObject {
             errorMessage = "Failed to load recovery addiction years: \(error.localizedDescription)"
             print("❌ Failed to load recovery addiction years: \(error)")
             recoveryAddictionYears = []
+        }
+    }
+    
+    public func loadAllServices() async {
+        do {
+            let services = try await appService.fetchAllServices()
+            allServices = services
+            print("✅ All services loaded successfully: \(services.count) items")
+        } catch {
+            errorMessage = "Failed to load services: \(error.localizedDescription)"
+            print("❌ Failed to load services: \(error)")
+            allServices = []
         }
     }
 }

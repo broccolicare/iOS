@@ -18,6 +18,7 @@ public enum AppEndpoint: Endpoint {
     case medicalDestinations
     case recoveryDrugs
     case recoveryAddictionYears
+    case allServices
     
     public var path: String {
         switch self {
@@ -35,18 +36,19 @@ public enum AppEndpoint: Endpoint {
         case .medicalDestinations: return "/global/medical-destinations"
         case .recoveryDrugs: return "/global/recovery-drugs"
         case .recoveryAddictionYears: return "/global/recovery-addiction-years"
+        case .allServices: return "/global/services"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears: return .GET
+        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices: return .GET
         }
     }
     
     public var body: [String: Any]? {
         switch self {
-        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears:
+        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices:
             return nil
         }
     }
