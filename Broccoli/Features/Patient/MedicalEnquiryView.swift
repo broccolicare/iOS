@@ -85,17 +85,6 @@ struct MedicalEnquiryView: View {
                                 errorText: viewModel.fieldErrors[.phoneNumber]
                             )
                             
-                            // Password field
-                            TextInputField(
-                                placeholder: "Password",
-                                text: $viewModel.password,
-                                keyboardType: .default,
-                                isSecure: true,
-                                autocapitalization: .never,
-                                disableAutocorrection: true,
-                                errorText: viewModel.fieldErrors[.password]
-                            )
-                            
                             // Desired Procedure dropdown
                             DropdownField(
                                 selectedValue: $viewModel.selectedProcedure,

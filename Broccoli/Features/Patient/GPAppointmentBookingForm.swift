@@ -24,6 +24,20 @@ struct GPAppointmentBookingForm: View {
         bookingViewModel.selectedTimeSlot
     }
     
+    // Computed property to check if we should show error alert
+    private var shouldShowErrorAlert: Binding<Bool> {
+        Binding(
+            get: {
+                bookingViewModel.showErrorToast && 
+                bookingViewModel.errorMessage != nil && 
+                !bookingViewModel.errorMessage!.isEmpty
+            },
+            set: { newValue in
+                bookingViewModel.showErrorToast = newValue
+            }
+        )
+    }
+    
     // Get all available slots combined
     private var allAvailableSlots: [TimeSlot] {
         bookingViewModel.morningSlots + bookingViewModel.afternoonSlots + bookingViewModel.eveningSlots
@@ -355,14 +369,13 @@ struct GPAppointmentBookingForm: View {
                 await bookingViewModel.fetchAvailableTimeSlots()
             }
         }
-        .alert("Error", isPresented: $bookingViewModel.showErrorToast) {
+        .alert("Error", isPresented: shouldShowErrorAlert) {
             Button("OK", role: .cancel) {
                 bookingViewModel.errorMessage = nil
+                bookingViewModel.showErrorToast = false
             }
         } message: {
-            if let errorMessage = bookingViewModel.errorMessage {
-                Text(errorMessage)
-            }
+            Text(bookingViewModel.errorMessage ?? "An unknown error occurred")
         }
     }
     

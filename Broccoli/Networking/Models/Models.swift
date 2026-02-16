@@ -236,20 +236,18 @@ public struct AllServicesResponse: Codable {
 
 public struct Doctor: Codable, Identifiable {
     public let id: Int
-    public let firstName: String
-    public let lastName: String
-    public let email: String
-    public let specialization: String
-    public let licenseNumber: String
+    public let name: String?
+    public let email: String?
+    public let specialization: String?
+    public let licenseNumber: String?
     public let avatar: String?
-    public let rating: Double
-    public let yearsOfExperience: Int
-    public let isAvailable: Bool
+    public let rating: Double?
+    public let yearsOfExperience: Int?
+    public let isAvailable: Bool?
     
     enum CodingKeys: String, CodingKey {
         case id
-        case firstName = "first_name"
-        case lastName = "last_name"
+        case name
         case email
         case specialization
         case licenseNumber = "license_number"
@@ -262,18 +260,16 @@ public struct Doctor: Codable, Identifiable {
 
 public struct Patient: Codable, Identifiable {
     public let id: Int
-    public let firstName: String
-    public let lastName: String
-    public let email: String
-    public let dateOfBirth: Date
-    public let gender: Gender
+    public let name: String?
+    public let email: String?
+    public let dateOfBirth: Date?
+    public let gender: Gender?
     public let avatar: String?
     public let emergencyContact: EmergencyContact?
     
     enum CodingKeys: String, CodingKey {
         case id
-        case firstName = "first_name"
-        case lastName = "last_name"
+        case name
         case email
         case dateOfBirth = "date_of_birth"
         case gender

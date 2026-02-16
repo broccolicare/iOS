@@ -66,52 +66,52 @@ struct SettingsView: View {
                     }
                     
                     // Privacy Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Privacy")
-                            .font(theme.typography.semiBold16)
-                            .foregroundStyle(theme.colors.textPrimary)
-                            .padding(.horizontal, 20)
-                        
-                        VStack(spacing: 0) {
-                            SettingsItemRow(
-                                icon: "shield",
-                                iconColor: Color(red: 0.26, green: 0.65, blue: 0.58),
-                                title: "Privacy",
-                                subtitle: "Manage your privacy settings",
-                                isLast: true,
-                                action: {
-                                    // Navigate to privacy settings
-                                }
-                            )
-                        }
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .padding(.horizontal, 20)
-                    }
+//                    VStack(alignment: .leading, spacing: 12) {
+//                        Text("Privacy")
+//                            .font(theme.typography.semiBold16)
+//                            .foregroundStyle(theme.colors.textPrimary)
+//                            .padding(.horizontal, 20)
+//                        
+//                        VStack(spacing: 0) {
+//                            SettingsItemRow(
+//                                icon: "shield",
+//                                iconColor: Color(red: 0.26, green: 0.65, blue: 0.58),
+//                                title: "Privacy",
+//                                subtitle: "Manage your privacy settings",
+//                                isLast: true,
+//                                action: {
+//                                    // Navigate to privacy settings
+//                                }
+//                            )
+//                        }
+//                        .background(Color.white)
+//                        .cornerRadius(12)
+//                        .padding(.horizontal, 20)
+//                    }
                     
                     // App Preferences Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("App Preferences")
-                            .font(theme.typography.semiBold16)
-                            .foregroundStyle(theme.colors.textPrimary)
-                            .padding(.horizontal, 20)
-                        
-                        VStack(spacing: 0) {
-                            SettingsItemRow(
-                                icon: "gearshape",
-                                iconColor: Color(red: 0.26, green: 0.65, blue: 0.58),
-                                title: "App Preferences",
-                                subtitle: "Manage your app preferences",
-                                isLast: true,
-                                action: {
-                                    // Navigate to app preferences
-                                }
-                            )
-                        }
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .padding(.horizontal, 20)
-                    }
+//                    VStack(alignment: .leading, spacing: 12) {
+//                        Text("App Preferences")
+//                            .font(theme.typography.semiBold16)
+//                            .foregroundStyle(theme.colors.textPrimary)
+//                            .padding(.horizontal, 20)
+//                        
+//                        VStack(spacing: 0) {
+//                            SettingsItemRow(
+//                                icon: "gearshape",
+//                                iconColor: Color(red: 0.26, green: 0.65, blue: 0.58),
+//                                title: "App Preferences",
+//                                subtitle: "Manage your app preferences",
+//                                isLast: true,
+//                                action: {
+//                                    // Navigate to app preferences
+//                                }
+//                            )
+//                        }
+//                        .background(Color.white)
+//                        .cornerRadius(12)
+//                        .padding(.horizontal, 20)
+//                    }
                     
                     // Support Section
                     VStack(alignment: .leading, spacing: 12) {
@@ -121,17 +121,6 @@ struct SettingsView: View {
                             .padding(.horizontal, 20)
                         
                         VStack(spacing: 0) {
-                            SettingsItemRow(
-                                icon: "questionmark.circle",
-                                iconColor: Color(red: 0.26, green: 0.65, blue: 0.58),
-                                title: "Help & Support",
-                                subtitle: "Get help or support",
-                                isLast: false,
-                                action: {
-                                    // Navigate to help & support
-                                }
-                            )
-                            
                             SettingsItemRow(
                                 icon: "envelope",
                                 iconColor: Color(red: 0.26, green: 0.65, blue: 0.58),

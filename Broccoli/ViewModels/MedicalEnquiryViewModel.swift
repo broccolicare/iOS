@@ -18,7 +18,6 @@ final class MedicalEnquiryViewModel: ObservableObject {
     @Published var email: String = ""
     @Published var countryCode: String = "+353"
     @Published var phoneNumber: String = ""
-    @Published var password: String = ""
     @Published var selectedProcedure: String? = nil
     @Published var selectedProcedureId: Int? = nil
     @Published var selectedDestination: String? = nil
@@ -40,7 +39,6 @@ final class MedicalEnquiryViewModel: ObservableObject {
         case name
         case email
         case phoneNumber
-        case password
         case procedure
         case destination
     }
@@ -86,13 +84,6 @@ final class MedicalEnquiryViewModel: ObservableObject {
             fieldErrors[.phoneNumber] = "Phone number must not exceed 20 characters."
         }
         
-        // Password validation - required, min 8 characters
-        if password.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            fieldErrors[.password] = "Please enter a password."
-        } else if password.count < 8 {
-            fieldErrors[.password] = "Password must be at least 8 characters."
-        }
-        
         // Procedure validation - required, max 255 characters
         if selectedProcedure == nil || selectedProcedure?.isEmpty == true {
             fieldErrors[.procedure] = "Please select a procedure."
@@ -132,7 +123,6 @@ final class MedicalEnquiryViewModel: ObservableObject {
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             phone: fullPhoneNumber,
-            password: password,
             medicalProcedureId: selectedProcedureId ?? 0,
             medicalDestinationId: selectedDestinationId ?? 0,
             additionalInformation: additionalInfo.isEmpty ? nil : additionalInfo.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -184,7 +174,6 @@ final class MedicalEnquiryViewModel: ObservableObject {
         email = ""
         countryCode = "+353"
         phoneNumber = ""
-        password = ""
         selectedProcedure = nil
         selectedProcedureId = nil
         selectedDestination = nil

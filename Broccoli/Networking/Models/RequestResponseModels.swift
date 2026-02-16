@@ -957,7 +957,7 @@ public struct Service: Codable, Identifiable {
     public let price: String
     public let duration: Int
     public let requiresDoctor: Int
-    public let bookableOnline: Int
+    public let bookableOnline: Int?
     public let department: ServiceDepartment?
     public let subServices: [SubService]
     
@@ -1273,13 +1273,12 @@ public struct MedicalTourismEnquiryRequest: Codable {
     public let name: String
     public let email: String
     public let phone: String
-    public let password: String
     public let medicalProcedureId: Int
     public let medicalDestinationId: Int
     public let additionalInformation: String?
     
     private enum CodingKeys: String, CodingKey {
-        case name, email, phone, password
+        case name, email, phone
         case medicalProcedureId = "medical_procedure_id"
         case medicalDestinationId = "medical_destination_id"
         case additionalInformation = "additional_information"
@@ -1289,7 +1288,6 @@ public struct MedicalTourismEnquiryRequest: Codable {
         name: String,
         email: String,
         phone: String,
-        password: String,
         medicalProcedureId: Int,
         medicalDestinationId: Int,
         additionalInformation: String?
@@ -1297,7 +1295,6 @@ public struct MedicalTourismEnquiryRequest: Codable {
         self.name = name
         self.email = email
         self.phone = phone
-        self.password = password
         self.medicalProcedureId = medicalProcedureId
         self.medicalDestinationId = medicalDestinationId
         self.additionalInformation = additionalInformation
@@ -1308,7 +1305,6 @@ public struct MedicalTourismEnquiryRequest: Codable {
             "name": name,
             "email": email,
             "phone": phone,
-            "password": password,
             "medical_procedure_id": medicalProcedureId,
             "medical_destination_id": medicalDestinationId
         ]

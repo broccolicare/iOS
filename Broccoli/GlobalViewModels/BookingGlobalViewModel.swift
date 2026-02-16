@@ -153,6 +153,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         promptAddPharmacy = false
         currentBookingId = nil
         errorMessage = nil
+        showErrorToast = false
         
         // Reset service-related fields
         selectedService = nil

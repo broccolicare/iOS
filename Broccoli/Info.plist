@@ -40,5 +40,7 @@
 		<string>Figtree-SemiBold.ttf</string>
 		<string>Figtree-SemiBoldItalic.ttf</string>
 	</array>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 </dict>
 </plist>

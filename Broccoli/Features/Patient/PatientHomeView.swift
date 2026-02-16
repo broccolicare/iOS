@@ -245,6 +245,7 @@ private struct BannerCarousel: View {
     @Environment(\.appTheme) private var theme
     let sliders: [Slider]
     @State private var index: Int = 0
+    @State private var timer: Timer?
     
     var body: some View {
         TabView(selection: $index) {
@@ -294,6 +295,37 @@ private struct BannerCarousel: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
+        .onAppear {
+            startAutoRotation()
+        }
+        .onDisappear {
+            stopAutoRotation()
+        }
+        .onChange(of: index) { _ in
+            // Reset timer when user manually swipes
+            resetAutoRotation()
+        }
+    }
+    
+    private func startAutoRotation() {
+        // Only auto-rotate if there are multiple banners
+        guard sliders.count > 1 else { return }
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+            withAnimation {
+                index = (index + 1) % sliders.count
+            }
+        }
+    }
+    
+    private func stopAutoRotation() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func resetAutoRotation() {
+        stopAutoRotation()
+        startAutoRotation()
     }
 }
 
