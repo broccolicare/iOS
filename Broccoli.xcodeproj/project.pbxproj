@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		536E85602F433050003266E8 /* RtcBasic in Frameworks */ = {isa = PBXBuildFile; productRef = 536E855F2F433050003266E8 /* RtcBasic */; };
+		536E85622F433050003266E8 /* SpatialAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 536E85612F433050003266E8 /* SpatialAudio */; };
+		536E85642F433050003266E8 /* VirtualBackground in Frameworks */ = {isa = PBXBuildFile; productRef = 536E85632F433050003266E8 /* VirtualBackground */; };
 		5381EE232E955FC90096B7DF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */; };
 		5381EE262E9562660096B7DF /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5381EE252E9562660096B7DF /* FirebaseCore */; };
 		5381EE282E9562660096B7DF /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 5381EE272E9562660096B7DF /* FirebaseCrashlytics */; };
@@ -55,14 +58,17 @@
 				53FC16BE2E98D5A7004CA9CE /* Toasts in Frameworks */,
 				53A210922E9564A800586875 /* GoogleSignInSwift in Frameworks */,
 				53A210952E95664300586875 /* FacebookCore in Frameworks */,
+				536E85622F433050003266E8 /* SpatialAudio in Frameworks */,
 				5381EE2A2E9562660096B7DF /* FirebaseMessaging in Frameworks */,
 				53FC16B72E98D05C004CA9CE /* AlertToast in Frameworks */,
 				53A210902E9564A800586875 /* GoogleSignIn in Frameworks */,
 				53A2109A2E9566FD00586875 /* KeychainAccess in Frameworks */,
+				536E85642F433050003266E8 /* VirtualBackground in Frameworks */,
 				5381EE262E9562660096B7DF /* FirebaseCore in Frameworks */,
 				53A210972E95664300586875 /* FacebookLogin in Frameworks */,
 				5382FA1E2ED86D3A0062DE39 /* StripePaymentSheet in Frameworks */,
 				5381EE282E9562660096B7DF /* FirebaseCrashlytics in Frameworks */,
+				536E85602F433050003266E8 /* RtcBasic in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -117,6 +123,9 @@
 				53FC16B62E98D05C004CA9CE /* AlertToast */,
 				53FC16BD2E98D5A7004CA9CE /* Toasts */,
 				5382FA1D2ED86D3A0062DE39 /* StripePaymentSheet */,
+				536E855F2F433050003266E8 /* RtcBasic */,
+				536E85612F433050003266E8 /* SpatialAudio */,
+				536E85632F433050003266E8 /* VirtualBackground */,
 			);
 			productName = Broccoli;
 			productReference = 535BAF5D2E95347A00C4A634 /* Broccoli.app */;
@@ -154,6 +163,7 @@
 				53FC16B52E98D05C004CA9CE /* XCRemoteSwiftPackageReference "AlertToast" */,
 				53FC16BC2E98D5A7004CA9CE /* XCRemoteSwiftPackageReference "swiftui-toasts" */,
 				5382FA1C2ED86D3A0062DE39 /* XCRemoteSwiftPackageReference "stripe-ios-spm" */,
+				536E855E2F433050003266E8 /* XCRemoteSwiftPackageReference "AgoraRtcEngine_iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 535BAF5E2E95347A00C4A634 /* Products */;
@@ -426,6 +436,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		536E855E2F433050003266E8 /* XCRemoteSwiftPackageReference "AgoraRtcEngine_iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/AgoraIO/AgoraRtcEngine_iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.6.2;
+			};
+		};
 		5381EE242E9562660096B7DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -485,6 +503,21 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		536E855F2F433050003266E8 /* RtcBasic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 536E855E2F433050003266E8 /* XCRemoteSwiftPackageReference "AgoraRtcEngine_iOS" */;
+			productName = RtcBasic;
+		};
+		536E85612F433050003266E8 /* SpatialAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 536E855E2F433050003266E8 /* XCRemoteSwiftPackageReference "AgoraRtcEngine_iOS" */;
+			productName = SpatialAudio;
+		};
+		536E85632F433050003266E8 /* VirtualBackground */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 536E855E2F433050003266E8 /* XCRemoteSwiftPackageReference "AgoraRtcEngine_iOS" */;
+			productName = VirtualBackground;
+		};
 		5381EE252E9562660096B7DF /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 5381EE242E9562660096B7DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

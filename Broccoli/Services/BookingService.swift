@@ -21,14 +21,15 @@ public protocol BookingServiceProtocol {
     func initializePayment(data: [String: Any]) async throws -> PaymentInitializeResponse
     func confirmPayment(data: [String: Any]) async throws -> PaymentConfirmResponse
     func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse
-    func fetchUpcomingConfirmedAppointments(perPage: Int, page: Int) async throws -> UpcomingAppointmentsResponse
-    func fetchPastBookings(perPage: Int, page: Int) async throws -> UpcomingAppointmentsResponse
+    func fetchPatientBookings(status: String?, type: String?, perPage: Int, page: Int) async throws -> UpcomingAppointmentsResponse
     func fetchPrescriptions(perPage: Int, page: Int) async throws -> PrescriptionsListResponse
     func fetchPrescriptionHistory(perPage: Int, page: Int) async throws -> PrescriptionsListResponse
-    func fetchPendingBookingsForDoctor() async throws -> PendingBookingsResponse
-    func fetchMyBookingsForDoctor() async throws -> MyBookingsResponse
+    func fetchDoctorBookings(status: String?, type: String?, perPage: Int, page: Int) async throws -> MyBookingsResponse
     func acceptBooking(bookingId: Int) async throws -> AcceptBookingResponse
     func rejectBooking(bookingId: Int, reason: String) async throws -> RejectBookingResponse
+    func generateAgoraToken(bookingId: Int) async throws -> AgoraTokenResponse
+    func startVideoCall(bookingId: Int) async throws -> VideoCallStatusResponse
+    func endVideoCall(bookingId: Int, notes: String) async throws -> VideoCallStatusResponse
 }
 
 public final class BookingService: BaseService, BookingServiceProtocol {
@@ -145,18 +146,10 @@ public final class BookingService: BaseService, BookingServiceProtocol {
         }
     }
     
-    /// Fetch upcoming confirmed appointments with pagination
-    public func fetchUpcomingConfirmedAppointments(perPage: Int = 10, page: Int = 1) async throws -> UpcomingAppointmentsResponse {
+    /// Fetch patient bookings with optional status/type filters
+    public func fetchPatientBookings(status: String? = nil, type: String? = nil, perPage: Int = 15, page: Int = 1) async throws -> UpcomingAppointmentsResponse {
         return try await handleServiceError {
-            let endpoint = BookingEndpoint.upcomingAppointments(perPage: perPage, page: page)
-            return try await httpClient.request(endpoint)
-        }
-    }
-    
-    /// Fetch past bookings with pagination
-    public func fetchPastBookings(perPage: Int = 10, page: Int = 1) async throws -> UpcomingAppointmentsResponse {
-        return try await handleServiceError {
-            let endpoint = BookingEndpoint.pastBookings(perPage: perPage, page: page)
+            let endpoint = BookingEndpoint.patientBookings(status: status, type: type, perPage: perPage, page: page)
             return try await httpClient.request(endpoint)
         }
     }
@@ -178,18 +171,10 @@ public final class BookingService: BaseService, BookingServiceProtocol {
         }
     }
     
-    /// Fetch pending bookings for doctor
-    public func fetchPendingBookingsForDoctor() async throws -> PendingBookingsResponse {
+    /// Fetch doctor bookings with optional status/type filters
+    public func fetchDoctorBookings(status: String? = nil, type: String? = nil, perPage: Int = 15, page: Int = 1) async throws -> MyBookingsResponse {
         return try await handleServiceError {
-            let endpoint = BookingEndpoint.pendingAppointmentsForDoctor
-            return try await httpClient.request(endpoint)
-        }
-    }
-    
-    /// Fetch accepted/my bookings for doctor
-    public func fetchMyBookingsForDoctor() async throws -> MyBookingsResponse {
-        return try await handleServiceError {
-            let endpoint = BookingEndpoint.myBookingsForDoctor
+            let endpoint = BookingEndpoint.doctorBookings(status: status, type: type, perPage: perPage, page: page)
             return try await httpClient.request(endpoint)
         }
     }
@@ -206,6 +191,30 @@ public final class BookingService: BaseService, BookingServiceProtocol {
     public func rejectBooking(bookingId: Int, reason: String) async throws -> RejectBookingResponse {
         return try await handleServiceError {
             let endpoint = BookingEndpoint.rejectBooking(bookingId: bookingId, reason: reason)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Generate Agora token for video call
+    public func generateAgoraToken(bookingId: Int) async throws -> AgoraTokenResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.generateAgoraToken(bookingId: bookingId)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Start video call for a booking
+    public func startVideoCall(bookingId: Int) async throws -> VideoCallStatusResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.startVideoCall(bookingId: bookingId)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// End video call with doctor notes
+    public func endVideoCall(bookingId: Int, notes: String) async throws -> VideoCallStatusResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.endVideoCall(bookingId: bookingId, notes: notes)
             return try await httpClient.request(endpoint)
         }
     }

@@ -81,7 +81,7 @@ struct MyAppointmentsView: View {
                             ForEach(bookingViewModel.upcomingAppointments) { appointment in
                                 AppointmentListRow(
                                     booking: appointment,
-                                    showStatus: false
+                                    showStatus: true
                                 )
                                 .onTapGesture {
                                     router.push(.appointmentDetailForPatient(booking: appointment))
@@ -172,7 +172,7 @@ struct MyAppointmentsView: View {
         .task {
             // Load appointments when view appears
             if bookingViewModel.upcomingAppointments.isEmpty {
-                await bookingViewModel.fetchUpcomingConfirmedAppointments()
+                await bookingViewModel.fetchUpcomingAppointments()
             }
         }
         .onChange(of: selectedTab) { _, newTab in

@@ -394,64 +394,38 @@ public struct PaginationInfo: Codable {
     }
 }
 
-public struct PendingBookingsResponse: Codable {
-    let success: Bool
-    let bookings: [BookingData]
-    let message: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case success
-        case bookings
-        case message
-    }
-}
-
 public struct MyBookingsResponse: Codable {
     let success: Bool
-    let bookings: MyBookingsPaginatedData
+    let data: [BookingData]
+    let pagination: DoctorBookingsPagination?
     let message: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case success
-        case bookings
+        case data
+        case pagination
         case message
     }
-    
-    // Computed properties for easy access
-    var bookingsList: [BookingData] { bookings.data }
-    var currentPage: Int { bookings.currentPage }
-    var lastPage: Int { bookings.lastPage }
-    var perPage: Int { bookings.perPage }
-    var total: Int { bookings.total }
+
+    // Computed properties for easy access (same names as before so ViewModel is unchanged)
+    var bookingsList: [BookingData] { data }
+    var currentPage: Int { pagination?.currentPage ?? 1 }
+    var lastPage: Int { pagination?.lastPage ?? 1 }
+    var perPage: Int { pagination?.perPage ?? data.count }
+    var total: Int { pagination?.total ?? data.count }
 }
 
-public struct MyBookingsPaginatedData: Codable {
-    let data: [BookingData]
+public struct DoctorBookingsPagination: Codable {
     let currentPage: Int
     let lastPage: Int
     let perPage: Int
     let total: Int
-    let from: Int?
-    let to: Int?
-    let path: String?
-    let firstPageUrl: String?
-    let lastPageUrl: String?
-    let nextPageUrl: String?
-    let prevPageUrl: String?
-    
+
     enum CodingKeys: String, CodingKey {
-        case data
         case currentPage = "current_page"
         case lastPage = "last_page"
         case perPage = "per_page"
         case total
-        case from
-        case to
-        case path
-        case firstPageUrl = "first_page_url"
-        case lastPageUrl = "last_page_url"
-        case nextPageUrl = "next_page_url"
-        case prevPageUrl = "prev_page_url"
     }
 }
 
@@ -1435,5 +1409,32 @@ public struct RecoveryJourneyEnquiry: Codable, Identifiable {
         case additionalInformation = "additional_information"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+}
+
+// MARK: - Video Call Models
+
+public struct AgoraTokenResponse: Codable {
+    public let success: Bool
+    public let token: String
+    public let channelName: String
+    public let uid: UInt
+    public let expiresAt: String?
+    public let message: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case success, token, uid, message
+        case channelName = "channel_name"
+        case expiresAt = "expires_at"
+    }
+}
+
+public struct VideoCallStatusResponse: Codable {
+    public let success: Bool
+    public let booking: BookingData?
+    public let message: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case success, booking, message
     }
 }

@@ -71,4 +71,5 @@ public enum PushNotificationError: Error {
 public extension Notification.Name {
     static let navigateToAppointment = Notification.Name("navigateToAppointment")
     static let newMessage = Notification.Name("newMessage")
+    static let fcmTokenRefreshed = Notification.Name("fcmTokenRefreshed")
 }

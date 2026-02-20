@@ -18,7 +18,6 @@ final class ContactUsViewModel: ObservableObject {
     @Published var message: String = ""
     
     @Published private(set) var fieldErrors: [Field: String] = [:]
-    @Published var isLoading: Bool = false
     
     enum Field: Hashable {
         case name, email, subject, message

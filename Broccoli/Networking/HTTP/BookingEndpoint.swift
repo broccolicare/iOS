@@ -23,12 +23,13 @@ public enum BookingEndpoint: Endpoint {
     case initialisePrescriptionPayment(String)
     case confirmPrescriptionPayment(String)
     case loadServices(String)
-    case upcomingAppointments(perPage: Int, page: Int)
-    case pastBookings(perPage: Int, page: Int)
-    case pendingAppointmentsForDoctor
-    case myBookingsForDoctor
+    case patientBookings(status: String?, type: String?, perPage: Int, page: Int)
+    case doctorBookings(status: String?, type: String?, perPage: Int, page: Int)
     case acceptBooking(Int)
     case rejectBooking(bookingId:Int, reason: String)
+    case generateAgoraToken(bookingId: Int)
+    case startVideoCall(bookingId: Int)
+    case endVideoCall(bookingId: Int, notes: String)
     
     
     public var path: String {
@@ -61,26 +62,28 @@ public enum BookingEndpoint: Endpoint {
             return "/payments/prescriptions/\(prescription)/confirm"
         case .loadServices(let department):
             return "/global/departments/\(department)/services"
-        case .upcomingAppointments:
-            return "/bookings/upcoming/confirmed"
-        case .pendingAppointmentsForDoctor:
-            return "/doctor/bookings/pending"
-        case .myBookingsForDoctor:
-            return "/doctor/bookings/my-bookings"
+        case .patientBookings:
+            return "/bookings/upcoming"
+        case .doctorBookings:
+            return "/doctor/bookings/upcoming"
         case .acceptBooking(let bookingId):
             return "/doctor/bookings/\(bookingId)/accept"
         case .rejectBooking(let bookingId, _):
             return "/doctor/bookings/\(bookingId)/reject"
-        case .pastBookings:
-            return "/bookings/past"
+        case .generateAgoraToken(let bookingId):
+            return "/bookings/\(bookingId)/generate-agora-token"
+        case .startVideoCall(let bookingId):
+            return "/bookings/\(bookingId)/start-video-call"
+        case .endVideoCall(let bookingId, _):
+            return "/bookings/\(bookingId)/end-video-call"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .upcomingAppointments, .myBookingsForDoctor, .pendingAppointmentsForDoctor, .pastBookings, .prescriptionList:
+        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .doctorBookings, .prescriptionList:
             return .GET
-        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking:
+        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .endVideoCall:
             return .POST
         case .cancelBooking:
             return .PUT
@@ -102,6 +105,10 @@ public enum BookingEndpoint: Endpoint {
         case .rejectBooking(_, let reason):
             return [
                 "reason": reason
+            ]
+        case .endVideoCall(_, let notes):
+            return [
+                "notes": notes
             ]
         case .uploadDocument(_, let documentData, let fileName):
             return nil
@@ -126,21 +133,27 @@ public enum BookingEndpoint: Endpoint {
                 items["service_id"] = serviceId
             }
             return items
-        case .upcomingAppointments(let perPage, let page):
-            return [
+        case .patientBookings(let status, let type, let perPage, let page):
+            var items: [String: String] = [
                 "per_page": String(perPage),
                 "page": String(page)
             ]
-        case .pastBookings(let perPage, let page):
-            return [
-                "per_page": String(perPage),
-                "page": String(page)
-            ]
+            if let status = status { items["status"] = status }
+            if let type = type { items["type"] = type }
+            return items
         case .prescriptionList(let perPage, let page):
             return [
                 "per_page": String(perPage),
                 "page": String(page)
             ]
+        case .doctorBookings(let status, let type, let perPage, let page):
+            var items: [String: String] = [
+                "per_page": String(perPage),
+                "page": String(page)
+            ]
+            if let status = status { items["status"] = status }
+            if let type = type { items["type"] = type }
+            return items
         default:
             return nil
         }

@@ -11,6 +11,8 @@ import StripePaymentSheet
 @main
 struct BroccoliApp: App {
     
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
     // Dependencies are created within the StateObject closures to avoid capturing self during App init
     
     @StateObject private var router = Router.shared
@@ -149,6 +151,16 @@ struct BroccoliApp: App {
                             AppointmentDetailForPatientView(booking: booking)
                         case .doctorAppointmentHistory:
                             DoctorAppointmentHistory()
+                        case .videoCall(let booking, let token, let channelName, let uid):
+                            VideoCallView(
+                                booking: booking,
+                                token: token,
+                                channelName: channelName,
+                                uid: uid,
+                                agoraService: AgoraService(appId: AppEnvironment.current.agoraAppId),
+                                bookingService: bookingViewModel.bookingService,
+                                userRole: authViewModel.currentUser?.primaryRole
+                            )
                         }
                     }
             }
@@ -161,6 +173,20 @@ struct BroccoliApp: App {
             .environmentObject(pharmacyViewModel)
             .environmentObject(packageViewModel)
             .environment(\.appTheme, AppTheme.default)
+            .onChange(of: authViewModel.isAuthenticated) { _, isAuthenticated in
+                if isAuthenticated {
+                    Task {
+                        await appViewModel.registerDeviceToken()
+                    }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .fcmTokenRefreshed)) { _ in
+                // Re-register device token when Firebase issues a new FCM token
+                guard authViewModel.isAuthenticated else { return }
+                Task {
+                    await appViewModel.registerDeviceToken()
+                }
+            }
             .onOpenURL { incomingURL in
                 // Handle Stripe redirect URLs
                 let stripeHandled = StripeAPI.handleURLCallback(with: incomingURL)

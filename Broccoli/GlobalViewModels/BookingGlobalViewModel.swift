@@ -11,7 +11,7 @@ import Combine
 
 @MainActor
 public final class BookingGlobalViewModel: ObservableObject {
-    private let bookingService: BookingServiceProtocol
+    public let bookingService: BookingServiceProtocol
     
     // Published UI state
     @Published public var isLoading: Bool = false
@@ -809,20 +809,44 @@ public final class BookingGlobalViewModel: ObservableObject {
     }
     
     // MARK: - Upcoming Appointments
+
+    /// Fetch upcoming appointments (confirmed, future only)
+    public func fetchUpcomingAppointments(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+        isLoadingAppointments = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.fetchPatientBookings(status: nil, type: "future", perPage: perPage, page: page)
+            
+            if loadMore {
+                self.upcomingAppointments.append(contentsOf: response.bookings)
+            } else {
+                self.upcomingAppointments = response.bookings
+            }
+            
+            self.currentPage = response.currentPage
+            self.lastPage = response.lastPage
+            self.totalAppointments = response.total
+            
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+        
+        isLoadingAppointments = false
+    }
     
-    /// Fetch upcoming confirmed appointments with pagination
+    /// Fetch upcoming appointments (confirmed, future only)
     public func fetchUpcomingConfirmedAppointments(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
         isLoadingAppointments = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchUpcomingConfirmedAppointments(perPage: perPage, page: page)
+            let response = try await bookingService.fetchPatientBookings(status: "confirmed", type: "future", perPage: perPage, page: page)
             
             if loadMore {
-                // Append to existing appointments for pagination
                 self.upcomingAppointments.append(contentsOf: response.bookings)
             } else {
-                // Replace appointments (for initial load or refresh)
                 self.upcomingAppointments = response.bookings
             }
             
@@ -851,19 +875,17 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     // MARK: - Past Appointments
     
-    /// Fetch past bookings with pagination
+    /// Fetch past bookings (confirmed, all including past)
     public func fetchPastBookings(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
         isLoadingPastAppointments = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPastBookings(perPage: perPage, page: page)
+            let response = try await bookingService.fetchPatientBookings(status: nil, type: "past", perPage: perPage, page: page)
             
             if loadMore {
-                // Append to existing appointments for pagination
                 self.pastAppointments.append(contentsOf: response.bookings)
             } else {
-                // Replace appointments (for initial load or refresh)
                 self.pastAppointments = response.bookings
             }
             
@@ -892,16 +914,16 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     // MARK: - Pending Bookings For Doctor
     
-    /// Fetch pending bookings for doctor
+    /// Fetch pending bookings for doctor (doctor_status = pending)
     public func fetchPendingBookingsForDoctor() async {
         isLoadingPendingBookings = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPendingBookingsForDoctor()
+            let response = try await bookingService.fetchDoctorBookings(status: "pending", type: "future", perPage: 50, page: 1)
             
             if response.success {
-                self.pendingBookings = response.bookings
+                self.pendingBookings = response.bookingsList
             } else {
                 errorMessage = response.message ?? "Failed to fetch pending bookings"
                 showErrorToast = true
@@ -921,13 +943,13 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     // MARK: - My/Accepted Bookings For Doctor
     
-    /// Fetch my/accepted bookings for doctor
+    /// Fetch confirmed bookings for doctor (upcoming + past)
     public func fetchMyBookingsForDoctor() async {
         isLoadingMyBookings = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchMyBookingsForDoctor()
+            let response = try await bookingService.fetchDoctorBookings(status: "confirmed", type: "future", perPage: 50, page: 1)
             
             if response.success {
                 self.myBookings = response.bookingsList
@@ -1101,6 +1123,67 @@ public final class BookingGlobalViewModel: ObservableObject {
             showErrorToast = true
             isLoading = false
             return false
+        }
+    }
+    
+    // MARK: - Video Call Methods
+    
+    /// Generate Agora token and start video call (for doctor)
+    public func generateTokenAndStartCall(booking: BookingData) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            // 1. Generate Agora token from backend
+            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id)
+            
+            // 2. Mark call as started in backend
+            _ = try await bookingService.startVideoCall(bookingId: booking.id)
+            
+            // 3. Navigate to video call screen
+            await MainActor.run {
+                Router.shared.push(.videoCall(
+                    booking: booking,
+                    token: tokenResponse.token,
+                    channelName: tokenResponse.channelName,
+                    uid: tokenResponse.uid
+                ))
+                isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to start video call: \(error.localizedDescription)"
+                showErrorToast = true
+                isLoading = false
+            }
+        }
+    }
+    
+    /// Generate Agora token and join video call (for patient)
+    public func generateTokenAndJoinCall(booking: BookingData) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            // 1. Generate Agora token from backend
+            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id)
+            
+            // 2. Navigate to video call screen
+            await MainActor.run {
+                Router.shared.push(.videoCall(
+                    booking: booking,
+                    token: tokenResponse.token,
+                    channelName: tokenResponse.channelName,
+                    uid: tokenResponse.uid
+                ))
+                isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to join video call: \(error.localizedDescription)"
+                showErrorToast = true
+                isLoading = false
+            }
         }
     }
 }

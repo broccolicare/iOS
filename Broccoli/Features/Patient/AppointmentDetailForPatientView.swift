@@ -10,6 +10,7 @@ import SwiftUI
 struct AppointmentDetailForPatientView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var bookingVM: BookingGlobalViewModel
     let booking: BookingData
     
     private var formattedDate: String {
@@ -207,25 +208,14 @@ struct AppointmentDetailForPatientView: View {
                                 .foregroundStyle(theme.colors.textPrimary)
                         }
                         
-                        // Description
-                        if let description = booking.service?.description {
+                        // Doctor Notes
+                        if let notes = booking.doctorNotes, !notes.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Description")
+                                Text("Doctor Notes")
                                     .font(theme.typography.regular12)
                                     .foregroundStyle(theme.colors.textSecondary)
                                 
-                                Text(description)
-                                    .font(theme.typography.regular14)
-                                    .foregroundStyle(theme.colors.textPrimary)
-                                    .lineSpacing(4)
-                            }
-                        } else {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Description")
-                                    .font(theme.typography.regular12)
-                                    .foregroundStyle(theme.colors.textSecondary)
-                                
-                                Text("Comprehensive health assessment including physical examination, vital signs monitoring, and review of medical history. The doctor will evaluate current health status and discuss any concerns or lifestyle modifications.")
+                                Text(notes)
                                     .font(theme.typography.regular14)
                                     .foregroundStyle(theme.colors.textPrimary)
                                     .lineSpacing(4)
@@ -240,42 +230,41 @@ struct AppointmentDetailForPatientView: View {
             .frame(maxHeight: .infinity)
             
             // Bottom Action Buttons
-            VStack {
-                HStack(spacing: 12) {
-                    // Reschedule Button
-                    Button(action: {
-                        // Handle reschedule action
-                        print("Reschedule tapped")
-                    }) {
-                        Text("Reschedule")
-                            .font(theme.typography.semiBold16)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(theme.colors.primary)
-                            .cornerRadius(12)
-                    }
-                    
-                    // Cancel Button
-                    Button(action: {
-                        // Handle cancel action
-                        print("Cancel tapped")
-                    }) {
-                        Text("Cancel")
-                            .font(theme.typography.semiBold16)
+            VStack(spacing: 0) {
+                VStack(spacing: 12) {
+                    // Status Card (full width)
+                    HStack {
+                        Text("Status")
+                            .font(theme.typography.regular16)
                             .foregroundStyle(theme.colors.textPrimary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
-                            )
+                        Spacer()
+                        Text(booking.status.capitalized)
+                            .font(theme.typography.semiBold16)
+                            .foregroundStyle(statusColor(for: booking.status))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(statusColor(for: booking.status).opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    
+                    // Call Button (only for confirmed bookings)
+                    if booking.status == "confirmed" {
+                        Button(action: { joinVideoCall() }) {
+                            Text(canJoinCall ? "Join Call" : "Call available 5 min before")
+                                .font(theme.typography.semiBold16)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(canJoinCall ? Color.green : theme.colors.textSecondary)
+                                .cornerRadius(12)
+                        }
+                        .disabled(!canJoinCall)
+                        .padding(.horizontal, 20)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .padding(.bottom, 16)
                 .background(Color.white)
                 .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: -2)
             }
@@ -283,6 +272,33 @@ struct AppointmentDetailForPatientView: View {
         .navigationBarHidden(true)
         .onAppear {
             print("Booking Detail: -- \(booking)")
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private var canJoinCall: Bool {
+        Date.isWithinCallWindow(appointmentDate: booking.date, appointmentTime: booking.time)
+    }
+    
+    private func statusColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "confirmed": return Color.green
+        case "completed": return Color.blue
+        case "cancelled": return Color.red
+        case "pending": return Color.orange
+        default: return Color.gray
+        }
+    }
+    
+    private var shouldShowJoinCallButton: Bool {
+        booking.status != "completed" &&
+        Date.isWithinCallWindow(appointmentDate: booking.date, appointmentTime: booking.time)
+    }
+    
+    private func joinVideoCall() {
+        Task {
+            await bookingVM.generateTokenAndJoinCall(booking: booking)
         }
     }
 }

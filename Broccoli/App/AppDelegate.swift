@@ -13,7 +13,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
         // Configure Firebase
-        FirebaseApp.configure()
+        //FirebaseApp.configure()
         
         // Set up push notifications
         UNUserNotificationCenter.current().delegate = self
@@ -58,7 +58,7 @@ extension AppDelegate: MessagingDelegate {
         guard let fcmToken = fcmToken else { return }
         print("Firebase registration token: \(fcmToken)")
         
-        // Send token to your server
-        // TODO: Implement token upload to backend
+        // Notify the app so it can upload the token if a user is logged in
+        NotificationCenter.default.post(name: .fcmTokenRefreshed, object: fcmToken)
     }
 }

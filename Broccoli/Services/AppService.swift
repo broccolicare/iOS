@@ -18,6 +18,9 @@ public protocol AppServiceProtocol {
     func fetchRecoveryDrugs() async throws -> [RecoveryDrug]
     func fetchRecoveryAddictionYears() async throws -> [RecoveryAddictionYear]
     func fetchAllServices() async throws -> [Service]
+    func submitContactForm(name: String, email: String, phone: String?, subject: String, message: String) async throws -> ContactUsResponse
+    func registerDeviceToken(token: String, deviceName: String, appVersion: String) async throws -> DeviceTokenResponse
+    func fetchNotifications() async throws -> NotificationsResponse
 }
 
 public final class AppService: BaseService, AppServiceProtocol {
@@ -99,6 +102,40 @@ public final class AppService: BaseService, AppServiceProtocol {
             let endpoint = AppEndpoint.allServices
             let response: AllServicesResponse = try await httpClient.request(endpoint)
             return response.data
+        }
+    }
+    
+    public func submitContactForm(name: String, email: String, phone: String?, subject: String, message: String) async throws -> ContactUsResponse {
+        return try await handleServiceError {
+            var data: [String: Any] = [
+                "name": name,
+                "email": email,
+                "subject": subject,
+                "message": message
+            ]
+            if let phone = phone { data["phone"] = phone }
+            let endpoint = AppEndpoint.contactUs(data)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func registerDeviceToken(token: String, deviceName: String, appVersion: String) async throws -> DeviceTokenResponse {
+        return try await handleServiceError {
+            let data: [String: Any] = [
+                "device_type": "ios",
+                "device_token": token,
+                "device_name": deviceName,
+                "app_version": appVersion
+            ]
+            let endpoint = AppEndpoint.registerDeviceToken(data)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func fetchNotifications() async throws -> NotificationsResponse {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.notifications
+            return try await httpClient.request(endpoint)
         }
     }
 }

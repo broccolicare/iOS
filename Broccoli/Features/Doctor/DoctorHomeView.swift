@@ -135,8 +135,10 @@ struct DoctorHomeView: View {
                         } else {
                             ForEach(scheduledAppointments) { appointment in
                                 ScheduledAppointmentCard(appointment: appointment, theme: theme) {
-                                    // Start call action
-                                    startCall(appointment)
+                                    // Start call action - find the corresponding BookingData
+                                    if let booking = bookingVM.myBookings.first(where: { $0.id == appointment.id }) {
+                                        startCall(for: booking)
+                                    }
                                 }
                                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                                 .listRowBackground(Color.clear)
@@ -209,9 +211,10 @@ struct DoctorHomeView: View {
         }
     }
     
-    private func startCall(_ appointment: DoctorAppointment) {
-        // Navigate to video call
-        print("Starting call with \(appointment.patientName)")
+    private func startCall(for booking: BookingData) {
+        Task {
+            await bookingVM.generateTokenAndStartCall(booking: booking)
+        }
     }
 }
 

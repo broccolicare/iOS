@@ -223,50 +223,83 @@ struct AppointmentDetailForDoctorView: View {
             .frame(maxHeight: .infinity)
             
             // Bottom Action Buttons
-            VStack {
-                HStack(spacing: 12) {
-                    // Accept button
-                    Button(action: {
-                        Task {
-                            let success = await bookingVM.acceptBooking(bookingId: booking.id)
-                            if success {
-                                router.pop()
-                            }
-                        }
-                    }) {
-                        Text("Accept")
+            VStack(spacing: 0) {
+                VStack(spacing: 12) {
+                    // Status Card (full width)
+                    HStack {
+                        Text("Status")
+                            .font(theme.typography.regular16)
+                            .foregroundStyle(theme.colors.textPrimary)
+                        Spacer()
+                        Text(booking.doctorStatus?.capitalized ?? booking.status.capitalized)
                             .font(theme.typography.semiBold16)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(theme.colors.primary)
-                            .cornerRadius(12)
+                            .foregroundStyle(doctorStatusColor)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(doctorStatusColor.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    
+                    // Call Button (only for confirmed/accepted bookings)
+                    if booking.doctorStatus == "accepted" || booking.status == "confirmed" {
+                        Button(action: {
+                            Task { await bookingVM.generateTokenAndStartCall(booking: booking) }
+                        }) {
+                            Text(canStartCall ? "Start Call" : "Call available 5 min before")
+                                .font(theme.typography.semiBold16)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(canStartCall ? theme.colors.primary : theme.colors.textSecondary)
+                                .cornerRadius(12)
+                        }
+                        .disabled(!canStartCall)
+                        .padding(.horizontal, 20)
                     }
                     
-                    // Reject button
-                    Button(action: {
-                        Task {
-                            let success = await bookingVM.rejectBooking(bookingId: booking.id, reason: "Rejected by doctor")
-                            if success {
-                                router.pop()
+                    // Accept/Reject only for pending bookings
+                    if booking.doctorStatus == "pending" {
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                Task {
+                                    let success = await bookingVM.acceptBooking(bookingId: booking.id)
+                                    if success { router.pop() }
+                                }
+                            }) {
+                                Text("Accept")
+                                    .font(theme.typography.semiBold16)
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(theme.colors.primary)
+                                    .cornerRadius(12)
+                            }
+                            
+                            Button(action: {
+                                Task {
+                                    let success = await bookingVM.rejectBooking(bookingId: booking.id, reason: "Rejected by doctor")
+                                    if success { router.pop() }
+                                }
+                            }) {
+                                Text("Reject")
+                                    .font(theme.typography.semiBold16)
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                                    .background(Color.white)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
+                                    )
                             }
                         }
-                    }) {
-                        Text("Reject")
-                            .font(theme.typography.semiBold16)
-                            .foregroundStyle(theme.colors.textPrimary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(red: 0.9, green: 0.9, blue: 0.9), lineWidth: 1)
-                            )
+                        .padding(.horizontal, 20)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .padding(.bottom, 16)
                 .background(Color.white)
                 .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: -2)
             }
@@ -278,6 +311,20 @@ struct AppointmentDetailForDoctorView: View {
     }
     
     // MARK: - Helper Functions
+    
+    private var canStartCall: Bool {
+        Date.isWithinCallWindow(appointmentDate: booking.date, appointmentTime: booking.time)
+    }
+    
+    private var doctorStatusColor: Color {
+        switch (booking.doctorStatus ?? booking.status).lowercased() {
+        case "accepted", "confirmed": return Color.green
+        case "completed": return Color.blue
+        case "rejected", "cancelled": return Color.red
+        case "pending": return Color.orange
+        default: return Color.gray
+        }
+    }
     
     private func formatDate(_ dateString: String) -> String {
         let formatter = DateFormatter()

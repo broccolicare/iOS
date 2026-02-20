@@ -8,6 +8,8 @@
 
 import Foundation
 import Combine
+import FirebaseMessaging
+import UIKit
 
 @MainActor
 public final class AppGlobalViewModel: ObservableObject {
@@ -227,5 +229,82 @@ public final class AppGlobalViewModel: ObservableObject {
             print("❌ Failed to load services: \(error)")
             allServices = []
         }
+    }
+    
+    // MARK: - Contact Us
+    
+    @Published public var isSubmittingContact: Bool = false
+    @Published public var contactSubmitSuccess: Bool = false
+    
+    public func submitContactForm(name: String, email: String, phone: String? = nil, subject: String, message: String) async -> Bool {
+        isSubmittingContact = true
+        errorMessage = nil
+        
+        do {
+            let response = try await appService.submitContactForm(
+                name: name,
+                email: email,
+                phone: phone,
+                subject: subject,
+                message: message
+            )
+            isSubmittingContact = false
+            if response.data != nil {
+                contactSubmitSuccess = true
+                print("✅ Contact form submitted successfully")
+                return true
+            } else {
+                errorMessage = response.message ?? "Failed to submit contact form"
+                return false
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            print("❌ Failed to submit contact form: \(error)")
+            isSubmittingContact = false
+            return false
+        }
+    }
+    
+    // MARK: - Device Token Registration
+    
+    public func registerDeviceToken() async {
+        guard let fcmToken = Messaging.messaging().fcmToken else {
+            print("⚠️ FCM token not available yet — skipping device token registration")
+            return
+        }
+        
+        let deviceName = UIDevice.current.name
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        
+        do {
+            let response = try await appService.registerDeviceToken(
+                token: fcmToken,
+                deviceName: deviceName,
+                appVersion: appVersion
+            )
+            print("✅ Device token registered: \(response.message ?? "success")")
+        } catch {
+            print("❌ Failed to register device token: \(error)")
+        }
+    }
+    
+    // MARK: - Notifications
+    
+    @Published public var notifications: [AppNotification] = []
+    @Published public var unreadNotificationsCount: Int = 0
+    @Published public var isLoadingNotifications: Bool = false
+    
+    public func fetchNotifications() async {
+        isLoadingNotifications = true
+        do {
+            let response = try await appService.fetchNotifications()
+            notifications = response.notifications?.data ?? []
+            unreadNotificationsCount = response.unreadCount ?? 0
+            print("✅ Notifications loaded: \(notifications.count) items, unread: \(unreadNotificationsCount)")
+        } catch {
+            print("❌ Failed to load notifications: \(error)")
+            notifications = []
+        }
+        isLoadingNotifications = false
     }
 }

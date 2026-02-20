@@ -12,6 +12,11 @@ struct ScheduledAppointmentCard: View {
     let theme: AppThemeProtocol
     let onStartCall: () -> Void
     
+    // Check if within call window (5 min before to 30 min after appointment)
+    private var canStartCall: Bool {
+        Date.isWithinCallWindow(appointmentDate: appointment.date, appointmentTime: appointment.startTime)
+    }
+    
     var body: some View {
         VStack(spacing: 16) {
             // Patient Info
@@ -43,14 +48,15 @@ struct ScheduledAppointmentCard: View {
             
             // Start Call Button
             Button(action: onStartCall) {
-                Text("Start call")
+                Text(canStartCall ? "Start call" : "Call available 5 min before")
                     .font(theme.typography.medium16)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
-                    .background(theme.colors.primary)
+                    .background(canStartCall ? theme.colors.primary : theme.colors.textSecondary)
                     .cornerRadius(8)
             }
+            .disabled(!canStartCall)
         }
         .padding(16)
         .background(Color.white)

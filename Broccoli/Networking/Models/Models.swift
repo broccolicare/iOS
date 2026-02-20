@@ -209,6 +209,121 @@ public struct AllServicesResponse: Codable {
     public let data: [Service]
 }
 
+public struct ContactUsResponse: Codable {
+    public let message: String?
+    public let data: ContactUsData?
+}
+
+public struct ContactUsData: Codable {
+    public let id: Int?
+    public let name: String?
+    public let email: String?
+    public let phone: String?
+    public let subject: String?
+    public let message: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, name, email, phone, subject, message
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+public struct DeviceTokenResponse: Codable {
+    public let message: String?
+    public let data: DeviceTokenData?
+}
+
+public struct DeviceTokenData: Codable {
+    public let id: Int?
+    public let deviceType: String?
+    public let deviceToken: String?
+    public let deviceName: String?
+    public let appVersion: String?
+    public let createdAt: String?
+    public let updatedAt: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case deviceType = "device_type"
+        case deviceToken = "device_token"
+        case deviceName = "device_name"
+        case appVersion = "app_version"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+public struct NotificationsResponse: Codable {
+    public let success: Bool?
+    public let notifications: NotificationsPaginatedData?
+    public let unreadCount: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case notifications
+        case unreadCount = "unread_count"
+    }
+}
+
+public struct NotificationsPaginatedData: Codable {
+    public let data: [AppNotification]?
+    public let currentPage: Int?
+    public let lastPage: Int?
+    public let perPage: Int?
+    public let total: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case data
+        case currentPage = "current_page"
+        case lastPage = "last_page"
+        case perPage = "per_page"
+        case total
+    }
+}
+
+public struct AppNotification: Codable, Identifiable {
+    public let id: Int
+    public let type: String?
+    public let title: String?
+    public let message: String?
+    public let userId: Int?
+    public let readAt: String?
+    public let isRead: Bool
+    public let createdAt: String?
+    public let updatedAt: String?
+    public let data: NotificationPayload?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, type, title, message, data
+        case userId = "user_id"
+        case readAt = "read_at"
+        case isRead = "is_read"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+public struct NotificationPayload: Codable {
+    // Booking notifications
+    public let bookingId: Int?
+    public let doctorId: Int?
+    public let doctorName: String?
+    public let reason: String?
+    // Prescription notifications
+    public let prescriptionId: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case reason
+        case bookingId = "booking_id"
+        case doctorId = "doctor_id"
+        case doctorName = "doctor_name"
+        case prescriptionId = "prescription_id"
+    }
+}
+
 // MARK: - Core Models
 //public struct Appointment: Codable, Identifiable {
 //    public let id: String

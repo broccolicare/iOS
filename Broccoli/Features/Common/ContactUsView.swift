@@ -11,6 +11,7 @@ import AlertToast
 struct ContactUsView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var appVM: AppGlobalViewModel
     
     @StateObject private var vm = ContactUsViewModel()
     @State private var showSuccessToast = false
@@ -144,7 +145,7 @@ struct ContactUsView: View {
                 Button(action: {
                     sendMessage()
                 }) {
-                    if vm.isLoading {
+                    if appVM.isSubmittingContact {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .frame(maxWidth: .infinity)
@@ -161,7 +162,7 @@ struct ContactUsView: View {
                             .cornerRadius(12)
                     }
                 }
-                .disabled(vm.isLoading)
+                .disabled(appVM.isSubmittingContact)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
                 .background(
@@ -197,28 +198,26 @@ struct ContactUsView: View {
     private func sendMessage() {
         hideKeyboard()
         
-        // Validate form using view model
         guard vm.validateContactFields() else { return }
         
-        // TODO: Implement actual API call to send contact message
-        // For now, simulate success
-        vm.isLoading = true
-        
         Task {
-            // Simulate API call
-            try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+            let success = await appVM.submitContactForm(
+                name: vm.name,
+                email: vm.email,
+                phone: nil,
+                subject: vm.subject,
+                message: vm.message
+            )
             
-            vm.isLoading = false
-            
-            // Show success toast
-            showSuccessToast = true
-            
-            // Reset form
-            vm.resetForm()
-            
-            // Navigate back after delay
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            router.pop()
+            if success {
+                showSuccessToast = true
+                vm.resetForm()
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                router.pop()
+            } else {
+                errorMessage = appVM.errorMessage ?? "Something went wrong. Please try again."
+                showErrorToast = true
+            }
         }
     }
 }
