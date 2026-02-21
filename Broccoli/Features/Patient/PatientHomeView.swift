@@ -3,8 +3,6 @@ import SwiftUI
 // MARK: - Models (sample)
 struct Banner: Identifiable { let id = UUID(); let title: String; let subtitle: String; let imageName: String }
 struct ServiceItem: Identifiable { let id = UUID(); let title: String; let icon: String; let color: Color }
-struct Appointment: Identifiable { let id = UUID(); let doctorName: String; let specialty: String; let date: String; let time: String; let avatar: String }
-
 // MARK: - Home View
 struct PatientHomeView: View {
     @Environment(\.appTheme) private var theme
@@ -23,16 +21,8 @@ struct PatientHomeView: View {
     ]
     
     // Convert API BookingData to UI Appointment model
-    private var appointments: [Appointment] {
-        bookingVM.upcomingAppointments.map { booking in
-            Appointment(
-                doctorName: booking.service?.name ?? "Doctor",
-                specialty: booking.department?.name ?? "Specialist",
-                date: formatDate(booking.date),
-                time: booking.time,
-                avatar: "doctor-placeholder"
-            )
-        }
+    private var appointments: [BookingData] {
+        bookingVM.upcomingAppointments
     }
     
     var body: some View {
@@ -131,7 +121,7 @@ struct PatientHomeView: View {
                                                      perspective: 0.9,
                                                      height: 160) { item in
                                         ZStack {
-                                            AppointmentCard(appointment: item)
+                                            AppointmentCard(booking: item)
                                                 .padding(.horizontal, theme.spacing.lg)
                                         }
                                         .frame(height: 200)
@@ -198,19 +188,6 @@ struct PatientHomeView: View {
         return window?.safeAreaInsets.bottom ?? 0
     }
     
-    // Format date from API (yyyy-MM-dd) to display format
-    private func formatDate(_ dateString: String) -> String {
-        let inputFormatter = DateFormatter()
-        inputFormatter.dateFormat = "yyyy-MM-dd"
-        
-        let outputFormatter = DateFormatter()
-        outputFormatter.dateFormat = "MMM d, yyyy"
-        
-        if let date = inputFormatter.date(from: dateString) {
-            return outputFormatter.string(from: date)
-        }
-        return dateString
-    }
 }
 
 // MARK: - Components

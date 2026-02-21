@@ -483,6 +483,10 @@ public struct BookingData: Codable, Hashable, Identifiable {
     let doctorStatus: String?
     let doctorNotes: String?
     let doctorRespondedAt: String?
+    let consultationNotes: String?
+    let consultationCompletedAt: String?
+    let agoraSessionId: String?
+    let bookingNumber: String?
     let createdAt: String?
     let updatedAt: String?
     let service: ServiceData?
@@ -509,6 +513,10 @@ public struct BookingData: Codable, Hashable, Identifiable {
         case doctorStatus = "doctor_status"
         case doctorNotes = "doctor_notes"
         case doctorRespondedAt = "doctor_responded_at"
+        case consultationNotes = "consultation_notes"
+        case consultationCompletedAt = "consultation_completed_at"
+        case agoraSessionId = "agora_session_id"
+        case bookingNumber = "booking_number"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case service
@@ -1415,17 +1423,19 @@ public struct RecoveryJourneyEnquiry: Codable, Identifiable {
 // MARK: - Video Call Models
 
 public struct AgoraTokenResponse: Codable {
-    public let success: Bool
-    public let token: String
-    public let channelName: String
-    public let uid: UInt
-    public let expiresAt: String?
+    public let success: Bool?
+    public let appId: String?
+    public let token: String?
+    public let channelName: String?
+    public let uid: UInt?
+    public let expiresIn: Int?
     public let message: String?
     
     private enum CodingKeys: String, CodingKey {
         case success, token, uid, message
+        case appId = "app_id"
         case channelName = "channel_name"
-        case expiresAt = "expires_at"
+        case expiresIn = "expires_in"
     }
 }
 

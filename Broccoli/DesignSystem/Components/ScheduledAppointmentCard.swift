@@ -8,18 +8,13 @@
 import SwiftUI
 
 struct ScheduledAppointmentCard: View {
-    let appointment: DoctorAppointment
+    let booking: BookingData
     let theme: AppThemeProtocol
-    let onStartCall: () -> Void
-    
-    // Check if within call window (5 min before to 30 min after appointment)
-    private var canStartCall: Bool {
-        Date.isWithinCallWindow(appointmentDate: appointment.date, appointmentTime: appointment.startTime)
-    }
+    var onCardTap: (() -> Void)? = nil
     
     var body: some View {
         VStack(spacing: 16) {
-            // Patient Info
+            // Patient Info — tapping here navigates to detail
             HStack(spacing: 12) {
                 // Patient Avatar
                 Circle()
@@ -30,33 +25,26 @@ struct ScheduledAppointmentCard: View {
                     )
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(appointment.patientName)
+                    Text(booking.user?.name ?? "Patient")
                         .font(theme.typography.semiBold22)
                         .foregroundStyle(.black)
                     
-                    Text(formatDate(appointment.date))
+                    Text(formattedDate)
                         .font(theme.typography.regular14)
                         .foregroundStyle(theme.colors.textSecondary)
                     
-                    Text("\(appointment.startTime) - \(appointment.endTime)")
+                    Text(formattedTimeRange)
                         .font(theme.typography.regular14)
                         .foregroundStyle(theme.colors.primary)
                 }
                 
                 Spacer()
             }
+            .contentShape(Rectangle())
+            .onTapGesture { onCardTap?() }
             
-            // Start Call Button
-            Button(action: onStartCall) {
-                Text(canStartCall ? "Start call" : "Call available 5 min before")
-                    .font(theme.typography.medium16)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(canStartCall ? theme.colors.primary : theme.colors.textSecondary)
-                    .cornerRadius(8)
-            }
-            .disabled(!canStartCall)
+            // Start Call Button — reusable component handles token fetch + navigation
+            VideoCallButton(booking: booking, role: .doctor)
         }
         .padding(16)
         .background(Color.white)
@@ -67,32 +55,73 @@ struct ScheduledAppointmentCard: View {
         )
     }
     
-    private func formatDate(_ dateString: String) -> String {
+    // MARK: - Helpers
+    
+    private var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        
-        if let date = formatter.date(from: dateString) {
+        if let date = formatter.date(from: booking.date) {
             formatter.dateFormat = "MMMM dd, yyyy"
             return formatter.string(from: date)
         }
-        return dateString
+        return booking.date
+    }
+    
+    private var formattedTimeRange: String {
+        var fmt = DateFormatter()
+        fmt.dateFormat = "HH:mm:ss"
+        let startDate = fmt.date(from: booking.time) ?? {
+            fmt.dateFormat = "HH:mm"
+            return fmt.date(from: booking.time)
+        }()
+        guard let startTime = startDate else { return booking.time }
+        let duration = booking.service?.duration ?? 30
+        let endTime = Calendar.current.date(byAdding: .minute, value: duration, to: startTime) ?? startTime
+        let display = DateFormatter()
+        display.dateFormat = "h:mm a"
+        return "\(display.string(from: startTime)) - \(display.string(from: endTime))"
     }
 }
 
 #Preview {
-    ScheduledAppointmentCard(
-        appointment: DoctorAppointment(
-            id: 3,
-            patientName: "Marc Maddison",
-            patientAvatar: "patient-avatar-3",
-            date: "2026-02-14",
-            startTime: "12:00 PM",
-            endTime: "12:30 PM",
-            status: .scheduled
+    let sampleBooking = BookingData(
+        id: 60,
+        userId: 30,
+        departmentId: 1,
+        serviceId: 1,
+        assignedDoctorId: 29,
+        date: "2026-02-20",
+        time: "08:00",
+        timeSlot: "morning",
+        amount: "50.00",
+        status: "confirmed",
+        paymentStatus: "paid",
+        paymentMethod: "stripe",
+        stripePaymentIntentId: nil,
+        stripeCustomerId: nil,
+        stripePaymentMethodId: nil,
+        doctorStatus: "accepted",
+        doctorNotes: nil,
+        doctorRespondedAt: nil,
+        consultationNotes: nil,
+        consultationCompletedAt: nil,
+        agoraSessionId: "booking_60_1771512180",
+        bookingNumber: "BRC-00000060",
+        createdAt: nil,
+        updatedAt: nil,
+        service: nil,
+        department: nil,
+        user: UserData(
+            id: 30, name: "Marc Maddison", email: "marc@example.com",
+            username: nil, stripeId: nil, pmType: nil, pmLastFour: nil,
+            trialEndsAt: nil, twoFactorSecret: nil, twoFactorRecoveryCodes: nil,
+            twoFactorConfirmedAt: nil, createdAt: nil, updatedAt: nil
         ),
-        theme: AppTheme.default,
-        onStartCall: {}
+        assignedDoctor: nil
     )
-    .padding()
-    .background(Color(red: 0.96, green: 0.97, blue: 0.98))
+    ScheduledAppointmentCard(booking: sampleBooking, theme: AppTheme.default)
+        .padding()
+        .background(Color(red: 0.96, green: 0.97, blue: 0.98))
+        .environment(\.appTheme, AppTheme.default)
+        .environmentObject(BookingGlobalViewModel(bookingService: BookingService(httpClient: HTTPClient())))
 }

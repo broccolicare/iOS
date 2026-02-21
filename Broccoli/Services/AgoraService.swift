@@ -14,6 +14,7 @@ public protocol AgoraServiceProtocol {
     func initializeEngine()
     func joinChannel(token: String, channelName: String, uid: UInt) async throws
     func leaveChannel()
+    func renewToken(_ token: String)
     func destroy()
     func toggleLocalAudio() -> Bool
     func toggleLocalVideo() -> Bool
@@ -26,11 +27,15 @@ public final class AgoraService: NSObject, AgoraServiceProtocol {
     private var agoraEngine: AgoraRtcEngineKit?
     private let appId: String
     
+    // Saved local video view so it can be re-registered after engine init
+    private var pendingLocalVideoView: UIView?
+    
     // Publishers for state changes
     public let remoteUserJoinedPublisher = PassthroughSubject<UInt, Never>()
     public let remoteUserLeftPublisher = PassthroughSubject<UInt, Never>()
     public let connectionStateChangedPublisher = PassthroughSubject<(AgoraConnectionState, AgoraConnectionChangedReason), Never>()
     public let networkQualityPublisher = PassthroughSubject<(UInt, AgoraNetworkQuality, AgoraNetworkQuality), Never>()
+    public let tokenPrivilegeWillExpirePublisher = PassthroughSubject<Void, Never>()
     
     private var isLocalAudioMuted: Bool = false
     private var isLocalVideoMuted: Bool = false
@@ -76,6 +81,16 @@ public final class AgoraService: NSObject, AgoraServiceProtocol {
         // Set client role to broadcaster (both can send/receive)
         agoraEngine?.setClientRole(.broadcaster)
         
+        // Re-apply local video canvas if the view was registered before engine init
+        if let view = pendingLocalVideoView {
+            let canvas = AgoraRtcVideoCanvas()
+            canvas.uid = 0
+            canvas.view = view
+            canvas.renderMode = .hidden
+            agoraEngine?.setupLocalVideo(canvas)
+            pendingLocalVideoView = nil
+        }
+        
         print("✅ [AgoraService] Engine initialized successfully")
     }
     
@@ -89,11 +104,18 @@ public final class AgoraService: NSObject, AgoraServiceProtocol {
         
         // Create media options
         let options = AgoraRtcChannelMediaOptions()
-        options.publishCameraTrack = true
         options.publishMicrophoneTrack = true
         options.autoSubscribeAudio = true
         options.autoSubscribeVideo = true
         options.clientRoleType = .broadcaster
+        
+        // Simulator has no real camera — publishing camera track causes FigCaptureSource errors
+        // and can trigger an SDK reconnect that exposes token validation failures
+        #if targetEnvironment(simulator)
+        options.publishCameraTrack = false
+        #else
+        options.publishCameraTrack = true
+        #endif
         
         // Join channel
         let result = engine.joinChannel(
@@ -116,11 +138,17 @@ public final class AgoraService: NSObject, AgoraServiceProtocol {
         print("✅ [AgoraService] Left channel")
     }
     
+    public func renewToken(_ token: String) {
+        agoraEngine?.renewToken(token)
+        print("🔑 [AgoraService] Token renewed")
+    }
+    
     public func destroy() {
         agoraEngine?.stopPreview()
         agoraEngine?.leaveChannel(nil)
         AgoraRtcEngineKit.destroy()
         agoraEngine = nil
+        pendingLocalVideoView = nil
         print("✅ [AgoraService] Engine destroyed")
     }
     
@@ -147,8 +175,14 @@ public final class AgoraService: NSObject, AgoraServiceProtocol {
         canvas.uid = 0
         canvas.view = view
         canvas.renderMode = .hidden
-        agoraEngine?.setupLocalVideo(canvas)
-        print("✅ [AgoraService] Local video setup")
+        if agoraEngine != nil {
+            agoraEngine?.setupLocalVideo(canvas)
+            print("✅ [AgoraService] Local video setup")
+        } else {
+            // Engine not yet initialized — save view to re-register after initializeEngine()
+            pendingLocalVideoView = view
+            print("⏳ [AgoraService] Local video view saved, will register after engine init")
+        }
     }
     
     public func setupRemoteVideo(view: UIView, uid: UInt) {
@@ -190,6 +224,12 @@ extension AgoraService: AgoraRtcEngineDelegate {
     
     public func rtcEngine(_ engine: AgoraRtcEngineKit, didOccurWarning warningCode: AgoraWarningCode) {
         print("⚠️ [AgoraService] Warning: \(warningCode.rawValue)")
+    }
+    
+    // Called ~30 seconds before the token expires — triggers proactive renewal
+    public func rtcEngineTokenPrivilegeWillExpire(_ engine: AgoraRtcEngineKit, token: String) {
+        print("🔑 [AgoraService] Token privilege will expire — requesting renewal")
+        tokenPrivilegeWillExpirePublisher.send()
     }
 }
 

@@ -14,6 +14,9 @@ struct AppointmentDetailForDoctorView: View {
     
     let booking: BookingData
     
+    @State private var showActionError = false
+    @State private var actionErrorMessage = ""
+    
     var body: some View {
         VStack(spacing: 0) {
             // Header with gradient background
@@ -27,7 +30,9 @@ struct AppointmentDetailForDoctorView: View {
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: 170)
+                // Base content height (126 pt) + real safe-area inset.
+                // iPhone 11 (≈44 pt) → 170 pt  |  iPhone 16 (≈59 pt) → 185 pt
+                .frame(height: 116 + topSafeAreaInset)
                 .frame(maxWidth: .infinity)
                 .ignoresSafeArea(edges: .top)
                 
@@ -78,8 +83,8 @@ struct AppointmentDetailForDoctorView: View {
                                 .foregroundStyle(theme.colors.profileDetailTextColor)
                                 .padding(.top, 6)
                             
-                            // Patient ID
-                            Text("Patient ID: \(booking.userId ?? 0)")
+                            // Booking Number
+                            Text(booking.bookingNumber ?? "#\(booking.id)")
                                 .font(theme.typography.regular16)
                                 .foregroundStyle(theme.colors.profileDetailTextColor)
                         }
@@ -194,25 +199,46 @@ struct AppointmentDetailForDoctorView: View {
                                 Text("Treatment Details")
                                     .font(theme.typography.bold18)
                                     .foregroundStyle(theme.colors.textPrimary)
-                                
-                                Text("Clinical notes")
-                                    .font(theme.typography.regular14)
-                                    .foregroundStyle(theme.colors.textSecondary)
                             }
                             
                             Spacer()
                         }
                         
-                        // Description
+                        // Treatment Type
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Notes")
+                            Text("Treatment Type")
                                 .font(theme.typography.regular12)
                                 .foregroundStyle(theme.colors.textSecondary)
                             
-                            Text("Patient requires a follow-up appointment to discuss treatment progress and adjust medication dosage.")
-                                .font(theme.typography.regular14)
+                            Text(booking.service?.name ?? booking.department?.name ?? "Consultation")
+                                .font(theme.typography.semiBold16)
                                 .foregroundStyle(theme.colors.textPrimary)
-                                .lineSpacing(4)
+                            
+                            if let description = booking.service?.description, !description.isEmpty {
+                                Text(description)
+                                    .font(theme.typography.regular14)
+                                    .foregroundStyle(theme.colors.profileDetailTextColor)
+                                    .lineSpacing(4)
+                            }
+                        }
+                        
+                        // Doctor Notes
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Doctor Notes")
+                                .font(theme.typography.regular12)
+                                .foregroundStyle(theme.colors.textSecondary)
+                            
+                            if let notes = booking.doctorNotes, !notes.isEmpty {
+                                Text(notes)
+                                    .font(theme.typography.regular14)
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                    .lineSpacing(4)
+                            } else {
+                                Text("No notes added yet.")
+                                    .font(theme.typography.regular14)
+                                    .foregroundStyle(theme.colors.textSecondary)
+                                    .italic()
+                            }
                         }
                     }
                     .padding(.vertical, 16)
@@ -244,19 +270,8 @@ struct AppointmentDetailForDoctorView: View {
                     
                     // Call Button (only for confirmed/accepted bookings)
                     if booking.doctorStatus == "accepted" || booking.status == "confirmed" {
-                        Button(action: {
-                            Task { await bookingVM.generateTokenAndStartCall(booking: booking) }
-                        }) {
-                            Text(canStartCall ? "Start Call" : "Call available 5 min before")
-                                .font(theme.typography.semiBold16)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(canStartCall ? theme.colors.primary : theme.colors.textSecondary)
-                                .cornerRadius(12)
-                        }
-                        .disabled(!canStartCall)
-                        .padding(.horizontal, 20)
+                        VideoCallButton(booking: booking, role: .doctor)
+                            .padding(.horizontal, 20)
                     }
                     
                     // Accept/Reject only for pending bookings
@@ -265,7 +280,12 @@ struct AppointmentDetailForDoctorView: View {
                             Button(action: {
                                 Task {
                                     let success = await bookingVM.acceptBooking(bookingId: booking.id)
-                                    if success { router.pop() }
+                                    if success {
+                                        router.pop()
+                                    } else {
+                                        actionErrorMessage = bookingVM.errorMessage ?? "Failed to accept booking. Please try again."
+                                        showActionError = true
+                                    }
                                 }
                             }) {
                                 Text("Accept")
@@ -280,7 +300,12 @@ struct AppointmentDetailForDoctorView: View {
                             Button(action: {
                                 Task {
                                     let success = await bookingVM.rejectBooking(bookingId: booking.id, reason: "Rejected by doctor")
-                                    if success { router.pop() }
+                                    if success {
+                                        router.pop()
+                                    } else {
+                                        actionErrorMessage = bookingVM.errorMessage ?? "Failed to reject booking. Please try again."
+                                        showActionError = true
+                                    }
                                 }
                             }) {
                                 Text("Reject")
@@ -308,12 +333,21 @@ struct AppointmentDetailForDoctorView: View {
         .onAppear {
             print("Booking Detail: -- \(booking)")
         }
+        .alert("Action Failed", isPresented: $showActionError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(actionErrorMessage)
+        }
     }
     
     // MARK: - Helper Functions
     
-    private var canStartCall: Bool {
-        Date.isWithinCallWindow(appointmentDate: booking.date, appointmentTime: booking.time)
+    /// Returns the window's real top safe-area inset so the gradient height
+    /// adapts across devices (e.g. iPhone 11 ≈ 44 pt, iPhone 16 ≈ 59 pt).
+    private var topSafeAreaInset: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.keyWindow?.safeAreaInsets.top ?? 44
     }
     
     private var doctorStatusColor: Color {
@@ -375,6 +409,10 @@ struct AppointmentDetailForDoctorView: View {
         doctorStatus: "pending",
         doctorNotes: nil,
         doctorRespondedAt: nil,
+        consultationNotes: nil,
+        consultationCompletedAt: nil,
+        agoraSessionId: nil,
+        bookingNumber: "BRC-00000001",
         createdAt: nil,
         updatedAt: nil,
         service: ServiceData(

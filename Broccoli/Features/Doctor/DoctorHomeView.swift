@@ -6,6 +6,9 @@ struct DoctorHomeView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var bookingVM: BookingGlobalViewModel
     
+    @State private var showActionError = false
+    @State private var actionErrorMessage = ""
+    
     // Convert BookingData to DoctorAppointment for Today's Appointments (Pending)
     private var todaysAppointments: [DoctorAppointment] {
         bookingVM.pendingBookings.map { booking in
@@ -17,21 +20,6 @@ struct DoctorHomeView: View {
                 startTime: booking.time,
                 endTime: calculateEndTime(from: booking.time, duration: booking.service?.duration ?? 30),
                 status: .pending
-            )
-        }
-    }
-    
-    // Convert BookingData to DoctorAppointment for Scheduled Appointments (Accepted)
-    private var scheduledAppointments: [DoctorAppointment] {
-        bookingVM.myBookings.map { booking in
-            DoctorAppointment(
-                id: booking.id,
-                patientName: booking.user?.name ?? "Patient",
-                patientAvatar: "doctor-placeholder",
-                date: booking.date,
-                startTime: booking.time,
-                endTime: calculateEndTime(from: booking.time, duration: booking.service?.duration ?? 30),
-                status: .scheduled
             )
         }
     }
@@ -127,18 +115,15 @@ struct DoctorHomeView: View {
                     
                     // Scheduled Appointments Section
                     Section {
-                        if scheduledAppointments.isEmpty {
+                        if bookingVM.myBookings.isEmpty {
                             NoAppointmentView(message: "No scheduled appointments")
                                 .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 20, trailing: 16))
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
                         } else {
-                            ForEach(scheduledAppointments) { appointment in
-                                ScheduledAppointmentCard(appointment: appointment, theme: theme) {
-                                    // Start call action - find the corresponding BookingData
-                                    if let booking = bookingVM.myBookings.first(where: { $0.id == appointment.id }) {
-                                        startCall(for: booking)
-                                    }
+                            ForEach(bookingVM.myBookings) { booking in
+                                ScheduledAppointmentCard(booking: booking, theme: theme) {
+                                    router.push(.appointmentDetailForDoctor(booking: booking))
                                 }
                                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                                 .listRowBackground(Color.clear)
@@ -155,6 +140,11 @@ struct DoctorHomeView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .navigationBarHidden(true)
+                .alert("Action Failed", isPresented: $showActionError) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(actionErrorMessage)
+                }
             }
             .task {
                 // Add a small delay to let navigation settle before triggering API calls
@@ -192,30 +182,28 @@ struct DoctorHomeView: View {
             let success = await bookingVM.acceptBooking(bookingId: appointment.id)
             
             if success {
-                // Refresh both lists after successful acceptance
                 await bookingVM.refreshPendingBookings()
                 await bookingVM.refreshMyBookings()
+            } else {
+                actionErrorMessage = bookingVM.errorMessage ?? "Failed to accept booking. Please try again."
+                showActionError = true
             }
         }
     }
     
     private func rejectAppointment(_ appointment: DoctorAppointment) {
         Task {
-            // Call reject API with a default reason (you can add a dialog to get reason from user)
             let success = await bookingVM.rejectBooking(bookingId: appointment.id, reason: "Rejected by doctor")
             
             if success {
-                // Refresh pending bookings list after successful rejection
                 await bookingVM.refreshPendingBookings()
+            } else {
+                actionErrorMessage = bookingVM.errorMessage ?? "Failed to reject booking. Please try again."
+                showActionError = true
             }
         }
     }
     
-    private func startCall(for booking: BookingData) {
-        Task {
-            await bookingVM.generateTokenAndStartCall(booking: booking)
-        }
-    }
 }
 
 #Preview {

@@ -88,6 +88,14 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var myBookings: [BookingData] = []
     @Published public var isLoadingMyBookings: Bool = false
     
+    // Past/history bookings for doctor
+    @Published public var doctorBookingHistory: [BookingData] = []
+    @Published public var isLoadingDoctorHistory: Bool = false
+    @Published public var doctorHistoryCurrentPage: Int = 1
+    @Published public var doctorHistoryLastPage: Int = 1
+    @Published public var doctorHistoryPerPage: Int = 15
+    @Published public var doctorHistoryTotal: Int = 0
+    
     // Prescriptions
     @Published public var prescriptions: [PrescriptionOrder] = []
     @Published public var isLoadingPrescriptions: Bool = false
@@ -970,6 +978,49 @@ public final class BookingGlobalViewModel: ObservableObject {
         await fetchMyBookingsForDoctor()
     }
     
+    // MARK: - Doctor Booking History
+    
+    /// Fetch past/completed bookings for doctor with pagination
+    public func fetchDoctorBookingHistory(status: String? = nil, type: String? = nil, perPage: Int = 15, page: Int = 1, loadMore: Bool = false) async {
+        isLoadingDoctorHistory = true
+        errorMessage = nil
+        
+        do {
+            let response = try await bookingService.fetchDoctorBookingHistory(status: status, type: type, perPage: perPage, page: page)
+            
+            if response.success {
+                if loadMore {
+                    self.doctorBookingHistory.append(contentsOf: response.bookingsList)
+                } else {
+                    self.doctorBookingHistory = response.bookingsList
+                }
+                self.doctorHistoryCurrentPage = response.currentPage
+                self.doctorHistoryLastPage = response.lastPage
+                self.doctorHistoryPerPage = response.perPage
+                self.doctorHistoryTotal = response.total
+            } else {
+                errorMessage = response.message ?? "Failed to fetch booking history"
+                showErrorToast = true
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+        
+        isLoadingDoctorHistory = false
+    }
+    
+    /// Load next page of doctor booking history
+    public func loadMoreDoctorBookingHistory(status: String? = nil, type: String? = nil) async {
+        guard doctorHistoryCurrentPage < doctorHistoryLastPage else { return }
+        await fetchDoctorBookingHistory(status: status, type: type, perPage: doctorHistoryPerPage, page: doctorHistoryCurrentPage + 1, loadMore: true)
+    }
+    
+    /// Refresh doctor booking history
+    public func refreshDoctorBookingHistory() async {
+        await fetchDoctorBookingHistory()
+    }
+    
     // MARK: - Prescriptions
     
     /// Fetch prescriptions list for patient
@@ -1133,9 +1184,36 @@ public final class BookingGlobalViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        // ── TEST MODE ─────────────────────────────────────────────────────────
+        // When enabled, skip the token API entirely and use hard-coded credentials.
+        // Flip VideoCallTestConfig.isEnabled = false before shipping to production.
+        if VideoCallTestConfig.isEnabled {
+            print("🧪 [BookingVM] Test mode ON — using hardcoded Agora credentials (doctor)")
+            await MainActor.run {
+                Router.shared.push(.videoCall(
+                    booking: booking,
+                    token: VideoCallTestConfig.token,
+                    channelName: VideoCallTestConfig.channelName,
+                    uid: VideoCallTestConfig.doctorUID
+                ))
+                isLoading = false
+            }
+            return
+        }
+        // ──────────────────────────────────────────────────────────────────────
+        
         do {
+            // Build channel name: prefer agora_session_id from booking, else construct one
+            let channelName = booking.agoraSessionId ?? "booking_\(booking.id)_\(Int(Date().timeIntervalSince1970))"
+            
             // 1. Generate Agora token from backend
-            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id)
+            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id, channelName: channelName, expireSeconds: 3600)
+            
+            guard let token = tokenResponse.token,
+                  let channel = tokenResponse.channelName,
+                  let uid = tokenResponse.uid else {
+                throw NSError(domain: "Agora", code: -1, userInfo: [NSLocalizedDescriptionKey: tokenResponse.message ?? "Failed to generate token"])
+            }
             
             // 2. Mark call as started in backend
             _ = try await bookingService.startVideoCall(bookingId: booking.id)
@@ -1144,9 +1222,9 @@ public final class BookingGlobalViewModel: ObservableObject {
             await MainActor.run {
                 Router.shared.push(.videoCall(
                     booking: booking,
-                    token: tokenResponse.token,
-                    channelName: tokenResponse.channelName,
-                    uid: tokenResponse.uid
+                    token: token,
+                    channelName: channel,
+                    uid: uid
                 ))
                 isLoading = false
             }
@@ -1164,17 +1242,42 @@ public final class BookingGlobalViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        // ── TEST MODE ─────────────────────────────────────────────────────────
+        if VideoCallTestConfig.isEnabled {
+            print("🧪 [BookingVM] Test mode ON — using hardcoded Agora credentials (patient)")
+            await MainActor.run {
+                Router.shared.push(.videoCall(
+                    booking: booking,
+                    token: VideoCallTestConfig.token,
+                    channelName: VideoCallTestConfig.channelName,
+                    uid: VideoCallTestConfig.patientUID
+                ))
+                isLoading = false
+            }
+            return
+        }
+        // ──────────────────────────────────────────────────────────────────────
+        
         do {
+            // Build channel name: prefer agora_session_id from booking, else construct one
+            let channelName = booking.agoraSessionId ?? "booking_\(booking.id)_\(Int(Date().timeIntervalSince1970))"
+            
             // 1. Generate Agora token from backend
-            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id)
+            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id, channelName: channelName, expireSeconds: 3600)
+            
+            guard let token = tokenResponse.token,
+                  let channel = tokenResponse.channelName,
+                  let uid = tokenResponse.uid else {
+                throw NSError(domain: "Agora", code: -1, userInfo: [NSLocalizedDescriptionKey: tokenResponse.message ?? "Failed to generate token"])
+            }
             
             // 2. Navigate to video call screen
             await MainActor.run {
                 Router.shared.push(.videoCall(
                     booking: booking,
-                    token: tokenResponse.token,
-                    channelName: tokenResponse.channelName,
-                    uid: tokenResponse.uid
+                    token: token,
+                    channelName: channel,
+                    uid: uid
                 ))
                 isLoading = false
             }

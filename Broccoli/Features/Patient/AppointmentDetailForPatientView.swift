@@ -13,6 +13,14 @@ struct AppointmentDetailForPatientView: View {
     @EnvironmentObject private var bookingVM: BookingGlobalViewModel
     let booking: BookingData
     
+    /// Returns the window's real top safe-area inset so the gradient height
+    /// adapts across devices (e.g. iPhone 11 ≈ 44 pt, iPhone 16 ≈ 59 pt).
+    private var topSafeAreaInset: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.keyWindow?.safeAreaInsets.top ?? 44
+    }
+    
     private var formattedDate: String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -56,7 +64,9 @@ struct AppointmentDetailForPatientView: View {
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: 170)
+                // Base content height (116 pt) + real safe-area inset.
+                // iPhone 11 (≈44 pt) → 160 pt  |  iPhone 16 (≈59 pt) → 175 pt
+                .frame(height: 116 + topSafeAreaInset)
                 .frame(maxWidth: .infinity)
                 .ignoresSafeArea(edges: .top)
                 
@@ -121,12 +131,10 @@ struct AppointmentDetailForPatientView: View {
                                 .foregroundStyle(theme.colors.profileDetailTextColor)
                                 .padding(.top, 10)
                             
-                            // Show experience only when doctor is assigned
-                            if booking.assignedDoctor != nil {
-                                Text("10+ years experience")
-                                    .font(theme.typography.regular16)
-                                    .foregroundStyle(theme.colors.profileDetailTextColor)
-                            }
+                            // Booking number
+                            Text(booking.bookingNumber ?? "#\(booking.id)")
+                                .font(theme.typography.regular16)
+                                .foregroundStyle(theme.colors.profileDetailTextColor)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -188,10 +196,6 @@ struct AppointmentDetailForPatientView: View {
                                 Text("Treatment Details")
                                     .font(theme.typography.bold18)
                                     .foregroundStyle(theme.colors.textPrimary)
-                                
-                                Text("Est. 30 minutes")
-                                    .font(theme.typography.regular14)
-                                    .foregroundStyle(theme.colors.textSecondary)
                             }
                             
                             Spacer()
@@ -209,16 +213,21 @@ struct AppointmentDetailForPatientView: View {
                         }
                         
                         // Doctor Notes
-                        if let notes = booking.doctorNotes, !notes.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Doctor Notes")
-                                    .font(theme.typography.regular12)
-                                    .foregroundStyle(theme.colors.textSecondary)
-                                
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Doctor Notes")
+                                .font(theme.typography.regular12)
+                                .foregroundStyle(theme.colors.textSecondary)
+                            
+                            if let notes = booking.doctorNotes, !notes.isEmpty {
                                 Text(notes)
                                     .font(theme.typography.regular14)
                                     .foregroundStyle(theme.colors.textPrimary)
                                     .lineSpacing(4)
+                            } else {
+                                Text("No notes added yet.")
+                                    .font(theme.typography.regular14)
+                                    .foregroundStyle(theme.colors.textSecondary)
+                                    .italic()
                             }
                         }
                     }
@@ -251,17 +260,8 @@ struct AppointmentDetailForPatientView: View {
                     
                     // Call Button (only for confirmed bookings)
                     if booking.status == "confirmed" {
-                        Button(action: { joinVideoCall() }) {
-                            Text(canJoinCall ? "Join Call" : "Call available 5 min before")
-                                .font(theme.typography.semiBold16)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(canJoinCall ? Color.green : theme.colors.textSecondary)
-                                .cornerRadius(12)
-                        }
-                        .disabled(!canJoinCall)
-                        .padding(.horizontal, 20)
+                        VideoCallButton(booking: booking, role: .patient)
+                            .padding(.horizontal, 20)
                     }
                 }
                 .padding(.bottom, 16)
@@ -277,10 +277,6 @@ struct AppointmentDetailForPatientView: View {
     
     // MARK: - Helper Methods
     
-    private var canJoinCall: Bool {
-        Date.isWithinCallWindow(appointmentDate: booking.date, appointmentTime: booking.time)
-    }
-    
     private func statusColor(for status: String) -> Color {
         switch status.lowercased() {
         case "confirmed": return Color.green
@@ -291,16 +287,6 @@ struct AppointmentDetailForPatientView: View {
         }
     }
     
-    private var shouldShowJoinCallButton: Bool {
-        booking.status != "completed" &&
-        Date.isWithinCallWindow(appointmentDate: booking.date, appointmentTime: booking.time)
-    }
-    
-    private func joinVideoCall() {
-        Task {
-            await bookingVM.generateTokenAndJoinCall(booking: booking)
-        }
-    }
 }
 
 // MARK: - Preview
@@ -324,6 +310,10 @@ struct AppointmentDetailForPatientView: View {
         doctorStatus: "accepted",
         doctorNotes: nil,
         doctorRespondedAt: nil,
+        consultationNotes: nil,
+        consultationCompletedAt: nil,
+        agoraSessionId: nil,
+        bookingNumber: "BRC-00000001",
         createdAt: nil,
         updatedAt: nil,
         service: ServiceData(

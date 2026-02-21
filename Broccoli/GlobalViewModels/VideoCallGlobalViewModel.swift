@@ -10,6 +10,24 @@ import SwiftUI
 import Combine
 import AgoraRtcKit
 
+// MARK: - Test Configuration
+/// Set `isEnabled = true` to bypass the Agora token API entirely and use hard-coded credentials.
+/// Flip it back to `false` before shipping to production.
+public struct VideoCallTestConfig {
+    /// Master switch. When `true`, no token endpoint is called.
+    public static var isEnabled: Bool = false
+    
+    /// A valid temporary token generated from the Agora console for the test channel below.
+    public static let token: String = "0064fa50bc791c84b3fb63717186dbc3adeIABN1ly313pS7u0S5b/yQH5+kF70Ry7rdOzzwmLX1e/fxHmdsCNjR2uTIgATpKM4UU2aaQQAAQDhCZlpAgDhCZlpAwDhCZlpBADhCZlp"
+    
+    /// Channel name to join in test mode. Must match the token above.
+    public static let channelName: String = "test-channel-broccoli"
+    
+    /// UID to use in test mode. Use different values for doctor/patient on separate devices.
+    public static let doctorUID: UInt = 2001
+    public static let patientUID: UInt = 30
+}
+
 @MainActor
 public class VideoCallGlobalViewModel: ObservableObject {
     
@@ -32,6 +50,8 @@ public class VideoCallGlobalViewModel: ObservableObject {
     private var callTimer: Timer?
     private var currentBooking: BookingData?
     private var currentUserRole: UserType?
+    private var reconnectAttempts: Int = 0
+    private static let maxReconnectAttempts = 1
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Call State Enum
@@ -114,6 +134,15 @@ public class VideoCallGlobalViewModel: ObservableObject {
                 self?.handleNetworkQuality(uid: uid, txQuality: txQuality, rxQuality: rxQuality)
             }
             .store(in: &cancellables)
+        
+        // Subscribe to token-about-to-expire events — renewToken before the channel is kicked
+        agoraService.tokenPrivilegeWillExpirePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                guard let self else { return }
+                Task { await self.renewTokenInBackground() }
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Call Management
@@ -161,7 +190,7 @@ public class VideoCallGlobalViewModel: ObservableObject {
         // If doctor and notes provided, send to backend
         if currentUserRole == .doctor, let notes = notes, !notes.isEmpty {
             do {
-                _ = try await bookingService.endVideoCall(bookingId: booking.id, notes: notes)
+                _ = try await bookingService.endConsultation(bookingId: booking.id, consultationNotes: notes)
                 print("✅ [VideoCallVM] Call ended with notes")
             } catch {
                 self.errorMessage = "Failed to save notes: \(error.localizedDescription)"
@@ -184,13 +213,20 @@ public class VideoCallGlobalViewModel: ObservableObject {
         
         do {
             // Generate new token
-            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id)
+            let channelName = booking.agoraSessionId ?? "booking_\(booking.id)_\(Int(Date().timeIntervalSince1970))"
+            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id, channelName: channelName, expireSeconds: 86400)
+            
+            guard let token = tokenResponse.token,
+                  let channel = tokenResponse.channelName,
+                  let uid = tokenResponse.uid else {
+                throw NSError(domain: "Agora", code: -1, userInfo: [NSLocalizedDescriptionKey: tokenResponse.message ?? "Failed to generate token"])
+            }
             
             // Rejoin channel
             try await agoraService.joinChannel(
-                token: tokenResponse.token,
-                channelName: tokenResponse.channelName,
-                uid: tokenResponse.uid
+                token: token,
+                channelName: channel,
+                uid: uid
             )
             
             self.callState = .connected
@@ -207,6 +243,20 @@ public class VideoCallGlobalViewModel: ObservableObject {
             self.errorMessage = "Failed to reconnect: \(error.localizedDescription)"
             self.showErrorAlert = true
             print("❌ [VideoCallVM] Reconnection failed: \(error)")
+        }
+    }
+    
+    // Proactive token refresh called 30 s before privilege expiry
+    private func renewTokenInBackground() async {
+        guard let booking = currentBooking else { return }
+        do {
+            let channelName = booking.agoraSessionId ?? "booking_\(booking.id)"
+            let tokenResponse = try await bookingService.generateAgoraToken(bookingId: booking.id, channelName: channelName, expireSeconds: 3600)
+            guard let newToken = tokenResponse.token else { return }
+            agoraService.renewToken(newToken)
+            print("🔑 [VideoCallVM] Token renewed proactively")
+        } catch {
+            print("⚠️ [VideoCallVM] Proactive token renewal failed: \(error)")
         }
     }
     
@@ -293,16 +343,26 @@ public class VideoCallGlobalViewModel: ObservableObject {
         case .connected:
             callState = .connected
             isReconnecting = false
+            reconnectAttempts = 0  // Reset on successful connection
         case .disconnected:
             callState = .disconnected
-            // Try to reconnect on network issues
             isReconnecting = true
         case .reconnecting:
             isReconnecting = true
         case .failed:
-            callState = .disconnected
-            errorMessage = "Connection failed"
-            showErrorAlert = true
+            // reason 8 = tokenExpired/invalidToken — attempt one automatic rejoin with a fresh token
+            if reason == .reasonTokenExpired, reconnectAttempts < Self.maxReconnectAttempts {
+                reconnectAttempts += 1
+                print("🔑 [VideoCallVM] Token rejected by Agora cloud (reason: \(reason.rawValue)) — attempting token renewal (\(reconnectAttempts)/\(Self.maxReconnectAttempts))")
+                Task { await reconnectToCall() }
+            } else {
+                callState = .disconnected
+                let detail = reason == .reasonTokenExpired
+                    ? "Token validation failed. Please check your Agora App Certificate configuration."
+                    : "Connection failed. Please check your network and try again."
+                errorMessage = detail
+                showErrorAlert = true
+            }
         case .connecting:
             callState = .connecting
         @unknown default:
@@ -344,6 +404,7 @@ public class VideoCallGlobalViewModel: ObservableObject {
         isLocalAudioMuted = false
         isLocalVideoMuted = false
         callState = .idle
+        reconnectAttempts = 0
     }
     
     deinit {
