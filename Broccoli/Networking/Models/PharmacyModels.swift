@@ -59,3 +59,8 @@ public struct Pharmacy: Codable, Identifiable, Hashable {
         case updatedAt = "updated_at"
     }
 }
+
+// MARK: - CustomStringConvertible (required for DropdownField)
+extension Pharmacy: CustomStringConvertible {
+    public var description: String { name }
+}

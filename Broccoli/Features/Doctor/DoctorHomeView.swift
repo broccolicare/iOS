@@ -56,7 +56,9 @@ struct DoctorHomeView: View {
                 Spacer()
                 
                 // Notification Bell
-                Button(action: {}) {
+                Button(action: {
+                    router.push(.notifications)
+                }) {
                     ZStack {
                         Circle()
                             .fill(theme.colors.primary.opacity(0.1))
@@ -139,6 +141,10 @@ struct DoctorHomeView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
+                .refreshable {
+                    await bookingVM.fetchPendingBookingsForDoctor()
+                    await bookingVM.fetchMyBookingsForDoctor()
+                }
                 .navigationBarHidden(true)
                 .alert("Action Failed", isPresented: $showActionError) {
                     Button("OK", role: .cancel) {}

@@ -106,6 +106,26 @@ extension Date {
     }
     
     // MARK: - Private Helpers
+
+    /// Returns true once the call window has opened (advanceMinutes before the appointment)
+    /// and keeps returning true indefinitely — callers are responsible for checking
+    /// whether the booking is complete.
+    /// - Parameters:
+    ///   - appointmentDate: Date string in format "yyyy-MM-dd"
+    ///   - appointmentTime: Time string in format "HH:mm" or "HH:mm:ss"
+    ///   - advanceMinutes: How many minutes before appointment the window opens (default: 5)
+    /// - Returns: True if current time is at or past (appointmentTime − advanceMinutes)
+    static func isCallWindowOpen(
+        appointmentDate: String,
+        appointmentTime: String,
+        advanceMinutes: Int = 5
+    ) -> Bool {
+        guard let appointmentDateTime = parseDateAndTime(date: appointmentDate, time: appointmentTime) else {
+            return false
+        }
+        let windowStart = appointmentDateTime.addingTimeInterval(TimeInterval(-advanceMinutes * 60))
+        return Date() >= windowStart
+    }
     
     /// Parse date and time strings into a Date object, supporting both HH:mm and HH:mm:ss formats
     /// - Parameters:

@@ -43,7 +43,7 @@ struct PatientHomeView: View {
                         Spacer()
                         Button {
                             // navigate to notifications screen; if you use router:
-                            router.push(.notifications) // example; replace with .notifications route if defined
+                            router.push(.notifications)
                         } label: {
                             ZStack {
                                 Circle()

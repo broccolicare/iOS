@@ -22,6 +22,8 @@ public enum AppEndpoint: Endpoint {
     case contactUs([String: Any])
     case registerDeviceToken([String: Any])
     case notifications
+    case markNotificationAsRead(Int)
+    case markAllNotificationsAsRead
     
     public var path: String {
         switch self {
@@ -43,19 +45,21 @@ public enum AppEndpoint: Endpoint {
         case .contactUs: return "/contact-us"
         case .registerDeviceToken: return "/device-tokens"
         case .notifications: return "/notifications"
+        case .markNotificationAsRead(let id): return "/notifications/\(id)/mark-as-read"
+        case .markAllNotificationsAsRead: return "/notifications/mark-all-as-read"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
         case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices, .notifications: return .GET
-        case .contactUs, .registerDeviceToken: return .POST
+        case .contactUs, .registerDeviceToken, .markNotificationAsRead, .markAllNotificationsAsRead: return .POST
         }
     }
     
     public var body: [String: Any]? {
         switch self {
-        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices, .notifications:
+        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices, .notifications, .markNotificationAsRead, .markAllNotificationsAsRead:
             return nil
         case .contactUs(let data):
             return data

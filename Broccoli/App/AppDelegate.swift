@@ -7,13 +7,14 @@
 
 import UIKit
 import FirebaseCore
+import FirebaseCrashlytics
 import FirebaseMessaging
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
         // Configure Firebase
-        //FirebaseApp.configure()
+        FirebaseApp.configure()
         
         // Set up push notifications
         UNUserNotificationCenter.current().delegate = self

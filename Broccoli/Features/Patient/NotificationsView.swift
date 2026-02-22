@@ -12,6 +12,8 @@ struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var appVM: AppGlobalViewModel
+    @EnvironmentObject private var bookingVM: BookingGlobalViewModel
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -35,10 +37,14 @@ struct NotificationsView: View {
                     
                     Spacer()
                     
-                    // Invisible spacer for centering
-                    Circle()
-                        .fill(.clear)
-                        .frame(width: 40, height: 40)
+                    Button(action: {
+                        Task { await appVM.markAllNotificationsAsRead() }
+                    }) {
+                        Image(systemName: "envelope.open")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(theme.colors.primary)
+                    }
+                    .disabled(appVM.notifications.allSatisfy { $0.isRead })
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -69,7 +75,7 @@ struct NotificationsView: View {
                                         isRead: notification.isRead
                                     )
                                 ) {
-                                    print("Tapped notification: \(notification.title ?? "")")
+                                    handleNotificationTap(notification)
                                 }
                             }
                         }
@@ -84,6 +90,50 @@ struct NotificationsView: View {
         .navigationBarHidden(true)
         .task {
             await appVM.fetchNotifications()
+        }
+        .overlay {
+            if bookingVM.isFetchingBookingDetail {
+                ZStack {
+                    Color.black.opacity(0.35).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.4)
+                        Text("Loading appointment...")
+                            .font(theme.typography.regular14)
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+        }
+    }
+
+    private func handleNotificationTap(_ notification: AppNotification) {
+        // Mark notification as read
+        if !notification.isRead {
+            Task { await appVM.markNotificationAsRead(notificationId: notification.id) }
+        }
+
+        guard let bookingId = notification.data?.bookingId else { return }
+
+        let notificationType = notification.type?.lowercased() ?? ""
+
+        // "new_booking" is a doctor-targeted notification
+        if notificationType == "new_booking" {
+            Task {
+                await bookingVM.navigateToBookingFromNotification(
+                    bookingId: bookingId,
+                    userRole: .doctor
+                )
+            }
+        } else if notificationType.contains("booking") {
+            // All other booking notifications — route based on logged-in user's role
+            Task {
+                await bookingVM.navigateToBookingFromNotification(
+                    bookingId: bookingId,
+                    userRole: authVM.currentUser?.primaryRole
+                )
+            }
         }
     }
     
@@ -196,4 +246,8 @@ struct NotificationRow: View {
 #Preview {
     NotificationsView()
         .environment(\.appTheme, AppTheme.default)
+        .environmentObject(Router.shared)
+        .environmentObject(AppGlobalViewModel(appService: AppService(httpClient: HTTPClient())))
+        .environmentObject(BookingGlobalViewModel(bookingService: BookingService(httpClient: HTTPClient())))
+        .environmentObject(AuthGlobalViewModel(authService: AuthService(httpClient: HTTPClient(), secureStore: SecureStore()), secureStore: SecureStore()))
 }

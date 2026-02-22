@@ -34,9 +34,9 @@ struct LoginView: View {
             
             VStack(spacing: theme.spacing.lg) {
                 VStack(spacing: theme.spacing.md) {
-                    // Username / Email
+                    // Email
                     TextInputField(
-                        placeholder: "Username/Email Address",
+                        placeholder: "Email Address",
                         text: $email,
                         keyboardType: .emailAddress
                     )

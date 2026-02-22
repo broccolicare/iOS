@@ -37,6 +37,7 @@ enum Route: Hashable {
     case editPharmacy(pharmacy: Pharmacy)
     case bookPrescription
     case prescriptionQuestions
+    case selectPharmacy
     case settings
     case contactUs
     case search

@@ -39,8 +39,30 @@ struct VideoCallView: View {
             
             // Remote video (full screen)
             if let remoteUid = videoCallVM.remoteUserIds.first {
-                RemoteVideoView(agoraService: videoCallVM.agoraService, uid: remoteUid)
-                    .ignoresSafeArea()
+                ZStack {
+                    RemoteVideoView(agoraService: videoCallVM.agoraService, uid: remoteUid)
+                        .ignoresSafeArea()
+                        // Hide the stale last-frame when remote user turns camera off
+                        .opacity(videoCallVM.isRemoteVideoMuted ? 0 : 1)
+                    
+                    if videoCallVM.isRemoteVideoMuted {
+                        cameraOffPlaceholder(label: "Camera is off")
+                            .ignoresSafeArea()
+                    }
+                    
+                    // Mute badge — bottom-left of the full-screen remote feed
+                    if videoCallVM.isRemoteAudioMuted {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                muteBadge()
+                                    .padding(.leading, 16)
+                                    .padding(.bottom, 160) // sits above the control bar
+                                Spacer()
+                            }
+                        }
+                    }
+                }
             } else {
                 // Waiting for remote user
                 VStack(spacing: theme.spacing.lg) {
@@ -57,11 +79,26 @@ struct VideoCallView: View {
             VStack {
                 HStack {
                     Spacer()
-                    LocalVideoView(agoraService: videoCallVM.agoraService)
-                        .frame(width: 120, height: 160)
-                        .cornerRadius(12)
-                        .shadow(radius: 10)
-                        .padding(theme.spacing.md)
+                    ZStack(alignment: .bottomLeading) {
+                        LocalVideoView(agoraService: videoCallVM.agoraService)
+                            // Hide stale last-frame when local camera is off
+                            .opacity(videoCallVM.isLocalVideoMuted ? 0 : 1)
+                        
+                        if videoCallVM.isLocalVideoMuted {
+                            cameraOffPlaceholder(label: "Your camera is off")
+                                .cornerRadius(12)
+                        }
+                        
+                        // Mute badge — bottom-left corner of the local PiP
+                        if videoCallVM.isLocalAudioMuted {
+                            muteBadge()
+                                .padding(6)
+                        }
+                    }
+                    .frame(width: 120, height: 160)
+                    .cornerRadius(12)
+                    .shadow(radius: 10)
+                    .padding(theme.spacing.md)
                 }
                 Spacer()
             }
@@ -105,7 +142,7 @@ struct VideoCallView: View {
                 HStack(spacing: theme.spacing.xl) {
                     // Mute audio button
                     Button(action: {
-                        videoCallVM.toggleLocalAudio()
+                        Task { @MainActor in videoCallVM.toggleLocalAudio() }
                     }) {
                         ZStack {
                             Circle()
@@ -135,7 +172,7 @@ struct VideoCallView: View {
                     
                     // Toggle video button
                     Button(action: {
-                        videoCallVM.toggleLocalVideo()
+                        Task { @MainActor in videoCallVM.toggleLocalVideo() }
                     }) {
                         ZStack {
                             Circle()
@@ -175,17 +212,18 @@ struct VideoCallView: View {
                             await videoCallVM.endCall(withNotes: notes)
                             router.pop()
                         }
-                    },
-                    onRejoinCall: {
-                        Task {
-                            await videoCallVM.reconnectToCall()
-                        }
-                    },
-                    canRejoin: videoCallVM.remainingTime > 0
+                    }
                 )
             }
         }
         .navigationBarHidden(true)
+        // When the doctor (host) ends the call, the patient's callState becomes .ended.
+        // Navigate back automatically so they are never stuck on the reconnecting overlay.
+        .onChange(of: videoCallVM.callState) { state in
+            if state == .ended, authVM.currentUser?.primaryRole != .doctor {
+                router.pop()
+            }
+        }
         .task {
             await videoCallVM.startCall(booking: booking, token: token, channelName: channelName, uid: uid)
         }
@@ -219,5 +257,44 @@ struct VideoCallView: View {
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
         return String(format: "%02d:%02d", minutes, remainingSeconds)
+    }
+    
+    // MARK: - Mute Badge
+    
+    @ViewBuilder
+    private func muteBadge() -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "mic.slash.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(Color.red.opacity(0.85))
+        .clipShape(Capsule())
+    }
+    
+    // MARK: - Placeholder View
+    
+    @ViewBuilder
+    private func cameraOffPlaceholder(label: String) -> some View {
+        ZStack {
+            Color(white: 0.12)
+            VStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.15))
+                        .frame(width: 64, height: 64)
+                    Image(systemName: "video.slash.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                Text(label)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+            }
+        }
     }
 }

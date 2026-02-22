@@ -22,8 +22,8 @@ public protocol BookingServiceProtocol {
     func confirmPayment(data: [String: Any]) async throws -> PaymentConfirmResponse
     func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse
     func fetchPatientBookings(status: String?, type: String?, perPage: Int, page: Int) async throws -> UpcomingAppointmentsResponse
-    func fetchPrescriptions(perPage: Int, page: Int) async throws -> PrescriptionsListResponse
-    func fetchPrescriptionHistory(perPage: Int, page: Int) async throws -> PrescriptionsListResponse
+    func fetchPrescriptions() async throws -> PrescriptionsListResponse
+    func fetchPrescriptionHistory() async throws -> PrescriptionsListResponse
     func fetchDoctorBookings(status: String?, type: String?, perPage: Int, page: Int) async throws -> MyBookingsResponse
     func fetchDoctorBookingHistory(status: String?, type: String?, perPage: Int, page: Int) async throws -> MyBookingsResponse
     func acceptBooking(bookingId: Int) async throws -> AcceptBookingResponse
@@ -155,19 +155,18 @@ public final class BookingService: BaseService, BookingServiceProtocol {
         }
     }
     
-    /// Fetch prescriptions list for patient
-    public func fetchPrescriptions(perPage: Int = 10, page: Int = 1) async throws -> PrescriptionsListResponse {
+    /// Fetch pending prescriptions for patient
+    public func fetchPrescriptions() async throws -> PrescriptionsListResponse {
         return try await handleServiceError {
-            let endpoint = BookingEndpoint.prescriptionList(perPage: perPage, page: page)
+            let endpoint = BookingEndpoint.prescriptionActive
             return try await httpClient.request(endpoint)
         }
     }
     
-    /// Fetch prescription history for patient (using same endpoint for now)
-    public func fetchPrescriptionHistory(perPage: Int = 10, page: Int = 1) async throws -> PrescriptionsListResponse {
+    /// Fetch prescription history for patient
+    public func fetchPrescriptionHistory() async throws -> PrescriptionsListResponse {
         return try await handleServiceError {
-            // TODO: Update endpoint when prescription history endpoint is available
-            let endpoint = BookingEndpoint.prescriptionList(perPage: perPage, page: page)
+            let endpoint = BookingEndpoint.prescriptionHistory
             return try await httpClient.request(endpoint)
         }
     }

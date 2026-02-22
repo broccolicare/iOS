@@ -36,6 +36,12 @@ public final class AgoraService: NSObject, AgoraServiceProtocol {
     public let connectionStateChangedPublisher = PassthroughSubject<(AgoraConnectionState, AgoraConnectionChangedReason), Never>()
     public let networkQualityPublisher = PassthroughSubject<(UInt, AgoraNetworkQuality, AgoraNetworkQuality), Never>()
     public let tokenPrivilegeWillExpirePublisher = PassthroughSubject<Void, Never>()
+    /// Fires whenever a remote user enables or disables their video stream.
+    /// Payload: (uid, isMuted)
+    public let remoteVideoMutedPublisher = PassthroughSubject<(UInt, Bool), Never>()
+    /// Fires whenever a remote user mutes or unmutes their microphone.
+    /// Payload: (uid, isMuted)
+    public let remoteAudioMutedPublisher = PassthroughSubject<(UInt, Bool), Never>()
     
     private var isLocalAudioMuted: Bool = false
     private var isLocalVideoMuted: Bool = false
@@ -163,8 +169,11 @@ public final class AgoraService: NSObject, AgoraServiceProtocol {
     
     public func toggleLocalVideo() -> Bool {
         isLocalVideoMuted.toggle()
-        agoraEngine?.muteLocalVideoStream(isLocalVideoMuted)
-        print("📹 [AgoraService] Local video muted: \(isLocalVideoMuted)")
+        // enableLocalVideo(false) fully disables the camera capture device;
+        // muteLocalVideoStream only blocks the outgoing stream but keeps the
+        // camera running, which makes the button appear broken.
+        agoraEngine?.enableLocalVideo(!isLocalVideoMuted)
+        print("📹 [AgoraService] Local video enabled: \(!isLocalVideoMuted)")
         return isLocalVideoMuted
     }
     
@@ -230,6 +239,18 @@ extension AgoraService: AgoraRtcEngineDelegate {
     public func rtcEngineTokenPrivilegeWillExpire(_ engine: AgoraRtcEngineKit, token: String) {
         print("🔑 [AgoraService] Token privilege will expire — requesting renewal")
         tokenPrivilegeWillExpirePublisher.send()
+    }
+    
+    // Called when a remote user toggles their video stream on/off
+    public func rtcEngine(_ engine: AgoraRtcEngineKit, didVideoMuted muted: Bool, byUid uid: UInt) {
+        print("📹 [AgoraService] Remote UID \(uid) video muted: \(muted)")
+        remoteVideoMutedPublisher.send((uid, muted))
+    }
+    
+    // Called when a remote user mutes or unmutes their microphone
+    public func rtcEngine(_ engine: AgoraRtcEngineKit, didAudioMuted muted: Bool, byUid uid: UInt) {
+        print("🔇 [AgoraService] Remote UID \(uid) audio muted: \(muted)")
+        remoteAudioMutedPublisher.send((uid, muted))
     }
 }
 

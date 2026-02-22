@@ -42,10 +42,6 @@ final class SignupViewModel: ObservableObject {
             fieldErrors[.name] = "Please enter your full name."
         }
         
-        if username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            fieldErrors[.username] = "Please enter your username."
-        }
-        
         if email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             fieldErrors[.email] = "Please enter your email."
         } else if !Validator.isValidEmail(email) {

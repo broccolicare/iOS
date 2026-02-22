@@ -12,8 +12,6 @@ struct DoctorNotesFormView: View {
     @Binding var notes: String
     @Binding var isPresented: Bool
     let onEndCall: (String) -> Void
-    let onRejoinCall: () -> Void
-    let canRejoin: Bool // True if timer hasn't expired
     
     @State private var showValidationError: Bool = false
     
@@ -80,24 +78,21 @@ struct DoctorNotesFormView: View {
                     }
                     .disabled(notes.isEmpty)
                     
-                    // Rejoin Call button (only if timer hasn't expired)
-                    if canRejoin {
-                        Button(action: {
-                            isPresented = false
-                            onRejoinCall()
-                        }) {
-                            Text("Rejoin Call")
-                                .font(theme.typography.medium16)
-                                .foregroundStyle(theme.colors.primary)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(theme.colors.surface)
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(theme.colors.primary, lineWidth: 2)
-                                )
-                        }
+                    // Cancel — dismisses the popup, call continues in the background
+                    Button(action: {
+                        isPresented = false
+                    }) {
+                        Text("Cancel")
+                            .font(theme.typography.medium16)
+                            .foregroundStyle(theme.colors.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(theme.colors.surface)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(theme.colors.primary, lineWidth: 2)
+                            )
                     }
                 }
             }
@@ -113,9 +108,7 @@ struct DoctorNotesFormView: View {
     DoctorNotesFormView(
         notes: .constant(""),
         isPresented: .constant(true),
-        onEndCall: { _ in },
-        onRejoinCall: {},
-        canRejoin: true
+        onEndCall: { _ in }
     )
     .appTheme(AppTheme.default)
 }

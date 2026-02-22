@@ -19,7 +19,8 @@ public enum BookingEndpoint: Endpoint {
     case activeTreatments
     case treatmentDetails(String)
     case createPrescriptionOrder([String: Any])
-    case prescriptionList(perPage: Int, page: Int)
+    case prescriptionActive
+    case prescriptionHistory
     case initialisePrescriptionPayment(String)
     case confirmPrescriptionPayment(String)
     case loadServices(String)
@@ -40,7 +41,7 @@ public enum BookingEndpoint: Endpoint {
         case .createBooking:
             return "/bookings"
         case .bookingDetails(let bookingId):
-            return "/api/bookings/\(bookingId)"
+            return "/bookings/\(bookingId)"
         case .cancelBooking(let bookingId):
             return "/api/bookings/\(bookingId)/cancel"
         case .uploadDocument(let bookingId, _, _):
@@ -55,8 +56,10 @@ public enum BookingEndpoint: Endpoint {
             return "/prescriptions/treatments/\(treatment)/questionnaire"
         case .createPrescriptionOrder:
             return "/prescriptions"
-        case .prescriptionList:
-            return "/prescriptions"
+        case .prescriptionActive:
+            return "/prescriptions/active"
+        case .prescriptionHistory:
+            return "/prescriptions/history"
         case .initialisePrescriptionPayment(let prescription):
             return "/payments/prescriptions/\(prescription)/initialize"
         case .confirmPrescriptionPayment(let prescription):
@@ -84,7 +87,7 @@ public enum BookingEndpoint: Endpoint {
     
     public var method: HTTPMethod {
         switch self {
-        case .availableTimeSlots, .doctorBookingHistory, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .doctorBookings, .prescriptionList:
+        case .availableTimeSlots, .doctorBookingHistory, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .doctorBookings, .prescriptionActive, .prescriptionHistory:
             return .GET
         case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall:
             return .POST
@@ -148,11 +151,10 @@ public enum BookingEndpoint: Endpoint {
             if let status = status { items["status"] = status }
             if let type = type { items["type"] = type }
             return items
-        case .prescriptionList(let perPage, let page):
-            return [
-                "per_page": String(perPage),
-                "page": String(page)
-            ]
+        case .prescriptionActive:
+            return nil
+        case .prescriptionHistory:
+            return nil
         case .doctorBookings(let status, let type, let perPage, let page):
             var items: [String: String] = [
                 "per_page": String(perPage),

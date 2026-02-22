@@ -9,6 +9,7 @@
 // GlobalViewModels/AuthGlobalViewModel.swift
 import Foundation
 import Combine
+import FirebaseCrashlytics
 
 @MainActor
 public final class AuthGlobalViewModel: ObservableObject {
@@ -258,7 +259,17 @@ public final class AuthGlobalViewModel: ObservableObject {
         // Update UI state
         isAuthenticated = true
         currentUser = resp.user
-        
+
+        // Tag user in Crashlytics
+        if let user = resp.user {
+            CrashlyticsLogger.setUser(
+                id: String(user.id),
+                email: user.email,
+                name: user.name
+            )
+            CrashlyticsLogger.set(user.primaryRole?.rawValue ?? "unknown", forKey: "role")
+        }
+
         // Clear any previous error messages
         errorMessage = nil
     }
@@ -271,7 +282,10 @@ public final class AuthGlobalViewModel: ObservableObject {
         // Update UI state
         isAuthenticated = false
         currentUser = nil
-        
+
+        // Clear Crashlytics user identity
+        CrashlyticsLogger.clearUser()
+
         // Clear navigation stack
         await MainActor.run {
             Router.shared.popToRoot()
@@ -301,7 +315,15 @@ public final class AuthGlobalViewModel: ObservableObject {
                     // Restore authentication state
                     isAuthenticated = true
                     currentUser = user
-                    
+
+                    // Restore Crashlytics user identity
+                    CrashlyticsLogger.setUser(
+                        id: String(user.id),
+                        email: user.email,
+                        name: user.name
+                    )
+                    CrashlyticsLogger.set(user.primaryRole?.rawValue ?? "unknown", forKey: "role")
+
                     print("✅ Authentication restored successfully")
                 } else {
                     print("⚠️ Token exists but no user data - clearing authentication")

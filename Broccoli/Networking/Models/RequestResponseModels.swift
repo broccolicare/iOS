@@ -628,20 +628,8 @@ public struct UserData: Codable, Hashable {
 
 public struct BookingDetailResponse: Codable {
     let success: Bool
-    let data: BookingDetail?
+    let data: BookingData?
     let message: String?
-}
-
-public struct BookingDetail: Codable {
-    let bookingId: String
-    let patientName: String?
-    let doctorName: String?
-    let specialty: String?
-    let appointmentDate: String?
-    let appointmentTime: String?
-    let status: String
-    let notes: String?
-    let documents: [String]?
 }
 
 public struct DocumentUploadResponse: Codable {

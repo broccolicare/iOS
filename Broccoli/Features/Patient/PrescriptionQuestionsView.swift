@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-@_spi(CustomerSessionBetaAccess) import StripePaymentSheet
 
 struct PrescriptionQuestionsView: View {
     @Environment(\.appTheme) private var theme
@@ -14,7 +13,6 @@ struct PrescriptionQuestionsView: View {
     @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
     
     @State private var currentStep: Int = 1
-    @State private var showPaymentSheet = false
     @State private var questionValidationErrors: Set<Int> = []
     
     var body: some View {
@@ -151,25 +149,6 @@ struct PrescriptionQuestionsView: View {
         .task {
             await fetchQuestionnaire()
         }
-        .paymentSheet(
-            isPresented: $showPaymentSheet,
-            paymentSheet: bookingViewModel.paymentSheet ?? PaymentSheet(paymentIntentClientSecret: "", configuration: PaymentSheet.Configuration())
-        ) { result in
-            Task {
-                // Handle payment completion for prescription
-                let response = await bookingViewModel.onPrescriptionPaymentCompletion(result: result)
-                
-                if response?.success == true {
-                    // Payment confirmed successfully - navigate to success screen
-                    router.push(.paymentSuccess(booking: nil))
-                }
-                
-                // Reset payment sheet
-                bookingViewModel.paymentSheet = nil
-                bookingViewModel.isPaymentReady = false
-                showPaymentSheet = false
-            }
-        }
     }
     
     // MARK: - Helper Functions
@@ -216,29 +195,8 @@ struct PrescriptionQuestionsView: View {
             // Move to next step
             currentStep += 1
         } else {
-            // Final submission - create prescription order
-            Task {
-                print("📝 [View] Submitting prescription order...")
-                let success = await bookingViewModel.createPrescriptionOrder()
-                print("📝 [View] Prescription order result: \(success)")
-                print("📝 [View] isPaymentReady: \(bookingViewModel.isPaymentReady)")
-                print("📝 [View] requiresPayment: \(bookingViewModel.requiresPayment)")
-                
-                if success {
-                    // Check if payment sheet is ready (payment required and not covered by subscription)
-                    if bookingViewModel.isPaymentReady && bookingViewModel.requiresPayment {
-                        // Show payment sheet
-                        print("📝 [View] Showing payment sheet")
-                        showPaymentSheet = true
-                    } else {
-                        // No payment required or covered by subscription - navigate to success
-                        print("📝 [View] Navigating to success (no payment needed)")
-                        router.push(.paymentSuccess(booking: nil))
-                    }
-                } else {
-                    print("📝 [View] Prescription order failed")
-                }
-            }
+            // All steps complete — go to pharmacy selection
+            router.push(.selectPharmacy)
         }
     }
     

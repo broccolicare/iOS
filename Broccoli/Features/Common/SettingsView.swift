@@ -128,7 +128,7 @@ struct SettingsView: View {
                                 subtitle: "Contact us for assistance",
                                 isLast: true,
                                 action: {
-                                    // Navigate to contact us
+                                    router.push(.contactUs)
                                 }
                             )
                         }

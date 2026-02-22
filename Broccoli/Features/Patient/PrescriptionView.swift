@@ -13,38 +13,6 @@ struct PrescriptionView: View {
     @EnvironmentObject private var userVM: UserGlobalViewModel
     @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
     
-    @State private var selectedPrescription: PrescriptionItem? = nil
-    
-    // Sample prescription data
-    private let prescriptionItems: [PrescriptionItem] = [
-        // Female Patients
-        PrescriptionItem(id: "1", name: "Contraceptive Pill & Patch", gender: .female),
-        PrescriptionItem(id: "2", name: "Period Delay Pill", gender: .female),
-        PrescriptionItem(id: "3", name: "Cystitis Treatment", gender: .female),
-        PrescriptionItem(id: "4", name: "Asthma Treatment", gender: .female),
-        PrescriptionItem(id: "5", name: "Anti-Malaria Treatment", gender: .female),
-        PrescriptionItem(id: "6", name: "Hay Fever Treatment", gender: .female),
-        PrescriptionItem(id: "7", name: "Bacterial Vaginosis Treatment", gender: .female),
-        PrescriptionItem(id: "8", name: "Acne Treatment", gender: .female),
-        PrescriptionItem(id: "9", name: "Thrush Treatment", gender: .female),
-        PrescriptionItem(id: "10", name: "Adrenaline Pen Treatment", gender: .female),
-        PrescriptionItem(id: "11", name: "Excess Female Facial Hair", gender: .female),
-        PrescriptionItem(id: "12", name: "Period Delay Pill", gender: .female),
-        PrescriptionItem(id: "13", name: "Eczema Treatment", gender: .female),
-        PrescriptionItem(id: "14", name: "Migraine Treatment", gender: .female),
-        PrescriptionItem(id: "15", name: "Menopausal Vaginal Dryness Treatment", gender: .female),
-        PrescriptionItem(id: "16", name: "Hypothyroidism Treatment", gender: .female),
-        
-        // Male Patients
-        PrescriptionItem(id: "17", name: "Erectile Dysfunction Treatment", gender: .male),
-        PrescriptionItem(id: "18", name: "Asthma Treatment", gender: .male),
-        
-        // Common treatments (both genders)
-        PrescriptionItem(id: "19", name: "Anti-Malaria Treatment", gender: .both),
-        PrescriptionItem(id: "20", name: "Hay Fever Treatment", gender: .both),
-        PrescriptionItem(id: "21", name: "Acne Treatment", gender: .both),
-    ]
-    
     // Get active treatments from API
     private var activeTreatments: [Treatment] {
         bookingViewModel.treatments.filter { $0.isActive }
@@ -68,7 +36,7 @@ struct PrescriptionView: View {
                     
                     Button {
                         // navigate to notifications screen; if you use router:
-                        router.push(.notifications) // example; replace with .notifications route if defined
+                        router.push(.notifications)
                     } label: {
                         ZStack {
                             Circle()
@@ -142,7 +110,6 @@ struct PrescriptionView: View {
                                             name: treatment.name,
                                             gender: .both
                                         )
-                                        selectedPrescription = prescriptionItem
                                         bookingViewModel.selectedPrescription = prescriptionItem
                                         // Navigate to book prescription screen
                                         router.push(.bookPrescription)

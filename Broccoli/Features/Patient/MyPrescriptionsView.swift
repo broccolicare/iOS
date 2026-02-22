@@ -303,9 +303,18 @@ struct PrescriptionRowAPIView: View {
                     .font(theme.typography.semiBold18)
                     .foregroundStyle(theme.colors.textPrimary)
                 
-                Text("Filled on \(formatDate(prescription.createdAt))")
+                Text("Submitted \(formatDate(prescription.createdAt))")
                     .font(theme.typography.regular14)
                     .foregroundStyle(theme.colors.profileDetailTextColor)
+                
+                if let pharmacy = prescription.pharmacy {
+                    Label(pharmacy.name, systemImage: "mappin.circle")
+                        .font(theme.typography.regular12)
+                        .foregroundStyle(theme.colors.textSecondary)
+                }
+                
+                PrescriptionStatusBadge(status: prescription.status, theme: theme)
+                    .padding(.top, 2)
             }
             
             Spacer()
@@ -316,7 +325,6 @@ struct PrescriptionRowAPIView: View {
     }
     
     private func formatDate(_ dateString: String) -> String {
-        // Parse date string format: "2026-02-11 06:49:34"
         let inputFormatter = DateFormatter()
         inputFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         inputFormatter.locale = Locale(identifier: "en_US_POSIX")
@@ -326,8 +334,53 @@ struct PrescriptionRowAPIView: View {
             outputFormatter.dateFormat = "MM/dd/yyyy"
             return outputFormatter.string(from: date)
         }
-        
         return dateString
+    }
+}
+
+// MARK: - Prescription Status Badge
+struct PrescriptionStatusBadge: View {
+    let status: String
+    let theme: AppThemeProtocol
+    
+    var displayText: String {
+        switch status.lowercased() {
+        case "pending":    return "Pending"
+        case "approved":   return "Approved"
+        case "assigned":   return "Assigned"
+        case "sent":       return "Sent"
+        case "completed":  return "Completed"
+        case "rejected":   return "Rejected"
+        case "cancelled":  return "Cancelled"
+        default:           return status.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+    
+    var badgeColor: Color {
+        switch status.lowercased() {
+        case "pending":    return theme.colors.primary
+        case "approved":   return Color(red: 0.18, green: 0.68, blue: 0.45)  // green
+        case "assigned":   return Color(red: 0.00, green: 0.60, blue: 0.60)  // teal
+        case "sent":       return Color(red: 0.90, green: 0.55, blue: 0.10)  // orange
+        case "completed":  return Color(red: 0.80, green: 0.72, blue: 0.32)  // gold
+        case "rejected",
+             "cancelled":  return theme.colors.error
+        default:           return theme.colors.textSecondary
+        }
+    }
+    
+    var body: some View {
+        Text(displayText)
+            .font(theme.typography.regular12)
+            .foregroundStyle(badgeColor)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 3)
+            .background(badgeColor.opacity(0.10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(badgeColor, lineWidth: 1)
+            )
+            .cornerRadius(4)
     }
 }
 

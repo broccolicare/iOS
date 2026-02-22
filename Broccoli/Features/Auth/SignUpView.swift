@@ -34,7 +34,7 @@ struct SignUpView: View {
                 
                 //Username
                 TextInputField(
-                    placeholder: "Enter username",
+                    placeholder: "Enter username (optional)",
                     text: $vm.username,
                     keyboardType: .default,
                     errorText: vm.fieldErrors[.username]

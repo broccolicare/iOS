@@ -18,6 +18,7 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var errorMessage: String? = nil
     @Published public var showErrorToast: Bool = false
     @Published public var showSuccessToast: Bool = false
+    @Published public var isFetchingBookingDetail: Bool = false
     
     // Stripe Payment state
     @Published public var paymentSheet: PaymentSheet? = nil
@@ -309,7 +310,7 @@ public final class BookingGlobalViewModel: ObservableObject {
     }
     
     /// Create prescription order with questionnaire answers
-    public func createPrescriptionOrder() async -> Bool {
+    public func createPrescriptionOrder(pharmacyId: Int? = nil) async -> Bool {
         guard let questionnaire = currentQuestionnaire else {
             errorMessage = "No questionnaire data available"
             showErrorToast = true
@@ -351,10 +352,11 @@ public final class BookingGlobalViewModel: ObservableObject {
         }
         
         // Prepare request data
-        let requestData: [String: Any] = [
+        var requestData: [String: Any] = [
             "treatment_id": questionnaire.id,
             "answers": answers
         ]
+        if let pharmacyId { requestData["pharmacy_id"] = pharmacyId }
         
         do {
             let response = try await bookingService.createPrescriptionOrder(data: requestData)
@@ -1029,7 +1031,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPrescriptions(perPage: perPage, page: page)
+            let response = try await bookingService.fetchPrescriptions()
             
             if response.success {
                 if loadMore {
@@ -1080,7 +1082,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPrescriptionHistory(perPage: perPage, page: page)
+            let response = try await bookingService.fetchPrescriptionHistory()
             
             if response.success {
                 if loadMore {
@@ -1216,7 +1218,8 @@ public final class BookingGlobalViewModel: ObservableObject {
             }
             
             // 2. Mark call as started in backend
-            _ = try await bookingService.startVideoCall(bookingId: booking.id)
+            // TODO: Endpoint not yet implemented — re-enable when available
+            // _ = try await bookingService.startVideoCall(bookingId: booking.id)
             
             // 3. Navigate to video call screen
             await MainActor.run {
@@ -1287,6 +1290,34 @@ public final class BookingGlobalViewModel: ObservableObject {
                 showErrorToast = true
                 isLoading = false
             }
+        }
+    }
+
+    // MARK: - Notification Navigation
+
+    /// Fetch booking details by ID and navigate to the appropriate detail screen
+    public func navigateToBookingFromNotification(bookingId: Int, userRole: UserType?) async {
+        isFetchingBookingDetail = true
+        errorMessage = nil
+
+        do {
+            let response = try await bookingService.fetchBookingDetails(bookingId: String(bookingId))
+            isFetchingBookingDetail = false
+
+            if let booking = response.data {
+                if userRole == .doctor {
+                    Router.shared.push(.appointmentDetailForDoctor(booking: booking))
+                } else {
+                    Router.shared.push(.appointmentDetailForPatient(booking: booking))
+                }
+            } else {
+                errorMessage = response.message ?? "Booking not found"
+                showErrorToast = true
+            }
+        } catch {
+            isFetchingBookingDetail = false
+            errorMessage = error.localizedDescription
+            showErrorToast = true
         }
     }
 }

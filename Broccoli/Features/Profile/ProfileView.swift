@@ -29,7 +29,9 @@ struct ProfileView: View {
                 
                 Spacer()
                 
-                Button(action: {}) {
+                Button(action: {
+                    router.push(.notifications)
+                }) {
                     ZStack {
                         Circle()
                             .fill(theme.colors.primary.opacity(0.1))

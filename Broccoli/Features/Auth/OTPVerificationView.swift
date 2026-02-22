@@ -209,19 +209,30 @@ struct OTPVerificationView: View {
         }
     }
     
+    /// Index of the box that should appear "active" — first empty slot, clamped to last box.
+    private var activeBoxIndex: Int {
+        let firstEmpty = vm.digits.firstIndex(where: { $0.isEmpty }) ?? (vm.digits.count - 1)
+        return min(firstEmpty, vm.digits.count - 1)
+    }
+
     @ViewBuilder
     private func otpBoxes() -> some View {
         HStack(spacing: 12) {
             ForEach(0..<vm.digits.count, id: \.self) { idx in
+                let isActive = isFocused && idx == activeBoxIndex
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(theme.colors.otpInputBox)
                         .frame(width: 48, height: 48)
-                        .shadow(radius: 0.5)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(theme.colors.otpInputBox, lineWidth: 1)
+                                .stroke(
+                                    isActive ? theme.colors.primary : Color.clear,
+                                    lineWidth: isActive ? 2 : 1
+                                )
                         )
+                        .shadow(color: isActive ? theme.colors.primary.opacity(0.25) : .clear, radius: 4)
+                        .animation(.easeInOut(duration: 0.15), value: isActive)
                     
                     Text(vm.digits[idx].isEmpty ? "" : vm.digits[idx])
                         .font(theme.typography.title)

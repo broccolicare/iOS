@@ -209,6 +209,11 @@ public struct AllServicesResponse: Codable {
     public let data: [Service]
 }
 
+public struct GenericSuccessResponse: Codable {
+    public let success: Bool?
+    public let message: String?
+}
+
 public struct ContactUsResponse: Codable {
     public let message: String?
     public let data: ContactUsData?

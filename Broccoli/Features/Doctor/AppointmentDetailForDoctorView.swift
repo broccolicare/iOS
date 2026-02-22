@@ -222,13 +222,13 @@ struct AppointmentDetailForDoctorView: View {
                             }
                         }
                         
-                        // Doctor Notes
+                        // Consultation Notes
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Doctor Notes")
+                            Text("Consultation Notes")
                                 .font(theme.typography.regular12)
                                 .foregroundStyle(theme.colors.textSecondary)
                             
-                            if let notes = booking.doctorNotes, !notes.isEmpty {
+                            if let notes = booking.consultationNotes, !notes.isEmpty {
                                 Text(notes)
                                     .font(theme.typography.regular14)
                                     .foregroundStyle(theme.colors.textPrimary)

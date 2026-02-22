@@ -20,6 +20,7 @@
 		53A210952E95664300586875 /* FacebookCore in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210942E95664300586875 /* FacebookCore */; };
 		53A210972E95664300586875 /* FacebookLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210962E95664300586875 /* FacebookLogin */; };
 		53A2109A2E9566FD00586875 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 53A210992E9566FD00586875 /* KeychainAccess */; };
+		53D688D32F4A863B00F4350C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 53D688D22F4A863B00F4350C /* GoogleService-Info.plist */; };
 		53FC16B72E98D05C004CA9CE /* AlertToast in Frameworks */ = {isa = PBXBuildFile; productRef = 53FC16B62E98D05C004CA9CE /* AlertToast */; };
 		53FC16BE2E98D5A7004CA9CE /* Toasts in Frameworks */ = {isa = PBXBuildFile; productRef = 53FC16BD2E98D5A7004CA9CE /* Toasts */; };
 /* End PBXBuildFile section */
@@ -27,6 +28,7 @@
 /* Begin PBXFileReference section */
 		535BAF5D2E95347A00C4A634 /* Broccoli.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Broccoli.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		53D688D22F4A863B00F4350C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -78,6 +80,7 @@
 		535BAF542E95347A00C4A634 = {
 			isa = PBXGroup;
 			children = (
+				53D688D22F4A863B00F4350C /* GoogleService-Info.plist */,
 				5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */,
 				535BAF5F2E95347A00C4A634 /* Broccoli */,
 				535BAF5E2E95347A00C4A634 /* Products */,
@@ -102,6 +105,7 @@
 				535BAF592E95347A00C4A634 /* Sources */,
 				535BAF5A2E95347A00C4A634 /* Frameworks */,
 				535BAF5B2E95347A00C4A634 /* Resources */,
+				53D688D62F4A936D00F4350C /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -181,10 +185,32 @@
 			buildActionMask = 2147483647;
 			files = (
 				5381EE232E955FC90096B7DF /* LaunchScreen.storyboard in Resources */,
+				53D688D32F4A863B00F4350C /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		53D688D62F4A936D00F4350C /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n${BUILD_DIR%Build/*}SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		535BAF592E95347A00C4A634 /* Sources */ = {
@@ -318,7 +344,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = DYGMRKM7YF;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -369,7 +395,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = DYGMRKM7YF;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;

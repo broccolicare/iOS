@@ -45,9 +45,14 @@ struct VideoCallButton: View {
 
     // MARK: - Computed
 
+    /// True when the booking has been marked completed by the server.
+    private var isCompleted: Bool {
+        booking.status.lowercased() == "completed"
+    }
+
     private var withinCallWindow: Bool {
-        // return true
-        Date.isWithinCallWindow(
+        guard !isCompleted else { return false }
+        return Date.isCallWindowOpen(
             appointmentDate: booking.date,
             appointmentTime: booking.time
         )
@@ -66,6 +71,7 @@ struct VideoCallButton: View {
 
     private var label: String {
         if isConnecting { return "Connecting..." }
+        if isCompleted  { return "Consultation Completed" }
         if !withinCallWindow { return "Call available 5 min before" }
         return role == .doctor ? "Start Call" : "Join Call"
     }

@@ -307,4 +307,44 @@ public final class AppGlobalViewModel: ObservableObject {
         }
         isLoadingNotifications = false
     }
+    
+    public func markNotificationAsRead(notificationId: Int) async {
+        do {
+            _ = try await appService.markNotificationAsRead(notificationId: notificationId)
+            // Update local state immediately for responsive UI
+            if let index = notifications.firstIndex(where: { $0.id == notificationId }) {
+                var updated = notifications
+                // Rebuild the notification with isRead = true
+                let old = updated[index]
+                updated[index] = AppNotification(
+                    id: old.id, type: old.type, title: old.title, message: old.message,
+                    userId: old.userId, readAt: old.readAt ?? ISO8601DateFormatter().string(from: Date()),
+                    isRead: true, createdAt: old.createdAt, updatedAt: old.updatedAt, data: old.data
+                )
+                notifications = updated
+                unreadNotificationsCount = max(0, unreadNotificationsCount - 1)
+            }
+            print("✅ Notification \(notificationId) marked as read")
+        } catch {
+            print("❌ Failed to mark notification as read: \(error)")
+        }
+    }
+    
+    public func markAllNotificationsAsRead() async {
+        do {
+            _ = try await appService.markAllNotificationsAsRead()
+            // Update all local notifications to read
+            notifications = notifications.map { old in
+                AppNotification(
+                    id: old.id, type: old.type, title: old.title, message: old.message,
+                    userId: old.userId, readAt: old.readAt ?? ISO8601DateFormatter().string(from: Date()),
+                    isRead: true, createdAt: old.createdAt, updatedAt: old.updatedAt, data: old.data
+                )
+            }
+            unreadNotificationsCount = 0
+            print("✅ All notifications marked as read")
+        } catch {
+            print("❌ Failed to mark all notifications as read: \(error)")
+        }
+    }
 }

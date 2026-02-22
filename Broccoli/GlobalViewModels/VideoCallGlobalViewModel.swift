@@ -41,6 +41,8 @@ public class VideoCallGlobalViewModel: ObservableObject {
     @Published public var showDoctorNotesForm: Bool = false
     @Published public var doctorNotes: String = ""
     @Published public var isReconnecting: Bool = false
+    @Published public var isRemoteVideoMuted: Bool = false
+    @Published public var isRemoteAudioMuted: Bool = false
     @Published public var errorMessage: String?
     @Published public var showErrorAlert: Bool = false
     
@@ -143,13 +145,29 @@ public class VideoCallGlobalViewModel: ObservableObject {
                 Task { await self.renewTokenInBackground() }
             }
             .store(in: &cancellables)
+        
+        // Track remote video mute state so the UI can show a placeholder
+        agoraService.remoteVideoMutedPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] (_, muted) in
+                self?.isRemoteVideoMuted = muted
+            }
+            .store(in: &cancellables)
+        
+        // Track remote audio mute state so the UI can show a mute badge
+        agoraService.remoteAudioMutedPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] (_, muted) in
+                self?.isRemoteAudioMuted = muted
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Call Management
     
     public func startCall(booking: BookingData, token: String, channelName: String, uid: UInt) async {
         self.currentBooking = booking
-        self.callState = .connecting
+        self.callState = .connecting  // reset from any previous .ended/.idle state
         
         do {
             // Initialize Agora engine
@@ -331,14 +349,27 @@ public class VideoCallGlobalViewModel: ObservableObject {
         remoteUserIds.removeAll { $0 == uid }
         print("👤 [VideoCallVM] Remote user left: \(uid)")
         
-        // If patient leaves early and we're doctor, keep call active
-        if currentUserRole == .doctor && remoteUserIds.isEmpty {
-            // Show message that patient left, but keep timer running
-            print("👤 [VideoCallVM] Patient left, waiting for rejoin or timer expiry")
+        guard !remoteUserIds.isEmpty else {
+            switch currentUserRole {
+            case .patient:
+                // Doctor (host) left — automatically end the patient's side of the call.
+                print("👤 [VideoCallVM] Doctor (host) left — ending call on patient side")
+                Task { await endCall() }
+            case .doctor:
+                // Patient left early — keep timer running, wait for rejoin or expiry.
+                print("👤 [VideoCallVM] Patient left, keeping call active until timer expiry")
+            default:
+                break
+            }
+            return
         }
     }
     
     private func handleConnectionStateChanged(state: AgoraConnectionState, reason: AgoraConnectionChangedReason) {
+        // If the call has already been ended (e.g. host left and patient is cleaning up),
+        // ignore any further SDK connection events so the reconnecting overlay never appears.
+        guard callState != .ended else { return }
+
         switch state {
         case .connected:
             callState = .connected
@@ -403,7 +434,13 @@ public class VideoCallGlobalViewModel: ObservableObject {
         remainingTime = 1800
         isLocalAudioMuted = false
         isLocalVideoMuted = false
-        callState = .idle
+        isRemoteVideoMuted = false
+        isRemoteAudioMuted = false
+        // NOTE: callState is intentionally NOT reset to .idle here.
+        // Resetting it synchronously inside endCall() would coalesce with
+        // callState = .ended in the same @MainActor batch, causing SwiftUI's
+        // onChange(of: callState) to skip the .ended value entirely.
+        // callState is reset to .connecting at the start of the next startCall().
         reconnectAttempts = 0
     }
     

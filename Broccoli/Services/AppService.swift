@@ -21,6 +21,8 @@ public protocol AppServiceProtocol {
     func submitContactForm(name: String, email: String, phone: String?, subject: String, message: String) async throws -> ContactUsResponse
     func registerDeviceToken(token: String, deviceName: String, appVersion: String) async throws -> DeviceTokenResponse
     func fetchNotifications() async throws -> NotificationsResponse
+    func markNotificationAsRead(notificationId: Int) async throws -> GenericSuccessResponse
+    func markAllNotificationsAsRead() async throws -> GenericSuccessResponse
 }
 
 public final class AppService: BaseService, AppServiceProtocol {
@@ -135,6 +137,20 @@ public final class AppService: BaseService, AppServiceProtocol {
     public func fetchNotifications() async throws -> NotificationsResponse {
         return try await handleServiceError {
             let endpoint = AppEndpoint.notifications
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func markNotificationAsRead(notificationId: Int) async throws -> GenericSuccessResponse {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.markNotificationAsRead(notificationId)
+            return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func markAllNotificationsAsRead() async throws -> GenericSuccessResponse {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.markAllNotificationsAsRead
             return try await httpClient.request(endpoint)
         }
     }
