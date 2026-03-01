@@ -15,13 +15,35 @@ public struct UserProfileResponse: Codable {
     public let data: UserProfileData
 }
 
+// MARK: - Upload Avatar Response
+
+/// Dedicated response for POST /account/avatar.
+/// The endpoint only returns the new profile image URL, not the full profile.
+public struct UploadAvatarResponse: Codable {
+    public let success: Bool
+    public let message: String
+    public let status: Int
+    public let data: UploadAvatarData?
+}
+
+public struct UploadAvatarData: Codable {
+    public let profileImage: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case profileImage = "profile_image"
+    }
+}
+
 public struct UserProfileData: Codable {
     public let id: Int
     public let name: String
     public let email: String
-    public let username: String
+    public let username: String?
+    public let status: String?
     public let roles: [String]
     public let profile: DetailedUserProfile?
+    public let createdAt: String?
+    public let emailVerifiedAt: String?
     
     // Patient-specific fields
     public let medicalInfo: MedicalInfo?
@@ -38,7 +60,7 @@ public struct UserProfileData: Codable {
     public let availableTimeSlots: String?
     
     private enum CodingKeys: String, CodingKey {
-        case id, name, email, username, roles, profile, insurances, specialization, subscriptions
+        case id, name, email, username, status, roles, profile, insurances, specialization, subscriptions
         case medicalInfo = "medical_info"
         case emergencyContact = "emergency_contact"
         case allergies
@@ -46,6 +68,8 @@ public struct UserProfileData: Codable {
         case licenseNumber = "license_number"
         case consultationFee = "consultation_fee"
         case availableTimeSlots = "available_time_slots"
+        case createdAt = "created_at"
+        case emailVerifiedAt = "email_verified_at"
     }
 }
 

@@ -46,5 +46,9 @@
 	<string>Broccoli needs access to your camera for video consultations with doctors.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Broccoli needs access to your microphone for audio during video consultations.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

@@ -208,15 +208,23 @@ struct VideoCallView: View {
                     notes: $videoCallVM.doctorNotes,
                     isPresented: $videoCallVM.showDoctorNotesForm,
                     onEndCall: { notes in
-                        Task {
-                            await videoCallVM.endCall(withNotes: notes)
+                        let success = await videoCallVM.endCall(withNotes: notes)
+                        if success {
+                            videoCallVM.showDoctorNotesForm = false
                             router.pop()
                         }
+                        return success
                     }
                 )
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
         // When the doctor (host) ends the call, the patient's callState becomes .ended.
         // Navigate back automatically so they are never stuck on the reconnecting overlay.
         .onChange(of: videoCallVM.callState) { state in

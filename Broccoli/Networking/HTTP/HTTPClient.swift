@@ -39,6 +39,7 @@ struct ServerErrorResponse: Codable {
 public protocol HTTPClientProtocol {
     func request<T: Codable>(_ endpoint: Endpoint) async throws -> T
     func request(_ endpoint: Endpoint) async throws -> Data
+    func multipartUpload<T: Codable>(_ endpoint: Endpoint, fileData: Data, fileName: String, mimeType: String, fieldName: String) async throws -> T
 }
 
 public class HTTPClient: HTTPClientProtocol {
@@ -185,6 +186,54 @@ public class HTTPClient: HTTPClientProtocol {
                 throw HTTPError.serverError(statusCode: httpResponse.statusCode, message: nil, errors: nil)
             }
         }
+    }
+    
+    // MARK: - Multipart Upload
+    
+    /// Sends a multipart/form-data POST with a single file field.
+    public func multipartUpload<T: Codable>(_ endpoint: Endpoint, fileData: Data, fileName: String, mimeType: String, fieldName: String) async throws -> T {
+        let url = try buildURL(from: endpoint)
+        let boundary = "Boundary-\(UUID().uuidString)"
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        
+        if let token = try? secureStore.retrieve(for: SecureStore.Keys.accessToken) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        // Build multipart body
+        var body = Data()
+        let crlf = "\r\n"
+        body.append("--\(boundary)\(crlf)".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"\(fileName)\"\(crlf)".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\(crlf)\(crlf)".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\(crlf)--\(boundary)--\(crlf)".data(using: .utf8)!)
+        request.httpBody = body
+        
+        print("\n--- Multipart Upload ---")
+        print("URL: \(url.absoluteString)")
+        print("Field: \(fieldName), File: \(fileName), MIME: \(mimeType), Size: \(fileData.count) bytes")
+        
+        let (data, response) = try await session.data(for: request)
+        logResponse(response: response, data: data)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw HTTPError.invalidResponse
+        }
+        
+        guard 200...299 ~= httpResponse.statusCode else {
+            let decoder = JSONDecoder()
+            if let serverError = try? decoder.decode(ServerErrorResponse.self, from: data) {
+                throw HTTPError.serverError(statusCode: httpResponse.statusCode, message: serverError.combinedMessage, errors: serverError.errors)
+            }
+            throw HTTPError.serverError(statusCode: httpResponse.statusCode, message: nil, errors: nil)
+        }
+        
+        return try JSONDecoder().decode(T.self, from: data)
     }
     
     private func buildURL(from endpoint: Endpoint) throws -> URL {

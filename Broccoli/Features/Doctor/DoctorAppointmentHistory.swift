@@ -174,7 +174,7 @@ struct DoctorAppointmentHistory: View {
                     }
 
                     // Pagination: load next page when this row appears
-                    if bookingViewModel.doctorHistoryCurrentPage < bookingViewModel.doctorHistoryLastPage {
+                    if bookingViewModel.doctorHistoryHasMore {
                         HStack {
                             Spacer()
                             ProgressView()

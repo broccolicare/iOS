@@ -126,7 +126,7 @@ struct NotificationsView: View {
                     userRole: .doctor
                 )
             }
-        } else if notificationType.contains("booking") {
+        } else if notificationType.contains("booking") || notificationType.contains("consultation") {
             // All other booking notifications — route based on logged-in user's role
             Task {
                 await bookingVM.navigateToBookingFromNotification(

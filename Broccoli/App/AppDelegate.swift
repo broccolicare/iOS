@@ -20,14 +20,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
         
-        // Request notification permissions
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            if granted {
-                DispatchQueue.main.async {
-                    application.registerForRemoteNotifications()
-                }
-            }
+        // Register for remote notifications on every launch — Apple requires this
+        // regardless of prior permission state so the APNS token stays fresh.
+        DispatchQueue.main.async {
+            application.registerForRemoteNotifications()
         }
+        
+        // Request notification permissions (first-time prompt)
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
         
         return true
     }

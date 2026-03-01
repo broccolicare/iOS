@@ -69,16 +69,14 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     // Upcoming appointments
     @Published public var upcomingAppointments: [BookingData] = []
-    @Published public var currentPage: Int = 1
-    @Published public var lastPage: Int = 1
-    @Published public var totalAppointments: Int = 0
+    @Published public var upcomingNextCursor: String? = nil
+    @Published public var upcomingHasMore: Bool = false
     @Published public var isLoadingAppointments: Bool = false
     
     // Past appointments
     @Published public var pastAppointments: [BookingData] = []
-    @Published public var pastCurrentPage: Int = 1
-    @Published public var pastLastPage: Int = 1
-    @Published public var pastTotalAppointments: Int = 0
+    @Published public var pastNextCursor: String? = nil
+    @Published public var pastHasMore: Bool = false
     @Published public var isLoadingPastAppointments: Bool = false
     
     // Pending bookings for doctor
@@ -92,24 +90,21 @@ public final class BookingGlobalViewModel: ObservableObject {
     // Past/history bookings for doctor
     @Published public var doctorBookingHistory: [BookingData] = []
     @Published public var isLoadingDoctorHistory: Bool = false
-    @Published public var doctorHistoryCurrentPage: Int = 1
-    @Published public var doctorHistoryLastPage: Int = 1
+    @Published public var doctorHistoryNextCursor: String? = nil
+    @Published public var doctorHistoryHasMore: Bool = false
     @Published public var doctorHistoryPerPage: Int = 15
-    @Published public var doctorHistoryTotal: Int = 0
     
     // Prescriptions
     @Published public var prescriptions: [PrescriptionOrder] = []
     @Published public var isLoadingPrescriptions: Bool = false
-    @Published public var prescriptionsCurrentPage: Int = 1
-    @Published public var prescriptionsPerPage: Int = 15
-    @Published public var prescriptionsTotal: Int = 0
+    @Published public var prescriptionsNextCursor: String? = nil
+    @Published public var prescriptionsHasMore: Bool = false
     
     // Prescription History
     @Published public var prescriptionHistory: [PrescriptionOrder] = []
     @Published public var isLoadingPrescriptionHistory: Bool = false
-    @Published public var prescriptionHistoryCurrentPage: Int = 1
-    @Published public var prescriptionHistoryPerPage: Int = 15
-    @Published public var prescriptionHistoryTotal: Int = 0
+    @Published public var prescriptionHistoryNextCursor: String? = nil
+    @Published public var prescriptionHistoryHasMore: Bool = false
     
     public init(bookingService: BookingServiceProtocol) {
         self.bookingService = bookingService
@@ -820,13 +815,13 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     // MARK: - Upcoming Appointments
 
-    /// Fetch upcoming appointments (confirmed, future only)
-    public func fetchUpcomingAppointments(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+    /// Fetch upcoming appointments (active: pending + confirmed, date >= today)
+    public func fetchUpcomingAppointments(perPage: Int = 10, cursor: String? = nil, loadMore: Bool = false) async {
         isLoadingAppointments = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPatientBookings(status: nil, type: "future", perPage: perPage, page: page)
+            let response = try await bookingService.fetchPatientBookings(type: "active", status: nil, perPage: perPage, cursor: cursor)
             
             if loadMore {
                 self.upcomingAppointments.append(contentsOf: response.bookings)
@@ -834,9 +829,8 @@ public final class BookingGlobalViewModel: ObservableObject {
                 self.upcomingAppointments = response.bookings
             }
             
-            self.currentPage = response.currentPage
-            self.lastPage = response.lastPage
-            self.totalAppointments = response.total
+            self.upcomingNextCursor = response.nextCursor
+            self.upcomingHasMore = response.hasMore
             
         } catch {
             errorMessage = error.localizedDescription
@@ -846,13 +840,13 @@ public final class BookingGlobalViewModel: ObservableObject {
         isLoadingAppointments = false
     }
     
-    /// Fetch upcoming appointments (confirmed, future only)
-    public func fetchUpcomingConfirmedAppointments(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+    /// Fetch upcoming confirmed appointments only (used by home screen)
+    public func fetchUpcomingConfirmedAppointments(perPage: Int = 10, cursor: String? = nil, loadMore: Bool = false) async {
         isLoadingAppointments = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPatientBookings(status: "confirmed", type: "future", perPage: perPage, page: page)
+            let response = try await bookingService.fetchPatientBookings(type: "active", status: "confirmed", perPage: perPage, cursor: cursor)
             
             if loadMore {
                 self.upcomingAppointments.append(contentsOf: response.bookings)
@@ -860,9 +854,8 @@ public final class BookingGlobalViewModel: ObservableObject {
                 self.upcomingAppointments = response.bookings
             }
             
-            self.currentPage = response.currentPage
-            self.lastPage = response.lastPage
-            self.totalAppointments = response.total
+            self.upcomingNextCursor = response.nextCursor
+            self.upcomingHasMore = response.hasMore
             
         } catch {
             errorMessage = error.localizedDescription
@@ -874,24 +867,25 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     /// Load next page of appointments
     public func loadMoreAppointments() async {
-        guard currentPage < lastPage else { return }
-        await fetchUpcomingConfirmedAppointments(perPage: 10, page: currentPage + 1, loadMore: true)
+        guard upcomingHasMore else { return }
+        await fetchUpcomingConfirmedAppointments(cursor: upcomingNextCursor, loadMore: true)
     }
     
-    /// Refresh appointments (reset to page 1)
+    /// Refresh appointments (reset to first page)
     public func refreshAppointments() async {
-        await fetchUpcomingConfirmedAppointments(perPage: 10, page: 1, loadMore: false)
+        upcomingNextCursor = nil
+        await fetchUpcomingConfirmedAppointments(cursor: nil, loadMore: false)
     }
     
     // MARK: - Past Appointments
     
-    /// Fetch past bookings (confirmed, all including past)
-    public func fetchPastBookings(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+    /// Fetch past bookings (completed + cancelled, all dates)
+    public func fetchPastBookings(perPage: Int = 10, cursor: String? = nil, loadMore: Bool = false) async {
         isLoadingPastAppointments = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPatientBookings(status: nil, type: "past", perPage: perPage, page: page)
+            let response = try await bookingService.fetchPatientBookings(type: "past", status: nil, perPage: perPage, cursor: cursor)
             
             if loadMore {
                 self.pastAppointments.append(contentsOf: response.bookings)
@@ -899,9 +893,8 @@ public final class BookingGlobalViewModel: ObservableObject {
                 self.pastAppointments = response.bookings
             }
             
-            self.pastCurrentPage = response.currentPage
-            self.pastLastPage = response.lastPage
-            self.pastTotalAppointments = response.total
+            self.pastNextCursor = response.nextCursor
+            self.pastHasMore = response.hasMore
             
         } catch {
             errorMessage = error.localizedDescription
@@ -913,97 +906,61 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     /// Load next page of past appointments
     public func loadMorePastAppointments() async {
-        guard pastCurrentPage < pastLastPage else { return }
-        await fetchPastBookings(perPage: 10, page: pastCurrentPage + 1, loadMore: true)
+        guard pastHasMore else { return }
+        await fetchPastBookings(cursor: pastNextCursor, loadMore: true)
     }
     
-    /// Refresh past appointments (reset to page 1)
+    /// Refresh past appointments (reset to first page)
     public func refreshPastAppointments() async {
-        await fetchPastBookings(perPage: 10, page: 1, loadMore: false)
+        pastNextCursor = nil
+        await fetchPastBookings(cursor: nil, loadMore: false)
     }
     
-    // MARK: - Pending Bookings For Doctor
+    // MARK: - Active Bookings For Doctor
     
-    /// Fetch pending bookings for doctor (doctor_status = pending)
+    /// Fetch active bookings for doctor: unassigned pending + accepted upcoming.
+    /// Splits the combined list into `pendingBookings` (unclaimed) and `myBookings` (accepted).
     public func fetchPendingBookingsForDoctor() async {
         isLoadingPendingBookings = true
+        isLoadingMyBookings = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchDoctorBookings(status: "pending", type: "future", perPage: 50, page: 1)
-            
-            if response.success {
-                self.pendingBookings = response.bookingsList
-            } else {
-                errorMessage = response.message ?? "Failed to fetch pending bookings"
-                showErrorToast = true
-            }
+            let response = try await bookingService.fetchDoctorBookings(type: "active", perPage: 50, cursor: nil)
+            self.pendingBookings = response.bookingsList.filter { $0.doctorStatus == "pending" }
+            self.myBookings = response.bookingsList.filter { $0.doctorStatus == "accepted" }
         } catch {
             errorMessage = error.localizedDescription
             showErrorToast = true
         }
         
         isLoadingPendingBookings = false
+        isLoadingMyBookings = false
     }
     
-    /// Refresh pending bookings
+    /// Refresh active bookings
     public func refreshPendingBookings() async {
         await fetchPendingBookingsForDoctor()
     }
     
-    // MARK: - My/Accepted Bookings For Doctor
-    
-    /// Fetch confirmed bookings for doctor (upcoming + past)
-    public func fetchMyBookingsForDoctor() async {
-        isLoadingMyBookings = true
-        errorMessage = nil
-        
-        do {
-            let response = try await bookingService.fetchDoctorBookings(status: "confirmed", type: "future", perPage: 50, page: 1)
-            
-            if response.success {
-                self.myBookings = response.bookingsList
-            } else {
-                errorMessage = response.message ?? "Failed to fetch my bookings"
-                showErrorToast = true
-            }
-        } catch {
-            errorMessage = error.localizedDescription
-            showErrorToast = true
-        }
-        
-        isLoadingMyBookings = false
-    }
-    
-    /// Refresh my bookings
-    public func refreshMyBookings() async {
-        await fetchMyBookingsForDoctor()
-    }
-    
     // MARK: - Doctor Booking History
     
-    /// Fetch past/completed bookings for doctor with pagination
-    public func fetchDoctorBookingHistory(status: String? = nil, type: String? = nil, perPage: Int = 15, page: Int = 1, loadMore: Bool = false) async {
+    /// Fetch past/completed bookings for doctor with cursor pagination
+    public func fetchDoctorBookingHistory(perPage: Int = 15, cursor: String? = nil, loadMore: Bool = false) async {
         isLoadingDoctorHistory = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchDoctorBookingHistory(status: status, type: type, perPage: perPage, page: page)
+            let response = try await bookingService.fetchDoctorBookings(type: "past", perPage: perPage, cursor: cursor)
             
-            if response.success {
-                if loadMore {
-                    self.doctorBookingHistory.append(contentsOf: response.bookingsList)
-                } else {
-                    self.doctorBookingHistory = response.bookingsList
-                }
-                self.doctorHistoryCurrentPage = response.currentPage
-                self.doctorHistoryLastPage = response.lastPage
-                self.doctorHistoryPerPage = response.perPage
-                self.doctorHistoryTotal = response.total
+            if loadMore {
+                self.doctorBookingHistory.append(contentsOf: response.bookingsList)
             } else {
-                errorMessage = response.message ?? "Failed to fetch booking history"
-                showErrorToast = true
+                self.doctorBookingHistory = response.bookingsList
             }
+            self.doctorHistoryNextCursor = response.nextCursor
+            self.doctorHistoryHasMore = response.hasMore
+            self.doctorHistoryPerPage = response.perPage
         } catch {
             errorMessage = error.localizedDescription
             showErrorToast = true
@@ -1013,48 +970,34 @@ public final class BookingGlobalViewModel: ObservableObject {
     }
     
     /// Load next page of doctor booking history
-    public func loadMoreDoctorBookingHistory(status: String? = nil, type: String? = nil) async {
-        guard doctorHistoryCurrentPage < doctorHistoryLastPage else { return }
-        await fetchDoctorBookingHistory(status: status, type: type, perPage: doctorHistoryPerPage, page: doctorHistoryCurrentPage + 1, loadMore: true)
+    public func loadMoreDoctorBookingHistory() async {
+        guard doctorHistoryHasMore else { return }
+        await fetchDoctorBookingHistory(perPage: doctorHistoryPerPage, cursor: doctorHistoryNextCursor, loadMore: true)
     }
     
     /// Refresh doctor booking history
     public func refreshDoctorBookingHistory() async {
-        await fetchDoctorBookingHistory()
+        doctorHistoryNextCursor = nil
+        await fetchDoctorBookingHistory(loadMore: false)
     }
     
     // MARK: - Prescriptions
     
-    /// Fetch prescriptions list for patient
-    public func fetchPrescriptions(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+    /// Fetch active prescriptions for patient
+    public func fetchPrescriptions(perPage: Int = 15, cursor: String? = nil, loadMore: Bool = false) async {
         isLoadingPrescriptions = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPrescriptions()
+            let response = try await bookingService.fetchPrescriptions(type: "active", perPage: perPage, cursor: cursor)
             
-            if response.success {
-                if loadMore {
-                    // Append to existing prescriptions for pagination
-                    self.prescriptions.append(contentsOf: response.prescriptions)
-                } else {
-                    // Replace prescriptions (for initial load or refresh)
-                    self.prescriptions = response.prescriptions
-                }
-                
-                // Store pagination metadata
-                if let meta = response.meta {
-                    self.prescriptionsCurrentPage = meta.currentPage
-                    self.prescriptionsPerPage = meta.perPage
-                    self.prescriptionsTotal = meta.total
-                    print("✅ Loaded \(response.prescriptions.count) prescriptions (Page \(meta.currentPage), Total: \(meta.total))")
-                } else {
-                    print("✅ Loaded \(response.prescriptions.count) prescriptions")
-                }
+            if loadMore {
+                self.prescriptions.append(contentsOf: response.prescriptions)
             } else {
-                errorMessage = "Failed to fetch prescriptions"
-                showErrorToast = true
+                self.prescriptions = response.prescriptions
             }
+            self.prescriptionsNextCursor = response.nextCursor
+            self.prescriptionsHasMore = response.hasMore
         } catch {
             errorMessage = error.localizedDescription
             showErrorToast = true
@@ -1065,47 +1008,33 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     /// Load next page of prescriptions
     public func loadMorePrescriptions() async {
-        guard prescriptionsCurrentPage < (prescriptionsTotal / prescriptionsPerPage + (prescriptionsTotal % prescriptionsPerPage > 0 ? 1 : 0)) else { return }
-        await fetchPrescriptions(perPage: prescriptionsPerPage, page: prescriptionsCurrentPage + 1, loadMore: true)
+        guard prescriptionsHasMore else { return }
+        await fetchPrescriptions(cursor: prescriptionsNextCursor, loadMore: true)
     }
     
     /// Refresh prescriptions
     public func refreshPrescriptions() async {
-        await fetchPrescriptions(perPage: 10, page: 1, loadMore: false)
+        prescriptionsNextCursor = nil
+        await fetchPrescriptions(loadMore: false)
     }
     
     // MARK: - Prescription History
     
-    /// Fetch prescription history for patient
-    public func fetchPrescriptionHistory(perPage: Int = 10, page: Int = 1, loadMore: Bool = false) async {
+    /// Fetch past prescriptions for patient
+    public func fetchPrescriptionHistory(perPage: Int = 15, cursor: String? = nil, loadMore: Bool = false) async {
         isLoadingPrescriptionHistory = true
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPrescriptionHistory()
+            let response = try await bookingService.fetchPrescriptions(type: "past", perPage: perPage, cursor: cursor)
             
-            if response.success {
-                if loadMore {
-                    // Append to existing prescription history for pagination
-                    self.prescriptionHistory.append(contentsOf: response.prescriptions)
-                } else {
-                    // Replace prescription history (for initial load or refresh)
-                    self.prescriptionHistory = response.prescriptions
-                }
-                
-                // Store pagination metadata
-                if let meta = response.meta {
-                    self.prescriptionHistoryCurrentPage = meta.currentPage
-                    self.prescriptionHistoryPerPage = meta.perPage
-                    self.prescriptionHistoryTotal = meta.total
-                    print("✅ Loaded \(response.prescriptions.count) prescription history (Page \(meta.currentPage), Total: \(meta.total))")
-                } else {
-                    print("✅ Loaded \(response.prescriptions.count) prescription history")
-                }
+            if loadMore {
+                self.prescriptionHistory.append(contentsOf: response.prescriptions)
             } else {
-                errorMessage = "Failed to fetch prescription history"
-                showErrorToast = true
+                self.prescriptionHistory = response.prescriptions
             }
+            self.prescriptionHistoryNextCursor = response.nextCursor
+            self.prescriptionHistoryHasMore = response.hasMore
         } catch {
             errorMessage = error.localizedDescription
             showErrorToast = true
@@ -1116,13 +1045,14 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     /// Load next page of prescription history
     public func loadMorePrescriptionHistory() async {
-        guard prescriptionHistoryCurrentPage < (prescriptionHistoryTotal / prescriptionHistoryPerPage + (prescriptionHistoryTotal % prescriptionHistoryPerPage > 0 ? 1 : 0)) else { return }
-        await fetchPrescriptionHistory(perPage: prescriptionHistoryPerPage, page: prescriptionHistoryCurrentPage + 1, loadMore: true)
+        guard prescriptionHistoryHasMore else { return }
+        await fetchPrescriptionHistory(cursor: prescriptionHistoryNextCursor, loadMore: true)
     }
     
     /// Refresh prescription history
     public func refreshPrescriptionHistory() async {
-        await fetchPrescriptionHistory(perPage: 10, page: 1, loadMore: false)
+        prescriptionHistoryNextCursor = nil
+        await fetchPrescriptionHistory(loadMore: false)
     }
     
     // MARK: - Accept/Reject Bookings For Doctor

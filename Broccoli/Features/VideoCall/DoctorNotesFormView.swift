@@ -11,9 +11,13 @@ struct DoctorNotesFormView: View {
     @Environment(\.appTheme) private var theme
     @Binding var notes: String
     @Binding var isPresented: Bool
-    let onEndCall: (String) -> Void
+    /// Called when the doctor confirms. Returns `true` on success so the form
+    /// can stay visible and show an error when the API fails.
+    let onEndCall: (String) async -> Bool
     
     @State private var showValidationError: Bool = false
+    @State private var isLoading: Bool = false
+    @State private var apiError: String? = nil
     
     var body: some View {
         ZStack {
@@ -54,29 +58,52 @@ struct DoctorNotesFormView: View {
                             .font(theme.typography.caption)
                             .foregroundStyle(.red)
                     }
+                    
+                    if let apiError {
+                        Text(apiError)
+                            .font(theme.typography.caption)
+                            .foregroundStyle(.red)
+                            .multilineTextAlignment(.leading)
+                    }
                 }
                 
                 // Buttons
                 VStack(spacing: theme.spacing.md) {
-                    // End Call button (only enabled if notes not empty)
+                    // End Call button
                     Button(action: {
-                        if notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        let trimmed = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else {
                             showValidationError = true
-                        } else {
-                            showValidationError = false
-                            onEndCall(notes)
-                            isPresented = false
+                            return
+                        }
+                        showValidationError = false
+                        apiError = nil
+                        isLoading = true
+                        Task {
+                            let success = await onEndCall(notes)
+                            isLoading = false
+                            if !success {
+                                apiError = "Failed to end consultation. Please try again."
+                            }
+                            // On success the caller sets isPresented = false and pops
                         }
                     }) {
-                        Text("End Call")
-                            .font(theme.typography.medium16)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(notes.isEmpty ? theme.colors.textSecondary : Color.red)
-                            .cornerRadius(12)
+                        ZStack {
+                            Text("End Call")
+                                .font(theme.typography.medium16)
+                                .foregroundStyle(.white)
+                                .opacity(isLoading ? 0 : 1)
+                            if isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background((notes.isEmpty || isLoading) ? theme.colors.textSecondary : Color.red)
+                        .cornerRadius(12)
                     }
-                    .disabled(notes.isEmpty)
+                    .disabled(notes.isEmpty || isLoading)
                     
                     // Cancel — dismisses the popup, call continues in the background
                     Button(action: {
@@ -94,6 +121,7 @@ struct DoctorNotesFormView: View {
                                     .stroke(theme.colors.primary, lineWidth: 2)
                             )
                     }
+                    .disabled(isLoading)
                 }
             }
             .padding(theme.spacing.lg)
@@ -108,7 +136,7 @@ struct DoctorNotesFormView: View {
     DoctorNotesFormView(
         notes: .constant(""),
         isPresented: .constant(true),
-        onEndCall: { _ in }
+        onEndCall: { _ in return true }
     )
     .appTheme(AppTheme.default)
 }

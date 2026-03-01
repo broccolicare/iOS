@@ -267,16 +267,31 @@ public final class AppGlobalViewModel: ObservableObject {
     
     // MARK: - Device Token Registration
     
+    /// Registers the FCM device token with the backend.
+    /// Uses `Messaging.token(completion:)` which actively drives the APNS ↔ Firebase
+    /// handshake rather than reading the locally-cached `fcmToken` property (which is
+    /// nil until the exchange has already completed).
     public func registerDeviceToken() async {
-        guard let fcmToken = Messaging.messaging().fcmToken else {
-            print("⚠️ FCM token not available yet — skipping device token registration")
-            return
-        }
-        
-        let deviceName = UIDevice.current.name
-        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        
         do {
+            let fcmToken: String = try await withCheckedThrowingContinuation { continuation in
+                Messaging.messaging().token { token, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let token = token {
+                        continuation.resume(returning: token)
+                    } else {
+                        continuation.resume(throwing: NSError(
+                            domain: "PushNotification",
+                            code: -1,
+                            userInfo: [NSLocalizedDescriptionKey: "FCM token was nil"]
+                        ))
+                    }
+                }
+            }
+
+            let deviceName = UIDevice.current.name
+            let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+
             let response = try await appService.registerDeviceToken(
                 token: fcmToken,
                 deviceName: deviceName,

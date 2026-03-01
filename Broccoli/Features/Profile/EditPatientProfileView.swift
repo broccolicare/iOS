@@ -1,5 +1,6 @@
 import SwiftUI
 import AlertToast
+import PhotosUI
 
 // Insurance Form Data Model
 struct InsuranceFormData: Identifiable {
@@ -17,6 +18,14 @@ struct EditPatientProfileView: View {
     @EnvironmentObject private var router: Router
     
     @StateObject private var vm = EditPatientProfileViewModel()
+    
+    // MARK: - Avatar state
+    @State private var selectedImage: UIImage? = nil
+    @State private var showImageSourceDialog = false
+    @State private var showPhotoPicker = false
+    @State private var showCameraPicker = false
+    @State private var isUploadingAvatar = false
+    @State private var photoPickerItem: PhotosPickerItem? = nil
     
     // Dropdown options
     private let relationships = ["Spouse", "Parent", "Sibling", "Child", "Friend", "Other"]
@@ -50,7 +59,34 @@ struct EditPatientProfileView: View {
                                 .fill(Color.white)
                                 .frame(width: 120, height: 120)
                                 .overlay(
-                                    Image("patient-placeholder").resizable().frame(width: 100, height: 100)
+                                    Group {
+                                        if let picked = selectedImage {
+                                            Image(uiImage: picked)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 120, height: 120)
+                                                .clipShape(Circle())
+                                        } else if let urlString = userVM.profileData?.profile?.profileImage,
+                                                  let url = URL(string: urlString) {
+                                            AsyncImage(url: url) { phase in
+                                                switch phase {
+                                                case .success(let image):
+                                                    image.resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: 120, height: 120)
+                                                        .clipShape(Circle())
+                                                default:
+                                                    Image("patient-placeholder")
+                                                        .resizable()
+                                                        .frame(width: 100, height: 100)
+                                                }
+                                            }
+                                        } else {
+                                            Image("patient-placeholder")
+                                                .resizable()
+                                                .frame(width: 100, height: 100)
+                                        }
+                                    }
                                 )
                                 .overlay(
                                     Circle()
@@ -62,11 +98,28 @@ struct EditPatientProfileView: View {
                                 .fill(Color.white)
                                 .frame(width: 36, height: 36)
                                 .overlay(
-                                    Image(systemName: "camera.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(theme.colors.primary)
+                                    Group {
+                                        if isUploadingAvatar {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: theme.colors.primary))
+                                                .scaleEffect(0.7)
+                                        } else {
+                                            Image(systemName: "camera.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundStyle(theme.colors.primary)
+                                        }
+                                    }
                                 )
                                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        }
+                        .onTapGesture {
+                            guard !isUploadingAvatar else { return }
+                            showImageSourceDialog = true
+                        }
+                        .confirmationDialog("Change Profile Photo", isPresented: $showImageSourceDialog, titleVisibility: .visible) {
+                            Button("Take Photo") { showCameraPicker = true }
+                            Button("Choose from Gallery") { showPhotoPicker = true }
+                            Button("Cancel", role: .cancel) {}
                         }
                         
                         
@@ -348,6 +401,30 @@ struct EditPatientProfileView: View {
             }
         }
         .navigationBarHidden(true)
+        // Photo library picker (PHPickerViewController)
+        .photosPicker(
+            isPresented: $showPhotoPicker,
+            selection: $photoPickerItem,
+            matching: .images
+        )
+        .onChange(of: photoPickerItem) { item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
+                    await uploadSelectedImage(image)
+                }
+                photoPickerItem = nil
+            }
+        }
+        // Camera picker (UIImagePickerController)
+        .sheet(isPresented: $showCameraPicker) {
+            ImageCameraPicker(image: $selectedImage, onPicked: { image in
+                Task { await uploadSelectedImage(image) }
+            })
+            .ignoresSafeArea()
+        }
         .task {
             // Load country codes if not already loaded
             if appVM.countryCodes.isEmpty {
@@ -438,6 +515,22 @@ struct EditPatientProfileView: View {
             }
         }
     }
+    
+    private func uploadSelectedImage(_ image: UIImage) async {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+        isUploadingAvatar = true
+        let success = await userVM.uploadAvatar(imageData: data)
+        isUploadingAvatar = false
+        if success {
+            vm.showSuccessToast = true
+            vm.errorMessage = ""
+        } else {
+            // Revert preview on failure
+            selectedImage = nil
+            vm.showErrorToast = true
+            vm.errorMessage = userVM.errorMessage ?? "Failed to upload photo"
+        }
+    }
 }
 
 #Preview {
@@ -445,4 +538,43 @@ struct EditPatientProfileView: View {
         .environment(\.appTheme, AppTheme.default)
         .environmentObject(AppGlobalViewModel(appService: AppService(httpClient: HTTPClient())))
 //        .environmentObject(UserGlobalViewModel(userService: UserService(httpClient: HTTPClient())))
+}
+
+// MARK: - Camera Picker (UIImagePickerController wrapper)
+
+struct ImageCameraPicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    var onPicked: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.allowsEditing = true
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImageCameraPicker
+        init(_ parent: ImageCameraPicker) { self.parent = parent }
+
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            let key: UIImagePickerController.InfoKey = info[.editedImage] != nil ? .editedImage : .originalImage
+            if let uiImage = info[key] as? UIImage {
+                parent.image = uiImage
+                parent.onPicked(uiImage)
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
 }

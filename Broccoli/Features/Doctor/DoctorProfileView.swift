@@ -12,6 +12,7 @@ struct DoctorProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var authVM: AuthGlobalViewModel
+    @EnvironmentObject private var userVM: UserGlobalViewModel
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -58,12 +59,36 @@ struct DoctorProfileView: View {
                     Button(action: { router.push(.doctorProfileDetail) }) {
                         HStack(alignment: .top) {
                             // Profile Image
-                            Rectangle()
-                                .frame(width: 120, height: 144)
-                                .cornerRadius(8)
-                                .overlay(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 120, height: 144)
+                                
+                                if let urlString = userVM.profileData?.profile?.profileImage,
+                                   let url = URL(string: urlString) {
+                                    AsyncImage(url: url) { phase in
+                                        switch phase {
+                                        case .success(let image):
+                                            image.resizable()
+                                                .scaledToFill()
+                                                .frame(width: 120, height: 144)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        default:
+                                            Image("doctor-square-placeholder")
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 120, height: 144)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        }
+                                    }
+                                } else {
                                     Image("doctor-square-placeholder")
-                                )
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 120, height: 144)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                            }
                             
                             
                             VStack(alignment: .leading, spacing: 8) {

@@ -19,20 +19,18 @@ public enum BookingEndpoint: Endpoint {
     case activeTreatments
     case treatmentDetails(String)
     case createPrescriptionOrder([String: Any])
-    case prescriptionActive
-    case prescriptionHistory
     case initialisePrescriptionPayment(String)
     case confirmPrescriptionPayment(String)
     case loadServices(String)
-    case patientBookings(status: String?, type: String?, perPage: Int, page: Int)
-    case doctorBookings(status: String?, type: String?, perPage: Int, page: Int)
+    case patientBookings(type: String?, status: String?, perPage: Int, cursor: String?)
+    case prescriptions(type: String?, perPage: Int, cursor: String?)
+    case doctorBookings(type: String?, perPage: Int, cursor: String?)
     case acceptBooking(Int)
     case rejectBooking(bookingId:Int, reason: String)
     case generateAgoraToken([String: Any])
     case startVideoCall(bookingId: Int)
     case endConsultation(bookingId: Int, consultationNotes: String)
-    case doctorBookingHistory(status: String?, type: String?, perPage: Int, page: Int)
-    
+    case consultationJoined(bookingId: Int)
     
     public var path: String {
         switch self {
@@ -56,10 +54,8 @@ public enum BookingEndpoint: Endpoint {
             return "/prescriptions/treatments/\(treatment)/questionnaire"
         case .createPrescriptionOrder:
             return "/prescriptions"
-        case .prescriptionActive:
-            return "/prescriptions/active"
-        case .prescriptionHistory:
-            return "/prescriptions/history"
+        case .prescriptions:
+            return "/prescriptions"
         case .initialisePrescriptionPayment(let prescription):
             return "/payments/prescriptions/\(prescription)/initialize"
         case .confirmPrescriptionPayment(let prescription):
@@ -67,13 +63,11 @@ public enum BookingEndpoint: Endpoint {
         case .loadServices(let department):
             return "/global/departments/\(department)/services"
         case .patientBookings:
-            return "/bookings/upcoming"
+            return "/bookings"
         case .doctorBookings:
-            return "/doctor/bookings/upcoming"
+            return "/doctor/bookings"
         case .acceptBooking(let bookingId):
             return "/doctor/bookings/\(bookingId)/accept"
-        case .doctorBookingHistory:
-            return "/doctor/bookings/past"
         case .rejectBooking(let bookingId, _):
             return "/doctor/bookings/\(bookingId)/reject"
         case .generateAgoraToken:
@@ -82,14 +76,16 @@ public enum BookingEndpoint: Endpoint {
             return "/bookings/\(bookingId)/start-video-call"
         case .endConsultation(let bookingId, _):
             return "/doctor/bookings/\(bookingId)/end-consultation"
+            case .consultationJoined(let bookingId):
+                return "/agora/joined"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .availableTimeSlots, .doctorBookingHistory, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .doctorBookings, .prescriptionActive, .prescriptionHistory:
+        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .prescriptions, .doctorBookings:
             return .GET
-        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall:
+        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .consultationJoined:
             return .POST
         case .endConsultation:
             return .PUT
@@ -120,6 +116,10 @@ public enum BookingEndpoint: Endpoint {
             return [
                 "consultation_notes": consultationNotes
             ]
+        case .consultationJoined(let bookingId):
+            return [
+                "booking_id": bookingId
+            ]
         case .uploadDocument(_, let documentData, let fileName):
             return nil
         default:
@@ -143,33 +143,30 @@ public enum BookingEndpoint: Endpoint {
                 items["service_id"] = serviceId
             }
             return items
-        case .patientBookings(let status, let type, let perPage, let page):
+        case .patientBookings(let type, let status, let perPage, let cursor):
             var items: [String: String] = [
                 "per_page": String(perPage),
-                "page": String(page)
+                "sort": "desc"
             ]
-            if let status = status { items["status"] = status }
             if let type = type { items["type"] = type }
+            if let status = status { items["status"] = status }
+            if let cursor = cursor { items["cursor"] = cursor }
             return items
-        case .prescriptionActive:
-            return nil
-        case .prescriptionHistory:
-            return nil
-        case .doctorBookings(let status, let type, let perPage, let page):
+        case .prescriptions(let type, let perPage, let cursor):
             var items: [String: String] = [
                 "per_page": String(perPage),
-                "page": String(page)
+                "sort": "desc"
             ]
-            if let status = status { items["status"] = status }
             if let type = type { items["type"] = type }
+            if let cursor = cursor { items["cursor"] = cursor }
             return items
-        case .doctorBookingHistory(let status, let type, let perPage, let page):
+        case .doctorBookings(let type, let perPage, let cursor):
             var items: [String: String] = [
                 "per_page": String(perPage),
-                "page": String(page)
+                "sort": "desc"
             ]
-            if let status = status { items["status"] = status }
             if let type = type { items["type"] = type }
+            if let cursor = cursor { items["cursor"] = cursor }
             return items
         default:
             return nil

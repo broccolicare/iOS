@@ -83,6 +83,18 @@ struct SelectPharmacyView: View {
                                     .font(theme.typography.regular12)
                                     .foregroundStyle(theme.colors.textSecondary)
                             }
+
+                            // Add new pharmacy link
+                            Button(action: { router.push(.addPharmacy) }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 14))
+                                    Text("Add New Pharmacy")
+                                        .font(theme.typography.regular14)
+                                }
+                                .foregroundStyle(theme.colors.primary)
+                            }
+                            .padding(.top, 2)
                         }
 
                         if let selected = selectedPharmacy {

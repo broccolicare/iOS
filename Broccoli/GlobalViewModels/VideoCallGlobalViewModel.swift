@@ -181,6 +181,16 @@ public class VideoCallGlobalViewModel: ObservableObject {
             // Start call timer
             startCallTimer()
             
+            // Notify backend that we have joined the channel (fire-and-forget)
+            Task {
+                do {
+                    _ = try await bookingService.notifyJoined(bookingId: booking.id)
+                    print("✅ [VideoCallVM] Joined presence notified for booking \(booking.id)")
+                } catch {
+                    print("⚠️ [VideoCallVM] Failed to notify joined presence: \(error)")
+                }
+            }
+            
             print("✅ [VideoCallVM] Call started successfully")
         } catch {
             self.callState = .disconnected
@@ -190,35 +200,38 @@ public class VideoCallGlobalViewModel: ObservableObject {
         }
     }
     
-    public func endCall(withNotes notes: String? = nil) async {
+    /// Ends the call. For the doctor role, the API is called **first**; the
+    /// channel is only left and the call torn down if the API succeeds.
+    /// Returns `true` on clean termination, `false` if the API rejected the request.
+    @discardableResult
+    public func endCall(withNotes notes: String? = nil) async -> Bool {
         guard let booking = currentBooking else {
             print("⚠️ [VideoCallVM] No active booking to end")
-            return
+            return false
         }
         
-        // Stop timer
-        stopCallTimer()
-        
-        // Leave Agora channel
-        agoraService.leaveChannel()
-        
-        // Update call state
-        callState = .ended
-        
-        // If doctor and notes provided, send to backend
+        // Doctor path: call API first — only end the call if it succeeds
         if currentUserRole == .doctor, let notes = notes, !notes.isEmpty {
             do {
-                _ = try await bookingService.endConsultation(bookingId: booking.id, consultationNotes: notes)
-                print("✅ [VideoCallVM] Call ended with notes")
+                _ = try await bookingService.endConsultation(
+                    bookingId: booking.id,
+                    consultationNotes: notes
+                )
+                print("✅ [VideoCallVM] Consultation ended successfully")
             } catch {
-                self.errorMessage = "Failed to save notes: \(error.localizedDescription)"
+                self.errorMessage = "Failed to end consultation: \(error.localizedDescription)"
                 self.showErrorAlert = true
-                print("❌ [VideoCallVM] Failed to end call: \(error)")
+                print("❌ [VideoCallVM] endConsultation API failed: \(error)")
+                return false
             }
         }
         
-        // Clean up
+        // API succeeded (or patient path — no API needed)
+        stopCallTimer()
+        agoraService.leaveChannel()
+        callState = .ended
         cleanup()
+        return true
     }
     
     public func reconnectToCall() async {

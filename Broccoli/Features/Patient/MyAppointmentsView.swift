@@ -91,7 +91,7 @@ struct MyAppointmentsView: View {
                             }
                             
                             // Load more indicator
-                            if bookingViewModel.currentPage < bookingViewModel.lastPage {
+                            if bookingViewModel.upcomingHasMore {
                                 HStack {
                                     Spacer()
                                     ProgressView()
@@ -142,7 +142,7 @@ struct MyAppointmentsView: View {
                             }
                             
                             // Load more indicator
-                            if bookingViewModel.pastCurrentPage < bookingViewModel.pastLastPage {
+                            if bookingViewModel.pastHasMore {
                                 HStack {
                                     Spacer()
                                     ProgressView()

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AlertToast
+import PhotosUI
 
 struct EditDoctorProfileView: View {
     
@@ -17,6 +18,14 @@ struct EditDoctorProfileView: View {
     @EnvironmentObject private var router: Router
     
     @StateObject private var vm = EditDoctorProfileViewModel()
+    
+    // MARK: - Avatar state
+    @State private var selectedImage: UIImage? = nil
+    @State private var showImageSourceDialog = false
+    @State private var showPhotoPicker = false
+    @State private var showCameraPicker = false
+    @State private var isUploadingAvatar = false
+    @State private var photoPickerItem: PhotosPickerItem? = nil
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -46,11 +55,38 @@ struct EditDoctorProfileView: View {
                                 .fill(Color.white)
                                 .frame(width: 120, height: 120)
                                 .overlay(
-                                    Image("doctor-square-placeholder")
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 120, height: 120)
-                                        .clipShape(Circle())
+                                    Group {
+                                        if let picked = selectedImage {
+                                            Image(uiImage: picked)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 120, height: 120)
+                                                .clipShape(Circle())
+                                        } else if let urlString = userVM.profileData?.profile?.profileImage,
+                                                  let url = URL(string: urlString) {
+                                            AsyncImage(url: url) { phase in
+                                                switch phase {
+                                                case .success(let image):
+                                                    image.resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: 120, height: 120)
+                                                        .clipShape(Circle())
+                                                default:
+                                                    Image("doctor-square-placeholder")
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: 120, height: 120)
+                                                        .clipShape(Circle())
+                                                }
+                                            }
+                                        } else {
+                                            Image("doctor-square-placeholder")
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 120, height: 120)
+                                                .clipShape(Circle())
+                                        }
+                                    }
                                 )
                                 .overlay(
                                     Circle()
@@ -62,11 +98,28 @@ struct EditDoctorProfileView: View {
                                 .fill(Color.white)
                                 .frame(width: 36, height: 36)
                                 .overlay(
-                                    Image(systemName: "camera.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(theme.colors.primary)
+                                    Group {
+                                        if isUploadingAvatar {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: theme.colors.primary))
+                                                .scaleEffect(0.7)
+                                        } else {
+                                            Image(systemName: "camera.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundStyle(theme.colors.primary)
+                                        }
+                                    }
                                 )
                                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        }
+                        .onTapGesture {
+                            guard !isUploadingAvatar else { return }
+                            showImageSourceDialog = true
+                        }
+                        .confirmationDialog("Change Profile Photo", isPresented: $showImageSourceDialog, titleVisibility: .visible) {
+                            Button("Take Photo") { showCameraPicker = true }
+                            Button("Choose from Gallery") { showPhotoPicker = true }
+                            Button("Cancel", role: .cancel) {}
                         }
                         
                         // Personal Information Section
@@ -209,6 +262,30 @@ struct EditDoctorProfileView: View {
             }
         }
         .navigationBarHidden(true)
+        // Photo library picker
+        .photosPicker(
+            isPresented: $showPhotoPicker,
+            selection: $photoPickerItem,
+            matching: .images
+        )
+        .onChange(of: photoPickerItem) { item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
+                    await uploadSelectedImage(image)
+                }
+                photoPickerItem = nil
+            }
+        }
+        // Camera picker
+        .sheet(isPresented: $showCameraPicker) {
+            ImageCameraPicker(image: $selectedImage, onPicked: { image in
+                Task { await uploadSelectedImage(image) }
+            })
+            .ignoresSafeArea()
+        }
         .task {
             // Load country codes if not already loaded
             if appVM.countryCodes.isEmpty {
@@ -276,6 +353,21 @@ struct EditDoctorProfileView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 router.pop()
             }
+        }
+    }
+    
+    private func uploadSelectedImage(_ image: UIImage) async {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+        isUploadingAvatar = true
+        let success = await userVM.uploadAvatar(imageData: data)
+        isUploadingAvatar = false
+        if success {
+            vm.showSuccessToast = true
+            vm.errorMessage = ""
+        } else {
+            selectedImage = nil
+            vm.showErrorToast = true
+            vm.errorMessage = userVM.errorMessage ?? "Failed to upload photo"
         }
     }
 }

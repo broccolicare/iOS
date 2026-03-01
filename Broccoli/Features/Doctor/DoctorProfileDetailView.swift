@@ -65,14 +65,33 @@ struct DoctorProfileDetailView: View {
                             .fill(Color.white)
                             .frame(width: 120, height: 120)
                             .overlay(
-                                Circle()
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(width: 110, height: 110)
-                                    .overlay(
-                                        Image(systemName: "person.fill")
-                                            .font(.system(size: 50))
-                                            .foregroundStyle(.gray)
-                                    )
+                                Group {
+                                    if let urlString = userVM.profileData?.profile?.profileImage,
+                                       let url = URL(string: urlString) {
+                                        AsyncImage(url: url) { phase in
+                                            switch phase {
+                                            case .success(let image):
+                                                image.resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 120, height: 120)
+                                                    .clipShape(Circle())
+                                            default:
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 50))
+                                                    .foregroundStyle(.gray)
+                                            }
+                                        }
+                                    } else {
+                                        Circle()
+                                            .fill(Color.gray.opacity(0.2))
+                                            .frame(width: 110, height: 110)
+                                            .overlay(
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 50))
+                                                    .foregroundStyle(.gray)
+                                            )
+                                    }
+                                }
                             )
                             .overlay(
                                 Circle()

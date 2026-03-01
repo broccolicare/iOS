@@ -10,7 +10,7 @@ import Foundation
 public protocol UserServiceProtocol {
     func fetchUserProfile() async throws -> UserProfileResponse
     func updateProfile(data: [String: Any]) async throws -> UserProfileResponse
-    func uploadAvatar(imageData: Data) async throws -> UserProfileResponse
+    func uploadAvatar(imageData: Data) async throws -> UploadAvatarResponse
     func submitMedicalTourismEnquiry(request: MedicalTourismEnquiryRequest) async throws -> MedicalTourismEnquiryResponse
     func submitRecoveryJourneyEnquiry(request: RecoveryJourneyEnquiryRequest) async throws -> RecoveryJourneyEnquiryResponse
 }
@@ -39,10 +39,16 @@ public final class UserService: BaseService, UserServiceProtocol {
         }
     }
     
-    public func uploadAvatar(imageData: Data) async throws -> UserProfileResponse {
+    public func uploadAvatar(imageData: Data) async throws -> UploadAvatarResponse {
         return try await handleServiceError {
             let endpoint = UserEndpoint.uploadAvatar(imageData)
-            return try await httpClient.request(endpoint)
+            return try await self.httpClient.multipartUpload(
+                endpoint,
+                fileData: imageData,
+                fileName: "avatar.jpg",
+                mimeType: "image/jpeg",
+                fieldName: "avatar"
+            )
         }
     }
     

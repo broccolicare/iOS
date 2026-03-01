@@ -19,7 +19,7 @@ public enum UserEndpoint: Endpoint {
         switch self {
         case .profile: return "/account/me"
         case .updateProfile: return "/account/me"
-        case .uploadAvatar: return "/user/avatar"
+        case .uploadAvatar: return "/account/avatar"
         case .medicalTourism: return "/medical-tourism"
         case .recoveryJourney: return "/recovery-journey"
         }

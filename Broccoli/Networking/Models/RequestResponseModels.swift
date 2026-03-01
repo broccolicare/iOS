@@ -334,7 +334,7 @@ public struct BookingResponse: Codable {
 public struct UpcomingAppointmentsResponse: Codable {
     let success: Bool
     let data: [BookingData]
-    let pagination: PaginationInfo
+    let pagination: CursorPaginationInfo
     let message: String?
     
     enum CodingKeys: String, CodingKey {
@@ -346,58 +346,45 @@ public struct UpcomingAppointmentsResponse: Codable {
     
     // Computed properties for easy access
     var bookings: [BookingData] { data }
-    var currentPage: Int { pagination.currentPage }
-    var lastPage: Int { pagination.lastPage }
+    var nextCursor: String? { pagination.nextCursor }
+    var hasMore: Bool { pagination.hasMore }
     var perPage: Int { pagination.perPage }
-    var total: Int { pagination.total }
+}
+
+public struct CursorPaginationInfo: Codable {
+    let nextCursor: String?
+    let prevCursor: String?
+    let perPage: Int
+    let hasMore: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case nextCursor = "next_cursor"
+        case prevCursor = "prev_cursor"
+        case perPage    = "per_page"
+        case hasMore    = "has_more"
+    }
 }
 
 public struct PrescriptionsListResponse: Codable {
     let success: Bool
     let prescriptions: [PrescriptionOrder]
-    let meta: PrescriptionsMeta?
+    let pagination: CursorPaginationInfo
     
     enum CodingKeys: String, CodingKey {
         case success
-        case prescriptions
-        case meta
+        case prescriptions = "data"
+        case pagination
     }
-}
-
-public struct PrescriptionsMeta: Codable {
-    let perPage: Int
-    let total: Int
-    let currentPage: Int
     
-    enum CodingKeys: String, CodingKey {
-        case perPage = "per_page"
-        case total
-        case currentPage = "current_page"
-    }
-}
-
-public struct PaginationInfo: Codable {
-    let currentPage: Int
-    let lastPage: Int
-    let perPage: Int
-    let total: Int
-    let from: Int?
-    let to: Int?
-    
-    enum CodingKeys: String, CodingKey {
-        case currentPage = "current_page"
-        case lastPage = "last_page"
-        case perPage = "per_page"
-        case total
-        case from
-        case to
-    }
+    var nextCursor: String? { pagination.nextCursor }
+    var hasMore: Bool { pagination.hasMore }
+    var perPage: Int { pagination.perPage }
 }
 
 public struct MyBookingsResponse: Codable {
     let success: Bool
     let data: [BookingData]
-    let pagination: DoctorBookingsPagination?
+    let pagination: CursorPaginationInfo
     let message: String?
 
     enum CodingKeys: String, CodingKey {
@@ -407,26 +394,10 @@ public struct MyBookingsResponse: Codable {
         case message
     }
 
-    // Computed properties for easy access (same names as before so ViewModel is unchanged)
     var bookingsList: [BookingData] { data }
-    var currentPage: Int { pagination?.currentPage ?? 1 }
-    var lastPage: Int { pagination?.lastPage ?? 1 }
-    var perPage: Int { pagination?.perPage ?? data.count }
-    var total: Int { pagination?.total ?? data.count }
-}
-
-public struct DoctorBookingsPagination: Codable {
-    let currentPage: Int
-    let lastPage: Int
-    let perPage: Int
-    let total: Int
-
-    enum CodingKeys: String, CodingKey {
-        case currentPage = "current_page"
-        case lastPage = "last_page"
-        case perPage = "per_page"
-        case total
-    }
+    var nextCursor: String? { pagination.nextCursor }
+    var hasMore: Bool { pagination.hasMore }
+    var perPage: Int { pagination.perPage }
 }
 
 public struct AcceptBookingResponse: Codable {
@@ -1288,17 +1259,9 @@ public struct MedicalTourismEnquiryRequest: Codable {
 }
 
 public struct MedicalTourismEnquiryResponse: Codable {
+    public let success: Bool
     public let message: String
-    public let data: MedicalTourismEnquiry
-    
-    private enum CodingKeys: String, CodingKey {
-        case message, data
-    }
-    
-    // Computed property for backward compatibility
-    public var success: Bool {
-        return !message.isEmpty
-    }
+    public let data: MedicalTourismEnquiry?
 }
 
 public struct MedicalTourismEnquiry: Codable, Identifiable {
@@ -1306,16 +1269,12 @@ public struct MedicalTourismEnquiry: Codable, Identifiable {
     public let name: String
     public let email: String
     public let phone: String
-    public let desiredProcedure: String
-    public let preferredDestination: String?
     public let additionalInformation: String?
-    public let createdAt: String
-    public let updatedAt: String
+    public let createdAt: String?
+    public let updatedAt: String?
     
     private enum CodingKeys: String, CodingKey {
         case id, name, email, phone
-        case desiredProcedure = "desired_procedure"
-        case preferredDestination = "preferred_destination"
         case additionalInformation = "additional_information"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
@@ -1373,17 +1332,9 @@ public struct RecoveryJourneyEnquiryRequest: Codable {
 }
 
 public struct RecoveryJourneyEnquiryResponse: Codable {
+    public let success: Bool
     public let message: String
-    public let data: RecoveryJourneyEnquiry
-    
-    private enum CodingKeys: String, CodingKey {
-        case message, data
-    }
-    
-    // Computed property for backward compatibility
-    public var success: Bool {
-        return !message.isEmpty
-    }
+    public let data: RecoveryJourneyEnquiry?
 }
 
 public struct RecoveryJourneyEnquiry: Codable, Identifiable {
@@ -1391,17 +1342,17 @@ public struct RecoveryJourneyEnquiry: Codable, Identifiable {
     public let fullName: String
     public let email: String
     public let phone: String
-    public let drugOfAddiction: String
-    public let yearsOfAddiction: Int
+    public let recoveryDrugId: Int?
+    public let recoveryAddictionYearId: Int?
     public let additionalInformation: String?
-    public let createdAt: String
-    public let updatedAt: String
+    public let createdAt: String?
+    public let updatedAt: String?
     
     private enum CodingKeys: String, CodingKey {
         case id, email, phone
         case fullName = "full_name"
-        case drugOfAddiction = "drug_of_addiction"
-        case yearsOfAddiction = "years_of_addiction"
+        case recoveryDrugId = "recovery_drug_id"
+        case recoveryAddictionYearId = "recovery_addiction_year_id"
         case additionalInformation = "additional_information"
         case createdAt = "created_at"
         case updatedAt = "updated_at"

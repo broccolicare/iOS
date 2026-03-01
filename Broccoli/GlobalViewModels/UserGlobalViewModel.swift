@@ -119,4 +119,31 @@ public final class UserGlobalViewModel: ObservableObject {
         isLoading = false
     }
     
+    /// Uploads a new avatar image. On success, patches `profileData.profile.profileImage`
+    /// locally so the UI reflects the change without a full profile re-fetch.
+    @discardableResult
+    public func uploadAvatar(imageData: Data) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            let response = try await userService.uploadAvatar(imageData: imageData)
+            guard response.success, let newURL = response.data?.profileImage else {
+                errorMessage = response.message
+                showErrorToast = true
+                return false
+            }
+            // Refresh full profile so all fields (including profile_image) stay in sync
+            await fetchProfileDetail()
+            showSuccessToast = true
+            print("✅ Avatar uploaded: \(newURL)")
+            return true
+        } catch {
+            print("❌ Avatar upload failed: \(error)")
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            showErrorToast = true
+            return false
+        }
+    }
+
 }

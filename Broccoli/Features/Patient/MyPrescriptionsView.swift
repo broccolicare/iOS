@@ -195,13 +195,6 @@ struct PrescriptionListAPIView: View {
     @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
     let prescriptions: [PrescriptionOrder]
     
-    // Calculate last page from total and per page
-    private var lastPage: Int {
-        let total = bookingViewModel.prescriptionsTotal
-        let perPage = bookingViewModel.prescriptionsPerPage
-        return total / perPage + (total % perPage > 0 ? 1 : 0)
-    }
-    
     var body: some View {
         List {
             ForEach(prescriptions) { prescription in
@@ -211,8 +204,8 @@ struct PrescriptionListAPIView: View {
                     .listRowBackground(Color.clear)
             }
             
-            // Load more indicator - only show if not currently loading and there are more pages
-            if bookingViewModel.prescriptionsCurrentPage < lastPage && !bookingViewModel.isLoadingPrescriptions {
+            // Load more indicator
+            if bookingViewModel.prescriptionsHasMore && !bookingViewModel.isLoadingPrescriptions {
                 HStack {
                     Spacer()
                     ProgressView()
@@ -240,13 +233,6 @@ struct PrescriptionHistoryListView: View {
     @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
     let prescriptions: [PrescriptionOrder]
     
-    // Calculate last page from total and per page
-    private var lastPage: Int {
-        let total = bookingViewModel.prescriptionHistoryTotal
-        let perPage = bookingViewModel.prescriptionHistoryPerPage
-        return total / perPage + (total % perPage > 0 ? 1 : 0)
-    }
-    
     var body: some View {
         List {
             ForEach(prescriptions) { prescription in
@@ -256,8 +242,8 @@ struct PrescriptionHistoryListView: View {
                     .listRowBackground(Color.clear)
             }
             
-            // Load more indicator - only show if not currently loading and there are more pages
-            if bookingViewModel.prescriptionHistoryCurrentPage < lastPage && !bookingViewModel.isLoadingPrescriptionHistory {
+            // Load more indicator
+            if bookingViewModel.prescriptionHistoryHasMore && !bookingViewModel.isLoadingPrescriptionHistory {
                 HStack {
                     Spacer()
                     ProgressView()

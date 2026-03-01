@@ -5,6 +5,7 @@ struct ProfileView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var authVM: AuthGlobalViewModel
+    @EnvironmentObject private var userVM: UserGlobalViewModel
     
     var body: some View {
         
@@ -57,10 +58,32 @@ struct ProfileView: View {
                         .fill(Color.gray.opacity(0.3))
                         .frame(width: 60, height: 60)
                         .overlay(
-                            Image("patient-placeholder")
-                                .font(.system(size: 30))
-                                .foregroundStyle(.gray)
+                            Group {
+                                if let urlString = userVM.profileData?.profile?.profileImage,
+                                   let url = URL(string: urlString) {
+                                    AsyncImage(url: url) { phase in
+                                        switch phase {
+                                        case .success(let image):
+                                            image.resizable()
+                                                .scaledToFill()
+                                                .frame(width: 60, height: 60)
+                                                .clipShape(Circle())
+                                        default:
+                                            Image("patient-placeholder")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 50, height: 50)
+                                        }
+                                    }
+                                } else {
+                                    Image("patient-placeholder")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 50, height: 50)
+                                }
+                            }
                         )
+                        .clipShape(Circle())
                     
                     Button(action: {
                         router.push(.patientProfileDetail)

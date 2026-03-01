@@ -5,6 +5,7 @@ struct DoctorHomeView: View {
     @EnvironmentObject private var authVM: AuthGlobalViewModel
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var bookingVM: BookingGlobalViewModel
+    @EnvironmentObject private var userVM: UserGlobalViewModel
     
     @State private var showActionError = false
     @State private var actionErrorMessage = ""
@@ -35,8 +36,26 @@ struct DoctorHomeView: View {
                             .fill(Color.gray.opacity(0.3))
                             .frame(width: 50, height: 50)
                             .overlay(
-                                Image("doctor-placeholder")
+                                Group {
+                                    if let urlString = userVM.profileData?.profile?.profileImage,
+                                       let url = URL(string: urlString) {
+                                        AsyncImage(url: url) { phase in
+                                            switch phase {
+                                            case .success(let image):
+                                                image.resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 50, height: 50)
+                                                    .clipShape(Circle())
+                                            default:
+                                                Image("doctor-placeholder")
+                                            }
+                                        }
+                                    } else {
+                                        Image("doctor-placeholder")
+                                    }
+                                }
                             )
+                            .clipShape(Circle())
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text(DateHelper.greetingText())
@@ -143,7 +162,6 @@ struct DoctorHomeView: View {
                 .scrollContentBackground(.hidden)
                 .refreshable {
                     await bookingVM.fetchPendingBookingsForDoctor()
-                    await bookingVM.fetchMyBookingsForDoctor()
                 }
                 .navigationBarHidden(true)
                 .alert("Action Failed", isPresented: $showActionError) {
@@ -156,9 +174,11 @@ struct DoctorHomeView: View {
                 // Add a small delay to let navigation settle before triggering API calls
                 try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
                 
-                // Fetch appointments sequentially to avoid overwhelming the navigation system
+                // Fetch profile so the latest avatar is always shown
+                await userVM.fetchProfileDetail()
+                
+                // Fetch active bookings (pending + accepted)
                 await bookingVM.fetchPendingBookingsForDoctor()
-                await bookingVM.fetchMyBookingsForDoctor()
             }
     }
     
@@ -189,7 +209,6 @@ struct DoctorHomeView: View {
             
             if success {
                 await bookingVM.refreshPendingBookings()
-                await bookingVM.refreshMyBookings()
             } else {
                 actionErrorMessage = bookingVM.errorMessage ?? "Failed to accept booking. Please try again."
                 showActionError = true
