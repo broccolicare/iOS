@@ -433,6 +433,15 @@ public struct RejectBookingResponse: Codable {
 public struct AssignedDoctorData: Codable, Hashable {
     let id: Int
     let name: String
+    let email: String?
+    let profileImage: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case email
+        case profileImage = "profile_image"
+    }
 }
 
 public struct BookingData: Codable, Hashable, Identifiable {
@@ -463,6 +472,7 @@ public struct BookingData: Codable, Hashable, Identifiable {
     let service: ServiceData?
     let department: DepartmentData?
     let user: UserData?
+    let patient: UserData?
     let assignedDoctor: AssignedDoctorData?
     
     enum CodingKeys: String, CodingKey {
@@ -493,6 +503,7 @@ public struct BookingData: Codable, Hashable, Identifiable {
         case service
         case department
         case user
+        case patient
         case assignedDoctor = "assigned_doctor"
     }
 }
@@ -579,6 +590,7 @@ public struct UserData: Codable, Hashable {
     let twoFactorConfirmedAt: String?
     let createdAt: String?
     let updatedAt: String?
+    let profileImage: String?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -594,6 +606,7 @@ public struct UserData: Codable, Hashable {
         case twoFactorConfirmedAt = "two_factor_confirmed_at"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case profileImage = "profile_image"
     }
 }
 
@@ -607,6 +620,40 @@ public struct DocumentUploadResponse: Codable {
     let success: Bool
     let data: DocumentData?
     let message: String?
+}
+
+public struct PrescriptionFile: Codable {
+    let id: Int
+    let fileName: String
+    let fileType: String?
+    let fileSize: Int?
+    let mimeType: String?
+    let url: String
+    let pageNumber: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case fileName = "file_name"
+        case fileType = "file_type"
+        case fileSize = "file_size"
+        case mimeType = "mime_type"
+        case url
+        case pageNumber = "page_number"
+    }
+}
+
+public struct UploadPrescriptionResponse: Codable {
+    let success: Bool
+    let message: String?
+    let booking: BookingData?
+    let prescriptionFiles: [PrescriptionFile]?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case message
+        case booking
+        case prescriptionFiles = "prescription_files"
+    }
 }
 
 public struct DocumentData: Codable {

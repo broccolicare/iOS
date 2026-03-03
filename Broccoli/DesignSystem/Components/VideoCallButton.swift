@@ -187,6 +187,7 @@ struct VideoCallButton: View {
         service: nil,
         department: nil,
         user: nil,
+        patient: nil,
         assignedDoctor: nil
     )
 

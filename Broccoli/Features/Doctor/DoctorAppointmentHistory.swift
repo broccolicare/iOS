@@ -39,21 +39,42 @@ struct AppointmentHistoryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Profile placeholder
+            // Patient profile image
             Circle()
                 .fill(theme.colors.surface)
                 .frame(width: 52, height: 52)
                 .overlay(
-                    Image("doctor-square-placeholder")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 52, height: 52)
-                        .clipShape(Circle())
+                    Group {
+                        if let urlString = booking.patient?.profileImage ?? booking.user?.profileImage,
+                           let url = URL(string: urlString) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image.resizable()
+                                        .scaledToFill()
+                                        .frame(width: 52, height: 52)
+                                        .clipShape(Circle())
+                                default:
+                                    Image("doctor-square-placeholder")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 52, height: 52)
+                                        .clipShape(Circle())
+                                }
+                            }
+                        } else {
+                            Image("doctor-square-placeholder")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 52, height: 52)
+                                .clipShape(Circle())
+                        }
+                    }
                 )
 
             // Patient Info
             VStack(alignment: .leading, spacing: 4) {
-                Text(booking.user?.name ?? "Patient")
+                Text(booking.patient?.name ?? booking.user?.name ?? "Patient")
                     .font(theme.typography.semiBold16)
                     .foregroundStyle(theme.colors.textPrimary)
 

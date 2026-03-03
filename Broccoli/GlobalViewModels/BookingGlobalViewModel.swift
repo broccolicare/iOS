@@ -105,6 +105,8 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var isLoadingPrescriptionHistory: Bool = false
     @Published public var prescriptionHistoryNextCursor: String? = nil
     @Published public var prescriptionHistoryHasMore: Bool = false
+    @Published public var isUploadingPrescription: Bool = false
+    @Published public var prescriptionUploadMessage: String?
     
     public init(bookingService: BookingServiceProtocol) {
         self.bookingService = bookingService
@@ -846,7 +848,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchPatientBookings(type: "active", status: "confirmed", perPage: perPage, cursor: cursor)
+            let response = try await bookingService.fetchPatientBookings(type: "active", status: nil, perPage: perPage, cursor: cursor)
             
             if loadMore {
                 self.upcomingAppointments.append(contentsOf: response.bookings)
@@ -918,22 +920,23 @@ public final class BookingGlobalViewModel: ObservableObject {
     
     // MARK: - Active Bookings For Doctor
     
-    /// Fetch active bookings for doctor: unassigned pending + accepted upcoming.
-    /// Splits the combined list into `pendingBookings` (unclaimed) and `myBookings` (accepted).
+    /// Fetch doctor bookings: two concurrent calls — type=pending for pending bookings, type=active for accepted bookings.
     public func fetchPendingBookingsForDoctor() async {
         isLoadingPendingBookings = true
         isLoadingMyBookings = true
         errorMessage = nil
-        
+
         do {
-            let response = try await bookingService.fetchDoctorBookings(type: "active", perPage: 50, cursor: nil)
-            self.pendingBookings = response.bookingsList.filter { $0.doctorStatus == "pending" }
-            self.myBookings = response.bookingsList.filter { $0.doctorStatus == "accepted" }
+            async let pendingResponse = bookingService.fetchDoctorBookings(type: "pending", status: nil, perPage: 50, cursor: nil)
+            async let activeResponse = bookingService.fetchDoctorBookings(type: "active", status: nil, perPage: 50, cursor: nil)
+            let (pending, active) = try await (pendingResponse, activeResponse)
+            self.pendingBookings = pending.bookingsList
+            self.myBookings = active.bookingsList
         } catch {
             errorMessage = error.localizedDescription
             showErrorToast = true
         }
-        
+
         isLoadingPendingBookings = false
         isLoadingMyBookings = false
     }
@@ -951,7 +954,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let response = try await bookingService.fetchDoctorBookings(type: "past", perPage: perPage, cursor: cursor)
+            let response = try await bookingService.fetchDoctorBookings(type: "past", status: "completed", perPage: perPage, cursor: cursor)
             
             if loadMore {
                 self.doctorBookingHistory.append(contentsOf: response.bookingsList)
@@ -1248,6 +1251,30 @@ public final class BookingGlobalViewModel: ObservableObject {
             isFetchingBookingDetail = false
             errorMessage = error.localizedDescription
             showErrorToast = true
+        }
+    }
+
+    // MARK: - Upload Prescription
+
+    /// Upload a prescription document for a completed booking (doctor only)
+    public func uploadPrescription(bookingId: Int, fileData: Data, fileName: String, mimeType: String) async -> Bool {
+        isUploadingPrescription = true
+        prescriptionUploadMessage = nil
+
+        do {
+            let response = try await bookingService.uploadPrescription(
+                bookingId: bookingId,
+                fileData: fileData,
+                fileName: fileName,
+                mimeType: mimeType
+            )
+            isUploadingPrescription = false
+            prescriptionUploadMessage = response.message ?? (response.success ? "Prescription uploaded successfully." : "Failed to upload prescription.")
+            return response.success
+        } catch {
+            isUploadingPrescription = false
+            prescriptionUploadMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return false
         }
     }
 }

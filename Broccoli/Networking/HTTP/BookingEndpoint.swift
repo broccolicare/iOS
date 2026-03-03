@@ -24,13 +24,14 @@ public enum BookingEndpoint: Endpoint {
     case loadServices(String)
     case patientBookings(type: String?, status: String?, perPage: Int, cursor: String?)
     case prescriptions(type: String?, perPage: Int, cursor: String?)
-    case doctorBookings(type: String?, perPage: Int, cursor: String?)
+    case doctorBookings(type: String?, status: String?, perPage: Int, cursor: String?)
     case acceptBooking(Int)
     case rejectBooking(bookingId:Int, reason: String)
     case generateAgoraToken([String: Any])
     case startVideoCall(bookingId: Int)
     case endConsultation(bookingId: Int, consultationNotes: String)
     case consultationJoined(bookingId: Int)
+    case uploadPrescription(bookingId: Int)
     
     public var path: String {
         switch self {
@@ -76,8 +77,10 @@ public enum BookingEndpoint: Endpoint {
             return "/bookings/\(bookingId)/start-video-call"
         case .endConsultation(let bookingId, _):
             return "/doctor/bookings/\(bookingId)/end-consultation"
-            case .consultationJoined(let bookingId):
-                return "/agora/joined"
+        case .consultationJoined(let bookingId):
+            return "/agora/joined"
+        case .uploadPrescription(let bookingId):
+            return "/doctor/bookings/\(bookingId)/upload-prescription"
         }
     }
     
@@ -85,7 +88,7 @@ public enum BookingEndpoint: Endpoint {
         switch self {
         case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .prescriptions, .doctorBookings:
             return .GET
-        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .consultationJoined:
+        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .consultationJoined, .uploadPrescription:
             return .POST
         case .endConsultation:
             return .PUT
@@ -160,12 +163,13 @@ public enum BookingEndpoint: Endpoint {
             if let type = type { items["type"] = type }
             if let cursor = cursor { items["cursor"] = cursor }
             return items
-        case .doctorBookings(let type, let perPage, let cursor):
+        case .doctorBookings(let type, let status, let perPage, let cursor):
             var items: [String: String] = [
                 "per_page": String(perPage),
                 "sort": "desc"
             ]
             if let type = type { items["type"] = type }
+            if let status = status { items["status"] = status }
             if let cursor = cursor { items["cursor"] = cursor }
             return items
         default:

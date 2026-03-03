@@ -19,11 +19,31 @@ struct TodayAppointmentCard: View {
             HStack(spacing: 12) {
                 // Patient Avatar
                 Circle()
+                    .fill(Color.gray.opacity(0.3))
                     .frame(width: 50, height: 50)
                     .overlay(
-                        Image("patient-placeholder")
-                            .foregroundStyle(.gray)
+                        Group {
+                            if let urlString = appointment.patientImageUrl,
+                               let url = URL(string: urlString) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image.resizable()
+                                            .scaledToFill()
+                                            .frame(width: 50, height: 50)
+                                            .clipShape(Circle())
+                                    default:
+                                        Image("patient-placeholder")
+                                            .foregroundStyle(.gray)
+                                    }
+                                }
+                            } else {
+                                Image("patient-placeholder")
+                                    .foregroundStyle(.gray)
+                            }
+                        }
                     )
+                    .clipShape(Circle())
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(appointment.patientName)
@@ -100,6 +120,7 @@ struct TodayAppointmentCard: View {
             id: 1,
             patientName: "Sophia Carter",
             patientAvatar: "patient-avatar-1",
+            patientImageUrl: nil,
             date: "2026-02-14",
             startTime: "10:00 AM",
             endTime: "10:30 AM",

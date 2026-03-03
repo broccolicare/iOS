@@ -23,13 +23,14 @@ public protocol BookingServiceProtocol {
     func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse
     func fetchPatientBookings(type: String?, status: String?, perPage: Int, cursor: String?) async throws -> UpcomingAppointmentsResponse
     func fetchPrescriptions(type: String?, perPage: Int, cursor: String?) async throws -> PrescriptionsListResponse
-    func fetchDoctorBookings(type: String?, perPage: Int, cursor: String?) async throws -> MyBookingsResponse
+    func fetchDoctorBookings(type: String?, status: String?, perPage: Int, cursor: String?) async throws -> MyBookingsResponse
     func acceptBooking(bookingId: Int) async throws -> AcceptBookingResponse
     func rejectBooking(bookingId: Int, reason: String) async throws -> RejectBookingResponse
     func generateAgoraToken(bookingId: Int, channelName: String, expireSeconds: Int) async throws -> AgoraTokenResponse
     func startVideoCall(bookingId: Int) async throws -> VideoCallStatusResponse
     func endConsultation(bookingId: Int, consultationNotes: String) async throws -> VideoCallStatusResponse
     func notifyJoined(bookingId: Int) async throws -> VideoCallStatusResponse
+    func uploadPrescription(bookingId: Int, fileData: Data, fileName: String, mimeType: String) async throws -> UploadPrescriptionResponse
 }
 
 public final class BookingService: BaseService, BookingServiceProtocol {
@@ -162,10 +163,10 @@ public final class BookingService: BaseService, BookingServiceProtocol {
         }
     }
     
-    /// Fetch doctor bookings with optional type/cursor filters
-    public func fetchDoctorBookings(type: String? = nil, perPage: Int = 15, cursor: String? = nil) async throws -> MyBookingsResponse {
+    /// Fetch doctor bookings with optional type/status/cursor filters
+    public func fetchDoctorBookings(type: String? = nil, status: String? = nil, perPage: Int = 15, cursor: String? = nil) async throws -> MyBookingsResponse {
         return try await handleServiceError {
-            let endpoint = BookingEndpoint.doctorBookings(type: type, perPage: perPage, cursor: cursor)
+            let endpoint = BookingEndpoint.doctorBookings(type: type, status: status, perPage: perPage, cursor: cursor)
             return try await httpClient.request(endpoint)
         }
     }
@@ -220,6 +221,20 @@ public final class BookingService: BaseService, BookingServiceProtocol {
         return try await handleServiceError {
             let endpoint = BookingEndpoint.consultationJoined(bookingId: bookingId)
             return try await httpClient.request(endpoint)
+        }
+    }
+
+    /// Upload prescription files for a completed booking (doctor only)
+    public func uploadPrescription(bookingId: Int, fileData: Data, fileName: String, mimeType: String) async throws -> UploadPrescriptionResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.uploadPrescription(bookingId: bookingId)
+            return try await httpClient.multipartUpload(
+                endpoint,
+                fileData: fileData,
+                fileName: fileName,
+                mimeType: mimeType,
+                fieldName: "files[]"
+            )
         }
     }
 }

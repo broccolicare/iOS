@@ -18,6 +18,7 @@ struct DoctorAppointment: Identifiable, Codable {
     let id: Int
     let patientName: String
     let patientAvatar: String
+    let patientImageUrl: String?
     let date: String
     let startTime: String
     let endTime: String

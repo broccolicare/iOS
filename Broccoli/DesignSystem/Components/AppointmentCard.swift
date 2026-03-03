@@ -14,17 +14,44 @@ struct AppointmentCard: View {
         VStack {
             
             HStack{
-                Image("doctor-placeholder")
-                    .resizable()
-                    .scaledToFit()
+                Circle()
+                    .fill(Color.white.opacity(0.3))
                     .frame(width: 56, height: 56)
+                    .overlay(
+                        Group {
+                            if let urlString = booking.assignedDoctor?.profileImage,
+                               let url = URL(string: urlString) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image.resizable()
+                                            .scaledToFill()
+                                            .frame(width: 56, height: 56)
+                                            .clipShape(Circle())
+                                    default:
+                                        Image("doctor-placeholder")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 56, height: 56)
+                                            .clipShape(Circle())
+                                    }
+                                }
+                            } else {
+                                Image("doctor-placeholder")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 56, height: 56)
+                                    .clipShape(Circle())
+                            }
+                        }
+                    )
                     .clipShape(Circle())
                 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(booking.service?.name ?? booking.assignedDoctor.map { "Dr. \($0.name)" } ?? "Doctor")
+                    Text(booking.assignedDoctor.map { "Dr. \($0.name)" } ?? booking.service?.name ?? "Doctor")
                         .font(theme.typography.bold22)
                         .foregroundStyle(.white)
-                    Text(booking.department?.name ?? "Specialist")
+                    Text(booking.service?.name ?? booking.department?.name ?? "Specialist")
                         .font(theme.typography.regular14)
                         .foregroundStyle(.white)
                 }
@@ -121,7 +148,8 @@ struct AppointmentCard: View {
             description: nil, status: "active", createdAt: nil, updatedAt: nil
         ),
         user: nil,
-        assignedDoctor: AssignedDoctorData(id: 29, name: "Sarah Johnson")
+        patient: nil,
+        assignedDoctor: AssignedDoctorData(id: 29, name: "Sarah Johnson", email: nil, profileImage: nil)
     )
     AppointmentCard(booking: sampleBooking)
         .environment(\.appTheme, AppTheme.default)

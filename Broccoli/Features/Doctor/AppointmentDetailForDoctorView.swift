@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct AppointmentDetailForDoctorView: View {
     @Environment(\.appTheme) private var theme
@@ -16,6 +17,12 @@ struct AppointmentDetailForDoctorView: View {
     
     @State private var showActionError = false
     @State private var actionErrorMessage = ""
+    @State private var showUploadSourceDialog = false
+    @State private var showPhotoLibraryPicker = false
+    @State private var showCameraPicker = false
+    @State private var photoPickerItem: PhotosPickerItem? = nil
+    @State private var showPrescriptionResultAlert = false
+    @State private var prescriptionResultSuccess = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -62,16 +69,37 @@ struct AppointmentDetailForDoctorView: View {
                             .fill(Color.white)
                             .frame(width: 80, height: 80)
                             .overlay(
-                                Image("patient-placeholder")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 80, height: 80)
-                                    .clipShape(Circle())
+                                Group {
+                                    if let urlString = booking.patient?.profileImage ?? booking.user?.profileImage,
+                                       let url = URL(string: urlString) {
+                                        AsyncImage(url: url) { phase in
+                                            switch phase {
+                                            case .success(let image):
+                                                image.resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 80, height: 80)
+                                                    .clipShape(Circle())
+                                            default:
+                                                Image("patient-placeholder")
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 80, height: 80)
+                                                    .clipShape(Circle())
+                                            }
+                                        }
+                                    } else {
+                                        Image("patient-placeholder")
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 80, height: 80)
+                                            .clipShape(Circle())
+                                    }
+                                }
                             )
                         
                         VStack(alignment: .leading, spacing: 6) {
                             // Patient name
-                            Text(booking.user?.name ?? "Patient")
+                            Text(booking.patient?.name ?? booking.user?.name ?? "Patient")
                                 .font(theme.typography.bold30)
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
@@ -256,7 +284,7 @@ struct AppointmentDetailForDoctorView: View {
                             .font(theme.typography.regular16)
                             .foregroundStyle(theme.colors.textPrimary)
                         Spacer()
-                        Text(booking.doctorStatus?.capitalized ?? booking.status.capitalized)
+                        Text(booking.status.replacingOccurrences(of: "_", with: " ").capitalized)
                             .font(theme.typography.semiBold16)
                             .foregroundStyle(doctorStatusColor)
                             .padding(.horizontal, 16)
@@ -267,8 +295,8 @@ struct AppointmentDetailForDoctorView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     
-                    // Call Button (only for confirmed/accepted bookings)
-                    if booking.doctorStatus == "accepted" || booking.status == "confirmed" {
+                    // Call Button (only for confirmed/accepted bookings, not completed or prescription_pending)
+                    if (booking.doctorStatus == "accepted" || booking.status == "confirmed") && booking.status != "completed" && booking.status != "prescription_pending" {
                         VideoCallButton(booking: booking, role: .doctor)
                             .padding(.horizontal, 20)
                     }
@@ -322,6 +350,27 @@ struct AppointmentDetailForDoctorView: View {
                         }
                         .padding(.horizontal, 20)
                     }
+                    
+                    // Upload Prescription (only for prescription_pending bookings)
+                    if booking.status == "prescription_pending" {
+                        Button(action: { showUploadSourceDialog = true }) {
+                            Group {
+                                if bookingVM.isUploadingPrescription {
+                                    ProgressView().tint(.white)
+                                } else {
+                                    Text("Upload Prescription")
+                                        .font(theme.typography.semiBold16)
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(theme.colors.primary)
+                            .cornerRadius(12)
+                        }
+                        .disabled(bookingVM.isUploadingPrescription)
+                        .padding(.horizontal, 20)
+                    }
                 }
                 .padding(.bottom, 16)
                 .background(Color.white)
@@ -337,6 +386,37 @@ struct AppointmentDetailForDoctorView: View {
         } message: {
             Text(actionErrorMessage)
         }
+        .confirmationDialog("Upload Prescription", isPresented: $showUploadSourceDialog, titleVisibility: .visible) {
+            Button("Camera") { showCameraPicker = true }
+            Button("Photo Library") { showPhotoLibraryPicker = true }
+            Button("Cancel", role: .cancel) {}
+        }
+        .photosPicker(
+            isPresented: $showPhotoLibraryPicker,
+            selection: $photoPickerItem,
+            matching: .images
+        )
+        .onChange(of: photoPickerItem) { item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    await handlePrescriptionUpload(data: data, fileName: "prescription.jpg", mimeType: "image/jpeg")
+                }
+                photoPickerItem = nil
+            }
+        }
+        .sheet(isPresented: $showCameraPicker) {
+            ImageCameraPicker(image: .constant(nil), onPicked: { image in
+                guard let data = image.jpegData(compressionQuality: 0.85) else { return }
+                Task { await handlePrescriptionUpload(data: data, fileName: "prescription.jpg", mimeType: "image/jpeg") }
+            })
+            .ignoresSafeArea()
+        }
+        .alert(prescriptionResultSuccess ? "Upload Successful" : "Upload Failed", isPresented: $showPrescriptionResultAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(bookingVM.prescriptionUploadMessage ?? "")
+        }
     }
     
     // MARK: - Helper Functions
@@ -350,9 +430,10 @@ struct AppointmentDetailForDoctorView: View {
     }
     
     private var doctorStatusColor: Color {
-        switch (booking.doctorStatus ?? booking.status).lowercased() {
+        switch booking.status.lowercased() {
         case "accepted", "confirmed": return Color.green
         case "completed": return Color.blue
+        case "prescription_pending": return Color.orange
         case "rejected", "cancelled": return Color.red
         case "pending": return Color.orange
         default: return Color.gray
@@ -384,6 +465,17 @@ struct AppointmentDetailForDoctorView: View {
             return "\(startString) - \(endString)"
         }
         return time
+    }
+
+    private func handlePrescriptionUpload(data: Data, fileName: String, mimeType: String) async {
+        let success = await bookingVM.uploadPrescription(
+            bookingId: booking.id,
+            fileData: data,
+            fileName: fileName,
+            mimeType: mimeType
+        )
+        prescriptionResultSuccess = success
+        showPrescriptionResultAlert = true
     }
 }
 
@@ -451,8 +543,10 @@ struct AppointmentDetailForDoctorView: View {
             twoFactorRecoveryCodes: nil,
             twoFactorConfirmedAt: nil,
             createdAt: nil,
-            updatedAt: nil
+            updatedAt: nil,
+            profileImage: nil
         ),
+        patient: nil,
         assignedDoctor: nil
     )
     

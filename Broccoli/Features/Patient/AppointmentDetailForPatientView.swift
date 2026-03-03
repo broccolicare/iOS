@@ -91,16 +91,37 @@ struct AppointmentDetailForPatientView: View {
                     
                     // Patient info
                     HStack(alignment: .top, spacing: 10) {
-                        // Profile image
+                        // Doctor profile image
                         Circle()
                             .fill(Color.white)
                             .frame(width: 80, height: 80)
                             .overlay(
-                                Image("patient-placeholder")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 80, height: 80)
-                                    .clipShape(Circle())
+                                Group {
+                                    if let urlString = booking.assignedDoctor?.profileImage,
+                                       let url = URL(string: urlString) {
+                                        AsyncImage(url: url) { phase in
+                                            switch phase {
+                                            case .success(let image):
+                                                image.resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 80, height: 80)
+                                                    .clipShape(Circle())
+                                            default:
+                                                Image("patient-placeholder")
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 80, height: 80)
+                                                    .clipShape(Circle())
+                                            }
+                                        }
+                                    } else {
+                                        Image("patient-placeholder")
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 80, height: 80)
+                                            .clipShape(Circle())
+                                    }
+                                }
                             )
                         
                         VStack(alignment: .leading, spacing: 6){
@@ -246,7 +267,7 @@ struct AppointmentDetailForPatientView: View {
                             .font(theme.typography.regular16)
                             .foregroundStyle(theme.colors.textPrimary)
                         Spacer()
-                        Text(booking.status.capitalized)
+                        Text(booking.status.replacingOccurrences(of: "_", with: " ").capitalized)
                             .font(theme.typography.semiBold16)
                             .foregroundStyle(statusColor(for: booking.status))
                             .padding(.horizontal, 16)
@@ -282,6 +303,7 @@ struct AppointmentDetailForPatientView: View {
         case "completed": return Color.blue
         case "cancelled": return Color.red
         case "pending": return Color.orange
+        case "prescription_pending": return Color.orange
         default: return Color.gray
         }
     }
@@ -348,9 +370,12 @@ struct AppointmentDetailForPatientView: View {
             updatedAt: nil
         ),
         user: nil,
+        patient: nil,
         assignedDoctor: AssignedDoctorData(
             id: 29,
-            name: "Emily Carter"
+            name: "Emily Carter",
+            email: nil,
+            profileImage: nil
         )
     )
     

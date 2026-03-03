@@ -15,8 +15,9 @@ struct DoctorHomeView: View {
         bookingVM.pendingBookings.map { booking in
             DoctorAppointment(
                 id: booking.id,
-                patientName: booking.user?.name ?? "Patient",
+                patientName: booking.patient?.name ?? booking.user?.name ?? "Patient",
                 patientAvatar: "doctor-placeholder",
+                patientImageUrl: booking.patient?.profileImage,
                 date: booking.date,
                 startTime: booking.time,
                 endTime: calculateEndTime(from: booking.time, duration: booking.service?.duration ?? 30),

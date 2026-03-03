@@ -364,8 +364,10 @@ struct StatusBadge: View {
             return "Pending"
         case "scheduled":
             return "Upcoming"
+        case "prescription_pending":
+            return "Prescription Pending"
         default:
-            return status.capitalized
+            return status.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
     
@@ -379,6 +381,8 @@ struct StatusBadge: View {
             return theme.colors.primary
         case "scheduled":
             return theme.colors.primary
+        case "prescription_pending":
+            return Color.orange
         default:
             return theme.colors.textSecondary
         }

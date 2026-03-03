@@ -18,14 +18,35 @@ struct ScheduledAppointmentCard: View {
             HStack(spacing: 12) {
                 // Patient Avatar
                 Circle()
+                    .fill(Color.gray.opacity(0.3))
                     .frame(width: 50, height: 50)
                     .overlay(
-                        Image("patient-placeholder")
-                            .foregroundStyle(.gray)
+                        Group {
+                            let imageUrl = booking.patient?.profileImage ?? booking.user?.profileImage
+                            if let urlString = imageUrl,
+                               let url = URL(string: urlString) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image.resizable()
+                                            .scaledToFill()
+                                            .frame(width: 50, height: 50)
+                                            .clipShape(Circle())
+                                    default:
+                                        Image("patient-placeholder")
+                                            .foregroundStyle(.gray)
+                                    }
+                                }
+                            } else {
+                                Image("patient-placeholder")
+                                    .foregroundStyle(.gray)
+                            }
+                        }
                     )
+                    .clipShape(Circle())
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(booking.user?.name ?? "Patient")
+                    Text(booking.patient?.name ?? booking.user?.name ?? "Patient")
                         .font(theme.typography.semiBold22)
                         .foregroundStyle(.black)
                     
@@ -43,8 +64,22 @@ struct ScheduledAppointmentCard: View {
             .contentShape(Rectangle())
             .onTapGesture { onCardTap?() }
             
-            // Start Call Button — reusable component handles token fetch + navigation
-            VideoCallButton(booking: booking, role: .doctor)
+            // Start Call Button or Upload Prescription Button
+            if booking.status == "prescription_pending" {
+                Button(action: { onCardTap?() }) {
+                    Text("Upload Prescription")
+                        .font(theme.typography.medium16)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(theme.colors.primary)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+            } else {
+                // Start Call Button — reusable component handles token fetch + navigation
+                VideoCallButton(booking: booking, role: .doctor)
+            }
         }
         .padding(16)
         .background(Color.white)
@@ -115,8 +150,10 @@ struct ScheduledAppointmentCard: View {
             id: 30, name: "Marc Maddison", email: "marc@example.com",
             username: nil, stripeId: nil, pmType: nil, pmLastFour: nil,
             trialEndsAt: nil, twoFactorSecret: nil, twoFactorRecoveryCodes: nil,
-            twoFactorConfirmedAt: nil, createdAt: nil, updatedAt: nil
+            twoFactorConfirmedAt: nil, createdAt: nil, updatedAt: nil,
+            profileImage: nil
         ),
+        patient: nil,
         assignedDoctor: nil
     )
     ScheduledAppointmentCard(booking: sampleBooking, theme: AppTheme.default)
