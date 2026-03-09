@@ -29,23 +29,22 @@ struct AppointmentCard: View {
                                             .frame(width: 56, height: 56)
                                             .clipShape(Circle())
                                     default:
-                                        Image("doctor-placeholder")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 56, height: 56)
-                                            .clipShape(Circle())
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 30))
+                                            .foregroundStyle(.white)
                                     }
                                 }
                             } else {
-                                Image("doctor-placeholder")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 56, height: 56)
-                                    .clipShape(Circle())
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 30))
+                                    .foregroundStyle(.white)
                             }
                         }
                     )
-                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(theme.colors.primary.opacity(0.3), lineWidth: 1)
+                    )
                 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(booking.assignedDoctor.map { "Dr. \($0.name)" } ?? booking.service?.name ?? "Doctor")

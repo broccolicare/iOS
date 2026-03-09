@@ -56,39 +56,44 @@ struct DoctorProfileView: View {
                 
                 // Profile Card
                 VStack(spacing: 0) {
-                    Button(action: { router.push(.doctorProfileDetail) }) {
                         HStack(alignment: .top) {
                             // Profile Image
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 120, height: 144)
-                                
-                                if let urlString = userVM.profileData?.profile?.profileImage,
-                                   let url = URL(string: urlString) {
-                                    AsyncImage(url: url) { phase in
-                                        switch phase {
-                                        case .success(let image):
-                                            image.resizable()
-                                                .scaledToFill()
-                                                .frame(width: 120, height: 144)
-                                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                        default:
-                                            Image("doctor-square-placeholder")
-                                                .resizable()
-                                                .scaledToFill()
-                                                .frame(width: 120, height: 144)
-                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 80, height: 80)
+                                .overlay(
+                                    Group {
+                                        if let urlString = userVM.profileData?.profile?.profileImage,
+                                           let url = URL(string: urlString) {
+                                            AsyncImage(url: url) { phase in
+                                                switch phase {
+                                                case .success(let image):
+                                                    image.resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: 80, height: 80)
+                                                        .clipShape(Circle())
+                                                default:
+                                                    Image(systemName: "person.fill")
+                                                        .font(.system(size: 50))
+                                                        .foregroundStyle(.gray)
+                                                }
+                                            }
+                                        } else {
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.2))
+                                                .frame(width: 80, height: 80)
+                                                .overlay(
+                                                    Image(systemName: "person.fill")
+                                                        .font(.system(size: 50))
+                                                        .foregroundStyle(.gray)
+                                                )
                                         }
                                     }
-                                } else {
-                                    Image("doctor-square-placeholder")
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 120, height: 144)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                                }
-                            }
+                                )
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 4)
+                                )
                             
                             
                             VStack(alignment: .leading, spacing: 8) {
@@ -110,57 +115,10 @@ struct DoctorProfileView: View {
                                         .font(theme.typography.bold20)
                                         .foregroundStyle(.white)
                                 }
-                                
-                                // Rating and Price
-                                HStack(spacing: 16) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "star.fill")
-                                            .foregroundStyle(.white)
-                                            .font(.system(size: 16))
-                                        Text("4.5")
-                                            .font(theme.typography.bold18)
-                                            .foregroundStyle(.white)
-                                    }
-                                    Spacer()
-                                    // HStack(spacing: 4) {
-                                    //     Image("dollar-symbol")
-                                    //     Text("€230")
-                                    //         .font(theme.typography.semiBold18)
-                                    // }
-                                    // .padding(.horizontal, 12)
-                                    // .padding(.vertical, 8)
-                                    // .background(Color.white.opacity(0.2))
-                                    // .cornerRadius(20)
-                                }
-                                .padding(.top, 8)
                             }
                         }
-                        .padding(20)
-                    }
+                        .padding(.vertical,20)
                     
-                    
-                    // Stats Card
-                    HStack(spacing: 0) {
-                        StatItem(number: "12 Years", label: "Experience")
-                        
-                        Divider()
-                            .frame(height: 40)
-                            .background(Color.gray.opacity(0.3))
-                        
-                        StatItem(number: "1.5K", label: "Patients")
-                        
-                        Divider()
-                            .frame(height: 40)
-                            .background(Color.gray.opacity(0.3))
-                        
-                        StatItem(number: "1.3K", label: "Reviews")
-                    }
-                    .padding(.vertical, 20)
-                    .background(Color.white)
-                    .cornerRadius(16)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
                     
                     // Menu Items List
                     List {
@@ -168,8 +126,8 @@ struct DoctorProfileView: View {
                         Section {
                             MenuItemRow(
                                 icon: "my-reviews-icon",
-                                title: "My Reviews",
-                                action: {}
+                                title: "My Profile",
+                                action: {router.push(.doctorProfileDetail)}
                             )
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowBackground(theme.colors.background)

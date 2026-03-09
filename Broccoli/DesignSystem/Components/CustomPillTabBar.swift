@@ -18,10 +18,10 @@ struct CustomPillTabBar: View {
             tabButton(tab: .profile, icon: "person.crop.circle", title: "Profile")
         }
         .padding(5)
-        .frame(height: 60)
+        .frame(height: 70)
         .background(theme.colors.surface)           // pill background
-        .cornerRadius(30)
-        .overlay(RoundedRectangle(cornerRadius: 30).stroke(theme.colors.border))
+        .cornerRadius(35)
+        .overlay(RoundedRectangle(cornerRadius: 35).stroke(theme.colors.border))
         .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
     }
 
@@ -34,18 +34,18 @@ struct CustomPillTabBar: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(theme.typography.regular12)
+                    .font(theme.typography.regular18)
                     .foregroundStyle(selected == tab ? .white : theme.colors.textSecondary)
                 Text(title)
                     .font(theme.typography.caption)
                     .foregroundStyle(selected == tab ? .white : theme.colors.textSecondary)
             }
             .frame(minWidth: 80)
-            .frame(height: 38)
+            .frame(height: 48)
             .padding(.vertical, 6)
             .padding(.horizontal, 6)
             .background(selected == tab ? theme.colors.primary : Color.clear)
-            .cornerRadius(26)
+            .cornerRadius(28)
         }
         .buttonStyle(PlainButtonStyle())
     }

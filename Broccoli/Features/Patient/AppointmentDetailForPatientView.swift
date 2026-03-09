@@ -107,21 +107,21 @@ struct AppointmentDetailForPatientView: View {
                                                     .frame(width: 80, height: 80)
                                                     .clipShape(Circle())
                                             default:
-                                                Image("patient-placeholder")
-                                                    .resizable()
-                                                    .scaledToFill()
-                                                    .frame(width: 80, height: 80)
-                                                    .clipShape(Circle())
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 30))
+                                                    .foregroundStyle(.gray)
                                             }
                                         }
                                     } else {
-                                        Image("patient-placeholder")
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 80, height: 80)
-                                            .clipShape(Circle())
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 30))
+                                            .foregroundStyle(.gray)
                                     }
                                 }
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(theme.colors.primary.opacity(0.3), lineWidth: 1)
                             )
                         
                         VStack(alignment: .leading, spacing: 6){

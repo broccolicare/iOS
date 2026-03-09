@@ -72,11 +72,9 @@ struct EditDoctorProfileView: View {
                                                         .frame(width: 120, height: 120)
                                                         .clipShape(Circle())
                                                 default:
-                                                    Image("doctor-square-placeholder")
-                                                        .resizable()
-                                                        .scaledToFill()
-                                                        .frame(width: 120, height: 120)
-                                                        .clipShape(Circle())
+                                                    Image(systemName: "person.fill")
+                                                        .font(.system(size: 50))
+                                                        .foregroundStyle(.gray)
                                                 }
                                             }
                                         } else {
@@ -231,6 +229,7 @@ struct EditDoctorProfileView: View {
                             .padding(.horizontal, 20)
                         }
                     }
+                    .padding(.vertical, 20)
                 }
                 
                 // Update Details Button

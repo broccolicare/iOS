@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Models (sample)
 struct Banner: Identifiable { let id = UUID(); let title: String; let subtitle: String; let imageName: String }
-struct ServiceItem: Identifiable { let id = UUID(); let title: String; let icon: String; let color: Color }
+struct ServiceItem: Identifiable { let id = UUID(); let title: String; let backgroundImage: String }
 // MARK: - Home View
 struct PatientHomeView: View {
     @Environment(\.appTheme) private var theme
@@ -14,10 +14,10 @@ struct PatientHomeView: View {
     // screen state
     @State private var searchText: String = ""
     @State private var services: [ServiceItem] = [
-        ServiceItem(title: "GP Booking", icon: "calendar-icon", color: Color("Tile1")),
-        ServiceItem(title: "Specialist", icon: "specilist-icon", color: Color("Tile2")),
-        ServiceItem(title: "Nutritionists", icon: "nutritionists-icon", color: Color("Tile3")),
-        ServiceItem(title: "Blood Tests", icon: "blood-test-icon", color: Color("Tile4"))
+        ServiceItem(title: "GP Booking", backgroundImage: "gp-image"),
+        ServiceItem(title: "Specialist", backgroundImage: "specialist"),
+        ServiceItem(title: "Nutritionists", backgroundImage: "nutritionists"),
+        ServiceItem(title: "Blood Tests", backgroundImage: "blood-tests")
     ]
     
     // Convert API BookingData to UI Appointment model
@@ -78,10 +78,7 @@ struct PatientHomeView: View {
                             // 2x2 service tiles
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: theme.spacing.md) {
                                 ForEach(services) { service in
-                                    ServiceTile(item: service) {
-                                        // navigate to respective screen
-                                        // e.g. router.push(.specialist) or NavigationLink
-                                        print("Tapped \(service.title)")
+                                    Button {
                                         if service.title == "GP Booking" {
                                             router.push(.gPAppointBookingForm)
                                         } else if service.title == "Specialist" {
@@ -91,7 +88,14 @@ struct PatientHomeView: View {
                                         } else if service.title == "Blood Tests" {
                                             router.push(.specialistList(departmentId: "4"))
                                         }
+                                    } label: {
+                                        SmallActionTile(
+                                            title: service.title,
+                                            backgroundImage: service.backgroundImage
+                                        )
+                                        .frame(height: 140)
                                     }
+                                    .buttonStyle(.plain)
                                 }
                             }
                             .padding(.horizontal, theme.spacing.lg)
@@ -129,28 +133,37 @@ struct PatientHomeView: View {
                                 }
                             }
                             
-                            // bottom two boxes
-                            HStack(spacing: theme.spacing.md) {
+                            // bottom tiles
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: theme.spacing.md) {
                                 Button(action: {
                                     router.push(.medicalTourismForm)
                                 }) {
                                     SmallActionTile(
                                         title: "Medical Tourism",
-                                        icon: "medical-tourism-icon"
+                                        backgroundImage: "medical-tourism"
                                     )
-                                    .frame(height: 100)
+                                    .frame(height: 130)
                                 }.buttonStyle(.plain)
-                                
+
                                 Button(action: {
                                     router.push(.cureFromDrugForm)
                                 }) {
                                     SmallActionTile(
                                         title: "Cure From Drug",
-                                        icon: "cure-from-drug-icon"
+                                        backgroundImage: "cure-from-drug"
                                     )
-                                    .frame(height: 100)
+                                    .frame(height: 130)
                                 }.buttonStyle(.plain)
-                                
+
+                                Button(action: {
+                                    router.push(.contactUs)
+                                }) {
+                                    SmallActionTile(
+                                        title: "Request a service",
+                                        backgroundImage: "request-service"
+                                    )
+                                    .frame(height: 130)
+                                }.buttonStyle(.plain)
                             }
                             .padding(.horizontal, theme.spacing.lg)
                             .padding(.bottom, 80) // space for tab bar

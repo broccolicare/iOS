@@ -33,17 +33,22 @@ struct ScheduledAppointmentCard: View {
                                             .frame(width: 50, height: 50)
                                             .clipShape(Circle())
                                     default:
-                                        Image("patient-placeholder")
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 30))
                                             .foregroundStyle(.gray)
                                     }
                                 }
                             } else {
-                                Image("patient-placeholder")
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 30))
                                     .foregroundStyle(.gray)
                             }
                         }
                     )
-                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(theme.colors.primary.opacity(0.3), lineWidth: 1)
+                    )
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(booking.patient?.name ?? booking.user?.name ?? "Patient")

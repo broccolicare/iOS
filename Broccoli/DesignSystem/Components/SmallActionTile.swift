@@ -9,30 +9,28 @@ import SwiftUI
 struct SmallActionTile: View {
     @Environment(\.appTheme) private var theme
     let title: String
-    let icon: String
-    
+    let backgroundImage: String
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack{
-                Image(icon)
-                    .resizable()
-                    .scaledToFill()
-                    .foregroundStyle(theme.colors.primary)
-                    .frame(width: 28, height: 28)
-                    .padding(8)
-                    .background(
-                        Circle()
-                            .fill(theme.colors.primary.opacity(0.1))
-                    )
-                Spacer()
-            }
-            Text(title)
-                .font(theme.typography.medium18)
+        ZStack(alignment: .bottom) {
+            // Full-bleed background photo
+            Image(backgroundImage)
+                .resizable()
+                .scaledToFill()
+                .clipped()
+
+            // Frosted title strip at bottom
+            Text(title.uppercased())
+                .font(theme.typography.semiBold14)
+                .fontWeight(.bold)
+                .foregroundStyle(.black)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(.white.opacity(0.82))
         }
-        .padding()
-        .background(theme.colors.surface)
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.colors.border))
+        .cornerRadius(20)
+        .clipped()
     }
 }
 
@@ -40,15 +38,15 @@ struct SmallActionTile: View {
     HStack(spacing: 12) {
         SmallActionTile(
             title: "Medical Tourism",
-            icon: "medical-tourism-icon"
+            backgroundImage: "medical-tourism"
         )
-        .frame(height: 100)
-        
+        .frame(height: 130)
+
         SmallActionTile(
             title: "Cure From Drug",
-            icon: "cure-from-drug-icon"
+            backgroundImage: "cure-from-drug"
         )
-        .frame(height: 100)
+        .frame(height: 130)
     }
     .padding()
     .environment(\.appTheme, AppTheme.default)

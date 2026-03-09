@@ -69,21 +69,22 @@ struct ProfileView: View {
                                                 .frame(width: 60, height: 60)
                                                 .clipShape(Circle())
                                         default:
-                                            Image("patient-placeholder")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 50, height: 50)
+                                            Image(systemName: "person.fill")
+                                                .font(.system(size: 30))
+                                                .foregroundStyle(.white)
                                         }
                                     }
                                 } else {
-                                    Image("patient-placeholder")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 50, height: 50)
+                                    Image(systemName: "person.fill")
+                                        .font(.system(size: 30))
+                                        .foregroundStyle(.white)
                                 }
                             }
                         )
-                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(theme.colors.primary.opacity(0.3), lineWidth: 1)
+                        )
                     
                     Button(action: {
                         router.push(.patientProfileDetail)

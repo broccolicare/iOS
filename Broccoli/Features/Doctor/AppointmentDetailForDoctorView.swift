@@ -80,21 +80,21 @@ struct AppointmentDetailForDoctorView: View {
                                                     .frame(width: 80, height: 80)
                                                     .clipShape(Circle())
                                             default:
-                                                Image("patient-placeholder")
-                                                    .resizable()
-                                                    .scaledToFill()
-                                                    .frame(width: 80, height: 80)
-                                                    .clipShape(Circle())
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 30))
+                                                    .foregroundStyle(.gray)
                                             }
                                         }
                                     } else {
-                                        Image("patient-placeholder")
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 80, height: 80)
-                                            .clipShape(Circle())
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 30))
+                                            .foregroundStyle(.gray)
                                     }
                                 }
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(theme.colors.primary.opacity(0.3), lineWidth: 1)
                             )
                         
                         VStack(alignment: .leading, spacing: 6) {
@@ -166,42 +166,42 @@ struct AppointmentDetailForDoctorView: View {
                     //             RoundedRectangle(cornerRadius: 12)
                     //                 .fill(theme.colors.profileDetailSectionBackground)
                     //                 .frame(width: 48, height: 48)
-                                
+                    
                     //             Image(systemName: "pills.fill")
                     //                 .font(.system(size: 24))
                     //                 .foregroundStyle(theme.colors.primary)
                     //         }
-                            
+                    
                     //         VStack(alignment: .leading, spacing: 2) {
                     //             Text("Medication Summary")
                     //                 .font(theme.typography.bold18)
                     //                 .foregroundStyle(theme.colors.textPrimary)
-                                
+                    
                     //             Text("Prescribed medications")
                     //                 .font(theme.typography.regular14)
                     //                 .foregroundStyle(theme.colors.textSecondary)
                     //         }
-                            
+                    
                     //         Spacer()
                     //     }
-                        
+                    
                     //     // Medication A
                     //     VStack(alignment: .leading, spacing: 8) {
                     //         Text("Medication A")
                     //             .font(theme.typography.regular12)
                     //             .foregroundStyle(theme.colors.textSecondary)
-                            
+                    
                     //         Text("100mg, twice daily")
                     //             .font(theme.typography.bold18)
                     //             .foregroundStyle(theme.colors.textPrimary)
                     //     }
-                        
+                    
                     //     // Medication B
                     //     VStack(alignment: .leading, spacing: 8) {
                     //         Text("Medication B")
                     //             .font(theme.typography.regular12)
                     //             .foregroundStyle(theme.colors.textSecondary)
-                            
+                    
                     //         Text("50mg, once daily")
                     //             .font(theme.typography.bold18)
                     //             .foregroundStyle(theme.colors.textPrimary)
@@ -466,7 +466,7 @@ struct AppointmentDetailForDoctorView: View {
         }
         return time
     }
-
+    
     private func handlePrescriptionUpload(data: Data, fileName: String, mimeType: String) async {
         let success = await bookingVM.uploadPrescription(
             bookingId: booking.id,

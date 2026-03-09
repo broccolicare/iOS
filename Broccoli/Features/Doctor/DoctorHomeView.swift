@@ -48,15 +48,22 @@ struct DoctorHomeView: View {
                                                     .frame(width: 50, height: 50)
                                                     .clipShape(Circle())
                                             default:
-                                                Image("doctor-placeholder")
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 30))
+                                                    .foregroundStyle(.gray)
                                             }
                                         }
                                     } else {
-                                        Image("doctor-placeholder")
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 30))
+                                            .foregroundStyle(.gray)
                                     }
                                 }
                             )
-                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(theme.colors.primary.opacity(0.3), lineWidth: 1)
+                            )
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text(DateHelper.greetingText())
@@ -88,99 +95,99 @@ struct DoctorHomeView: View {
                         
                         // Notification badge
                         Circle()
-                                .fill(Color.red)
-                                .frame(width: 8, height: 8)
-                                .offset(x: 10, y: -10)
-                        }
+                            .fill(Color.red)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 10, y: -10)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                // List Content with Sections
-                List {
-                    // Today's Appointment Section
-                    Section {
-                        if todaysAppointments.isEmpty {
-                            NoAppointmentView(message: "No appointments for today")
-                                .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 20, trailing: 16))
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                        } else {
-                            ForEach(todaysAppointments) { appointment in
-                                Button(action: {
-                                    // Navigate to appointment detail
-                                    if let booking = bookingVM.pendingBookings.first(where: { $0.id == appointment.id }) {
-                                        router.push(.appointmentDetailForDoctor(booking: booking))
-                                    }
-                                }) {
-                                    TodayAppointmentCard(appointment: appointment, theme: theme) {
-                                        // Accept action
-                                        acceptAppointment(appointment)
-                                    } onReject: {
-                                        // Reject action
-                                        rejectAppointment(appointment)
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                            }
-                        }
-                    } header: {
-                        Text("Todays Appointment")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(theme.colors.textPrimary)
-                            .textCase(nil)
-                    }
-                    
-                    // Scheduled Appointments Section
-                    Section {
-                        if bookingVM.myBookings.isEmpty {
-                            NoAppointmentView(message: "No scheduled appointments")
-                                .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 20, trailing: 16))
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                        } else {
-                            ForEach(bookingVM.myBookings) { booking in
-                                ScheduledAppointmentCard(booking: booking, theme: theme) {
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            
+            // List Content with Sections
+            List {
+                // Today's Appointment Section
+                Section {
+                    if todaysAppointments.isEmpty {
+                        NoAppointmentView(message: "No appointments for today")
+                            .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 20, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    } else {
+                        ForEach(todaysAppointments) { appointment in
+                            Button(action: {
+                                // Navigate to appointment detail
+                                if let booking = bookingVM.pendingBookings.first(where: { $0.id == appointment.id }) {
                                     router.push(.appointmentDetailForDoctor(booking: booking))
                                 }
-                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
+                            }) {
+                                TodayAppointmentCard(appointment: appointment, theme: theme) {
+                                    // Accept action
+                                    acceptAppointment(appointment)
+                                } onReject: {
+                                    // Reject action
+                                    rejectAppointment(appointment)
+                                }
                             }
+                            .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                         }
-                    } header: {
-                        Text("Scheduled Appointments")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(theme.colors.textPrimary)
-                            .textCase(nil)
                     }
+                } header: {
+                    Text("Todays Appointment")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(theme.colors.textPrimary)
+                        .textCase(nil)
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .refreshable {
-                    await bookingVM.fetchPendingBookingsForDoctor()
-                }
-                .navigationBarHidden(true)
-                .alert("Action Failed", isPresented: $showActionError) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(actionErrorMessage)
+                
+                // Scheduled Appointments Section
+                Section {
+                    if bookingVM.myBookings.isEmpty {
+                        NoAppointmentView(message: "No scheduled appointments")
+                            .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 20, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    } else {
+                        ForEach(bookingVM.myBookings) { booking in
+                            ScheduledAppointmentCard(booking: booking, theme: theme) {
+                                router.push(.appointmentDetailForDoctor(booking: booking))
+                            }
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                        }
+                    }
+                } header: {
+                    Text("Scheduled Appointments")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(theme.colors.textPrimary)
+                        .textCase(nil)
                 }
             }
-            .task {
-                // Add a small delay to let navigation settle before triggering API calls
-                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
-                
-                // Fetch profile so the latest avatar is always shown
-                await userVM.fetchProfileDetail()
-                
-                // Fetch active bookings (pending + accepted)
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .refreshable {
                 await bookingVM.fetchPendingBookingsForDoctor()
             }
+            .navigationBarHidden(true)
+            .alert("Action Failed", isPresented: $showActionError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(actionErrorMessage)
+            }
+        }
+        .task {
+            // Add a small delay to let navigation settle before triggering API calls
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+            
+            // Fetch profile so the latest avatar is always shown
+            await userVM.fetchProfileDetail()
+            
+            // Fetch active bookings (pending + accepted)
+            await bookingVM.fetchPendingBookingsForDoctor()
+        }
     }
     
     // Helper function to calculate end time based on start time and duration

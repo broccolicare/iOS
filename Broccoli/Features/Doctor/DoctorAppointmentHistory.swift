@@ -11,9 +11,9 @@ import SwiftUI
 
 struct AppointmentHistoryRow: View {
     let booking: BookingData
-
+    
     @Environment(\.appTheme) private var theme
-
+    
     private var formattedTime: String {
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH:mm"
@@ -23,20 +23,20 @@ struct AppointmentHistoryRow: View {
         timeFormatter.dateFormat = "hh:mm a"
         return timeFormatter.string(from: timeDate)
     }
-
+    
     private var formattedAmount: String {
         guard let amount = booking.amount, !amount.isEmpty else { return "" }
         if amount.hasPrefix("€") || amount.hasPrefix("$") { return amount }
         // Strip trailing zeros: "49.00" → "€49"
         if let value = Double(amount) {
             let formatted = value.truncatingRemainder(dividingBy: 1) == 0
-                ? String(Int(value))
-                : String(format: "%.2f", value)
+            ? String(Int(value))
+            : String(format: "%.2f", value)
             return "€\(formatted)"
         }
         return "€\(amount)"
     }
-
+    
     var body: some View {
         HStack(spacing: 12) {
             // Patient profile image
@@ -55,42 +55,42 @@ struct AppointmentHistoryRow: View {
                                         .frame(width: 52, height: 52)
                                         .clipShape(Circle())
                                 default:
-                                    Image("doctor-square-placeholder")
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 52, height: 52)
-                                        .clipShape(Circle())
+                                    Image(systemName: "person.fill")
+                                        .font(.system(size: 30))
+                                        .foregroundStyle(.gray)
                                 }
                             }
                         } else {
-                            Image("doctor-square-placeholder")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 52, height: 52)
-                                .clipShape(Circle())
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 30))
+                                .foregroundStyle(.gray)
                         }
                     }
                 )
-
+                .overlay(
+                    Circle()
+                        .stroke(theme.colors.primary.opacity(0.3), lineWidth: 1)
+                )
+            
             // Patient Info
             VStack(alignment: .leading, spacing: 4) {
                 Text(booking.patient?.name ?? booking.user?.name ?? "Patient")
                     .font(theme.typography.semiBold16)
                     .foregroundStyle(theme.colors.textPrimary)
-
+                
                 Text(formattedTime)
                     .font(theme.typography.regular14)
                     .foregroundStyle(theme.colors.textSecondary)
-
+                
                 if let serviceName = booking.service?.name {
                     Text(serviceName)
                         .font(theme.typography.regular12)
                         .foregroundStyle(theme.colors.textSecondary)
                 }
             }
-
+            
             Spacer()
-
+            
             // Price
             if !formattedAmount.isEmpty {
                 Text(formattedAmount)
@@ -108,17 +108,17 @@ struct DoctorAppointmentHistory: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
-
+    
     // Bookings grouped by date, sorted newest first
     private var appointmentSections: [(date: String, formattedDate: String, appointments: [BookingData])] {
         let grouped = Dictionary(grouping: bookingViewModel.doctorBookingHistory) { $0.date }
         let sortedKeys = grouped.keys.sorted(by: >)
-
+        
         let inputFormatter = DateFormatter()
         inputFormatter.dateFormat = "yyyy-MM-dd"
         let outputFormatter = DateFormatter()
         outputFormatter.dateFormat = "dd MMM, yyyy"
-
+        
         return sortedKeys.compactMap { key in
             guard let items = grouped[key], !items.isEmpty else { return nil }
             let label: String
@@ -130,7 +130,7 @@ struct DoctorAppointmentHistory: View {
             return (date: key, formattedDate: label, appointments: items)
         }
     }
-
+    
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -139,17 +139,17 @@ struct DoctorAppointmentHistory: View {
                     Image("BackButton")
                         .foregroundStyle(theme.colors.primary)
                 }
-
+                
                 Text("Appointment History")
                     .font(theme.typography.bold20)
                     .foregroundStyle(theme.colors.textPrimary)
-
+                
                 Spacer()
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .background(Color.white)
-
+            
             // Content
             List {
                 // Loading state (initial load only)
@@ -161,8 +161,8 @@ struct DoctorAppointmentHistory: View {
                     }
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.white)
-
-                // Empty state
+                    
+                    // Empty state
                 } else if bookingViewModel.doctorBookingHistory.isEmpty {
                     EmptyAppointmentsView(
                         title: "No Appointment History",
@@ -170,8 +170,8 @@ struct DoctorAppointmentHistory: View {
                     )
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.white)
-
-                // Appointments grouped by date
+                    
+                    // Appointments grouped by date
                 } else {
                     ForEach(appointmentSections, id: \.date) { section in
                         Section {
@@ -193,7 +193,7 @@ struct DoctorAppointmentHistory: View {
                                 .padding(.top, 8)
                         }
                     }
-
+                    
                     // Pagination: load next page when this row appears
                     if bookingViewModel.doctorHistoryHasMore {
                         HStack {

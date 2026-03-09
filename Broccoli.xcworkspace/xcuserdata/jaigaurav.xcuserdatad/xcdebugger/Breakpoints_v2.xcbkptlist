@@ -192,7 +192,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1275"
             endingLineNumber = "1275"
-            landmarkName = "generateTokenAndJoinCall(booking:)"
+            landmarkName = "uploadPrescription(bookingId:fileData:fileName:mimeType:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
