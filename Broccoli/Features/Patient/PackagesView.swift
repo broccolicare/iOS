@@ -167,8 +167,7 @@ struct PackagesView: View {
         .navigationBarHidden(true)
         .task {
             await packageViewModel.loadPackages()
-            // Refresh user profile to get latest subscriptions
-            await userViewModel.fetchProfileDetail()
+            await userViewModel.fetchUserPackage()
         }
         .onChange(of: packageViewModel.isPaymentReady) { _, isReady in
             if isReady {
@@ -199,8 +198,8 @@ struct PackagesView: View {
                     // Reset state on success
                     selectedPackageForPurchase = nil
                     packageViewModel.resetPaymentState()
-                    // Refresh user profile to get updated subscriptions
-                    await userViewModel.fetchProfileDetail()
+                    // Refresh active subscription
+                    await userViewModel.fetchUserPackage()
                 } else {
                     print("❌ [PackagesView] Payment failed")
                 }
@@ -245,13 +244,9 @@ struct PackagesView: View {
     
     // Check if package has active subscription
     private func isPackageActive(_ package: Package) -> Bool {
-        guard let subscriptions = userViewModel.profileData?.subscriptions else {
-            return false
-        }
-        
-        return subscriptions.contains { subscription in
-            subscription.stripePrice == package.stripePriceId && subscription.stripeStatus == "active"
-        }
+        guard let active = userViewModel.activePackage,
+              active.subscriptionStatus == "active" else { return false }
+        return active.stripePriceId == package.stripePriceId
     }
 }
 

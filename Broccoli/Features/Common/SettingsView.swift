@@ -10,6 +10,9 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
+    
+    @State private var showDeleteConfirmation = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -41,29 +44,6 @@ struct SettingsView: View {
             
             ScrollView {
                 VStack(spacing: 24) {
-                    // Notifications Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Notifications")
-                            .font(theme.typography.bold18)
-                            .foregroundStyle(theme.colors.textPrimary)
-                            .padding(.horizontal, 20)
-                        
-                        VStack(spacing: 0) {
-                            SettingsItemRow(
-                                icon: "bell",
-                                iconColor: Color(red: 0.26, green: 0.65, blue: 0.58),
-                                title: "Notifications",
-                                subtitle: "Manage your notification preferences",
-                                isLast: true,
-                                action: {
-                                    // Navigate to notifications settings
-                                }
-                            )
-                        }
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .padding(.horizontal, 20)
-                    }
                     
                     // Privacy Section
 //                    VStack(alignment: .leading, spacing: 12) {
@@ -113,6 +93,30 @@ struct SettingsView: View {
 //                        .padding(.horizontal, 20)
 //                    }
                     
+                    // Account Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Account")
+                            .font(theme.typography.semiBold16)
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .padding(.horizontal, 20)
+                        
+                        VStack(spacing: 0) {
+                            SettingsItemRow(
+                                icon: "trash",
+                                iconColor: Color.red,
+                                title: "Delete Account",
+                                subtitle: "Permanently deactivate your account",
+                                isLast: true,
+                                action: {
+                                    showDeleteConfirmation = true
+                                }
+                            )
+                        }
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .padding(.horizontal, 20)
+                    }
+                    
                     // Support Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Support")
@@ -143,6 +147,14 @@ struct SettingsView: View {
         }
         .background(Color(red: 0.96, green: 0.97, blue: 0.98))
         .navigationBarHidden(true)
+        .alert("Delete Account", isPresented: $showDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                Task { await authVM.deleteAccount() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete your account? This action cannot be undone.")
+        }
     }
 }
 

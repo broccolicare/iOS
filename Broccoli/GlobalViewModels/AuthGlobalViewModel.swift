@@ -228,6 +228,25 @@ public final class AuthGlobalViewModel: ObservableObject {
         isLoading = false
     }
     
+    public func deleteAccount() async {
+        guard let userId = currentUser?.id else { return }
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await authService.deleteAccount(userId: userId)
+            await clearAuthState()
+        } catch let srvErr as ServiceError {
+            errorMessage = srvErr.errorDescription ?? "Failed to delete account. Please try again."
+            showErrorToast = true
+        } catch {
+            errorMessage = "Failed to delete account. Please try again."
+            showErrorToast = true
+        }
+        
+        isLoading = false
+    }
+    
 
     
     // MARK: - Helpers

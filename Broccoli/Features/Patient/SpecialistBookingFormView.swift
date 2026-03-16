@@ -423,6 +423,10 @@ struct SpecialistDayCell: View {
     let isSelected: Bool
     let isCurrentMonth: Bool
     let action: () -> Void
+
+    private var isPastDate: Bool {
+        date < Calendar.current.startOfDay(for: Date())
+    }
     
     var body: some View {
         Button(action: action) {
@@ -433,9 +437,9 @@ struct SpecialistDayCell: View {
                 .frame(height: 44)
                 .background(isSelected ? .white : Color.clear)
                 .cornerRadius(22)
-                .opacity(isCurrentMonth ? 1.0 : 0.4)
+                .opacity(isCurrentMonth && !isPastDate ? 1.0 : 0.3)
         }
-        .disabled(!isCurrentMonth)
+        .disabled(!isCurrentMonth || isPastDate)
     }
 }
 

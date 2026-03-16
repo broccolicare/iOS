@@ -81,3 +81,63 @@ public struct PackageDetails: Codable {
         case remainingServices = "remaining_services"
     }
 }
+
+// MARK: - User Active Package (GET /user-packages)
+
+public struct UserPackageResponse: Codable {
+    public let success: Bool?
+    public let package: UserPackage?
+}
+
+public struct UserPackage: Codable {
+    public let id: Int
+    public let name: String
+    public let slug: String
+    public let description: String?
+    public let price: String
+    public let billingPeriod: String
+    public let isFeatured: Bool
+    public let bgColor: String?
+    public let stripePriceId: String
+    public let stripeProductId: String
+    public let subscriptionStatus: String
+    public let subscriptionEndsAt: String?
+    public let features: [UserPackageFeature]
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, slug, description, price, features
+        case billingPeriod = "billing_period"
+        case isFeatured = "is_featured"
+        case bgColor = "bg_color"
+        case stripePriceId = "stripe_price_id"
+        case stripeProductId = "stripe_product_id"
+        case subscriptionStatus = "subscription_status"
+        case subscriptionEndsAt = "subscription_ends_at"
+    }
+}
+
+public struct UserPackageFeature: Codable, Identifiable {
+    public let id: Int
+    public let name: String
+    public let description: String?
+    public let featureType: String
+    public let isUnlimited: Bool
+    public let quota: PackageQuota?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, description, quota
+        case featureType = "feature_type"
+        case isUnlimited = "is_unlimited"
+    }
+}
+
+public struct PackageQuota: Codable {
+    public let monthlyLimit: Int
+    public let used: Int
+    public let remaining: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case used, remaining
+        case monthlyLimit = "monthly_limit"
+    }
+}

@@ -247,14 +247,12 @@ struct BookingConfirmationView: View {
                         
                         // Step 2: Check if booking is covered by subscription
                         if initResponse.covered == true {
-                            // User has subscription - show success message and navigate
-                            bookingViewModel.showSuccessToast = true
-                            bookingViewModel.errorMessage = initResponse.message ?? "This booking is covered by your subscription"
-                            
-                            // Small delay to show the message
-                            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                            
-                            router.push(.paymentSuccess(booking: bookingViewModel.confirmedBooking))
+                            // Subscription covers the booking — confirm without a payment intent
+                            let confirmResponse = await bookingViewModel.confirmPayment(paymentIntentId: nil)
+                            if confirmResponse != nil {
+                                router.push(.paymentSuccess(booking: bookingViewModel.confirmedBooking))
+                            }
+                            // Error already surfaced via showErrorToast inside confirmPayment
                         } else {
                             // Payment required - prepare and show payment sheet
                             bookingViewModel.preparePaymentSheet(with: initResponse)

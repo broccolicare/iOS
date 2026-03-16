@@ -18,6 +18,7 @@ public final class UserGlobalViewModel: ObservableObject {
     @Published public var showErrorToast: Bool = false
     @Published public var showSuccessToast: Bool = false
     @Published public var profileData: UserProfileData? = nil
+    @Published public var activePackage: UserPackage? = nil
     
     public init(userService: UserServiceProtocol, secureStore: SecureStore = SecureStore()) {
         self._userService = userService
@@ -119,8 +120,6 @@ public final class UserGlobalViewModel: ObservableObject {
         isLoading = false
     }
     
-    /// Uploads a new avatar image. On success, patches `profileData.profile.profileImage`
-    /// locally so the UI reflects the change without a full profile re-fetch.
     @discardableResult
     public func uploadAvatar(imageData: Data) async -> Bool {
         isLoading = true
@@ -143,6 +142,17 @@ public final class UserGlobalViewModel: ObservableObject {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             showErrorToast = true
             return false
+        }
+    }
+
+    public func fetchUserPackage() async {
+        do {
+            let response = try await userService.fetchUserPackage()
+            activePackage = response.package
+            print("✅ Fetched user package: \(response.package?.name ?? "none")")
+        } catch {
+            print("⚠️ fetchUserPackage failed: \(error)")
+            activePackage = nil
         }
     }
 

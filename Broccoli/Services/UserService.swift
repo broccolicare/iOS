@@ -13,6 +13,7 @@ public protocol UserServiceProtocol {
     func uploadAvatar(imageData: Data) async throws -> UploadAvatarResponse
     func submitMedicalTourismEnquiry(request: MedicalTourismEnquiryRequest) async throws -> MedicalTourismEnquiryResponse
     func submitRecoveryJourneyEnquiry(request: RecoveryJourneyEnquiryRequest) async throws -> RecoveryJourneyEnquiryResponse
+    func fetchUserPackage() async throws -> UserPackageResponse
 }
 
 public final class UserService: BaseService, UserServiceProtocol {
@@ -63,6 +64,12 @@ public final class UserService: BaseService, UserServiceProtocol {
         return try await handleServiceError {
             let endpoint = UserEndpoint.recoveryJourney(request.toDictionary())
             return try await httpClient.request(endpoint)
+        }
+    }
+
+    public func fetchUserPackage() async throws -> UserPackageResponse {
+        return try await handleServiceError {
+            return try await httpClient.request(UserEndpoint.userPackages)
         }
     }
 }

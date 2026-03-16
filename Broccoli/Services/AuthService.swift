@@ -24,6 +24,7 @@ public protocol AuthServiceProtocol {
     func signOut() async throws
     func forgotPassword(email: String) async throws -> EmptyResponse
     func resetPassword(email: String, otp: String, newPassword: String, confirmPassword: String) async throws -> EmptyResponse
+    func deleteAccount(userId: Int) async throws
 }
 
 public final class AuthService: BaseService, AuthServiceProtocol {
@@ -127,6 +128,13 @@ public final class AuthService: BaseService, AuthServiceProtocol {
         return try await handleServiceError {
             let endpoint = AuthEndpoint.resetPassword(email: email, otp: otp, newPassword: newPassword, confirmPassword: confirmPassword)
             return try await httpClient.request(endpoint)
+        }
+    }
+    
+    public func deleteAccount(userId: Int) async throws {
+        try await handleServiceError {
+            let endpoint = AuthEndpoint.disableAccount(userId: userId)
+            let _: EmptyResponse = try await self.httpClient.request(endpoint)
         }
     }
     

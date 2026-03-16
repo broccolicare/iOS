@@ -12,6 +12,10 @@ struct DayCell: View {
     let isSelected: Bool
     let isCurrentMonth: Bool
     let action: () -> Void
+
+    private var isPastDate: Bool {
+        date < Calendar.current.startOfDay(for: Date())
+    }
     
     var body: some View {
         Button(action: action) {
@@ -22,8 +26,8 @@ struct DayCell: View {
                 .frame(height: 40)
                 .background(isSelected ? .white : Color.clear)
                 .cornerRadius(20)
-                .opacity(isCurrentMonth ? 1.0 : 0.5)
+                .opacity(isCurrentMonth && !isPastDate ? 1.0 : 0.3)
         }
-        .disabled(!isCurrentMonth)
+        .disabled(!isCurrentMonth || isPastDate)
     }
 }

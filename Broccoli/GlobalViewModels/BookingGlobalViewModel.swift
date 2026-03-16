@@ -58,6 +58,7 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var currentQuestionnaire: TreatmentWithQuestionnaire? = nil
     @Published public var questionnaireAnswers: [Int: [Int]] = [:] // questionId: [optionIds] for multiple/single choice
     @Published public var questionnaireTextAnswers: [Int: String] = [:] // questionId: text answer
+    @Published public var questionnaireFollowUpAnswers: [Int: String] = [:] // questionId: follow-up text for single_choice with hasFollowUp
     
     // Prescription Order
     @Published public var currentPrescriptionOrder: PrescriptionOrder? = nil
@@ -154,6 +155,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         currentQuestionnaire = nil
         questionnaireAnswers = [:]
         questionnaireTextAnswers = [:]
+        questionnaireFollowUpAnswers = [:]
         currentPrescriptionOrder = nil
         requiresPayment = false
         promptAddPharmacy = false
@@ -174,6 +176,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         currentQuestionnaire = nil
         questionnaireAnswers = [:]
         questionnaireTextAnswers = [:]
+        questionnaireFollowUpAnswers = [:]
         currentPrescriptionOrder = nil
         requiresPayment = false
         promptAddPharmacy = false
@@ -223,10 +226,20 @@ public final class BookingGlobalViewModel: ObservableObject {
                 // Store department info
                 currentDepartment = response.department
             } else {
+                morningSlots = []
+                afternoonSlots = []
+                eveningSlots = []
+                availableTimeSlots = []
+                pricingInfo = nil
                 errorMessage = response.message ?? "Failed to fetch available time slots"
                 showErrorToast = true
             }
         } catch {
+            morningSlots = []
+            afternoonSlots = []
+            eveningSlots = []
+            availableTimeSlots = []
+            pricingInfo = nil
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             showErrorToast = true
         }
@@ -324,15 +337,22 @@ public final class BookingGlobalViewModel: ObservableObject {
         for (questionId, optionIds) in questionnaireAnswers {
             // Get option texts from the questionnaire
             if let question = findQuestion(by: questionId, in: questionnaire) {
-                let selectedOptionTexts = question.options
+                var answerText = question.options
                     .filter { optionIds.contains($0.id) }
                     .map { $0.optionText }
                     .joined(separator: ", ")
                 
-                if !selectedOptionTexts.isEmpty {
+                // Append follow-up text when the selected single-choice option has hasFollowUp = true
+                if let followUp = questionnaireFollowUpAnswers[questionId],
+                   !followUp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                   question.options.first(where: { optionIds.contains($0.id) && $0.hasFollowUp }) != nil {
+                    answerText += ": \(followUp)"
+                }
+                
+                if !answerText.isEmpty {
                     answers.append([
                         "question_id": questionId,
-                        "answer_text": selectedOptionTexts
+                        "answer_text": answerText
                     ])
                 }
             }
@@ -565,7 +585,7 @@ public final class BookingGlobalViewModel: ObservableObject {
     }
     
     /// Confirm payment - Step 2: After successful payment, confirm and create booking
-    public func confirmPayment(paymentIntentId: String) async -> PaymentConfirmResponse? {
+    public func confirmPayment(paymentIntentId: String?) async -> PaymentConfirmResponse? {
         guard isBookingFormValid else {
             errorMessage = "Please fill all required fields"
             showErrorToast = true
@@ -578,7 +598,9 @@ public final class BookingGlobalViewModel: ObservableObject {
         // Prepare booking data with payment intent
         var confirmData: [String: Any] = [:]
         
-        confirmData["payment_intent_id"] = paymentIntentId
+        if let paymentIntentId = paymentIntentId {
+            confirmData["payment_intent_id"] = paymentIntentId
+        }
         
         // Required: date in YYYY-MM-DD format
         if let date = selectedDate {
@@ -612,6 +634,7 @@ public final class BookingGlobalViewModel: ObservableObject {
             
             if response.success == true, let booking = response.booking {
                 currentBookingId = String(booking.id)
+                confirmedBooking = booking
                 showSuccessToast = true
                 isLoading = false
                 return response

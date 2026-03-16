@@ -100,11 +100,11 @@ struct PaymentSuccessView: View {
                     
                     Spacer().frame(height: 60)
                     
-                    // View Details Button
+                    // Go Home Button (no detail view for prescriptions)
                     Button(action: {
                         router.popToRoot()
                     }) {
-                        Text("View Details")
+                        Text("Go Home")
                             .font(theme.typography.button)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -157,6 +157,26 @@ struct PaymentSuccessView: View {
                     .padding(.horizontal, 32)
                     
                     Spacer().frame(height: 40)
+                    
+                    // View Details Button
+                    if let booking = booking {
+                        Button(action: {
+                            router.popToRoot()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                router.push(.appointmentDetailForPatient(booking: booking))
+                            }
+                        }) {
+                            Text("View Details")
+                                .font(theme.typography.button)
+                                .foregroundColor(theme.colors.primary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(theme.colors.primary.opacity(0.1))
+                                .cornerRadius(12)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
+                    }
                     
                     // Go Home Button
                     Button(action: {

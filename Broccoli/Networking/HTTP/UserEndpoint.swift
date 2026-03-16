@@ -14,6 +14,7 @@ public enum UserEndpoint: Endpoint {
     case uploadAvatar(Data)
     case medicalTourism([String: Any])
     case recoveryJourney([String: Any])
+    case userPackages
     
     public var path: String {
         switch self {
@@ -22,25 +23,24 @@ public enum UserEndpoint: Endpoint {
         case .uploadAvatar: return "/account/avatar"
         case .medicalTourism: return "/medical-tourism"
         case .recoveryJourney: return "/recovery-journey"
+        case .userPackages: return "/user-packages"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .profile: return .GET
+        case .profile, .userPackages: return .GET
         case .updateProfile: return .PUT
         case .uploadAvatar, .medicalTourism, .recoveryJourney: return .POST
-        
         }
     }
     
     public var body: [String: Any]? {
         switch self {
-        case .profile: return nil
+        case .profile, .uploadAvatar, .userPackages: return nil
         case .updateProfile(let data): return data
         case .medicalTourism(let data): return data
         case .recoveryJourney(let data): return data
-        case .uploadAvatar: return nil // Handle multipart/form-data separately
         }
     }
 }

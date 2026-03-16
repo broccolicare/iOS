@@ -508,6 +508,52 @@ public struct BookingData: Codable, Hashable, Identifiable {
     }
 }
 
+// Custom Decodable conformance in an extension so the struct retains its
+// synthesised memberwise initialiser (used in previews and test fixtures).
+extension BookingData {
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        userId = try c.decodeIfPresent(Int.self, forKey: .userId)
+        departmentId = try c.decodeIfPresent(Int.self, forKey: .departmentId)
+        serviceId = try c.decodeIfPresent(Int.self, forKey: .serviceId)
+        assignedDoctorId = try c.decodeIfPresent(Int.self, forKey: .assignedDoctorId)
+        date = try c.decode(String.self, forKey: .date)
+        time = try c.decode(String.self, forKey: .time)
+        timeSlot = try c.decodeIfPresent(String.self, forKey: .timeSlot)
+        // amount may arrive as a String ("500.00") or a Number (0 when covered by subscription)
+        if let str = try? c.decodeIfPresent(String.self, forKey: .amount) {
+            amount = str
+        } else if let num = try? c.decodeIfPresent(Double.self, forKey: .amount) {
+            amount = num.truncatingRemainder(dividingBy: 1) == 0
+                ? String(Int(num))
+                : String(num)
+        } else {
+            amount = nil
+        }
+        status = try c.decode(String.self, forKey: .status)
+        paymentStatus = try c.decodeIfPresent(String.self, forKey: .paymentStatus)
+        paymentMethod = try c.decodeIfPresent(String.self, forKey: .paymentMethod)
+        stripePaymentIntentId = try c.decodeIfPresent(String.self, forKey: .stripePaymentIntentId)
+        stripeCustomerId = try c.decodeIfPresent(String.self, forKey: .stripeCustomerId)
+        stripePaymentMethodId = try c.decodeIfPresent(String.self, forKey: .stripePaymentMethodId)
+        doctorStatus = try c.decodeIfPresent(String.self, forKey: .doctorStatus)
+        doctorNotes = try c.decodeIfPresent(String.self, forKey: .doctorNotes)
+        doctorRespondedAt = try c.decodeIfPresent(String.self, forKey: .doctorRespondedAt)
+        consultationNotes = try c.decodeIfPresent(String.self, forKey: .consultationNotes)
+        consultationCompletedAt = try c.decodeIfPresent(String.self, forKey: .consultationCompletedAt)
+        agoraSessionId = try c.decodeIfPresent(String.self, forKey: .agoraSessionId)
+        bookingNumber = try c.decodeIfPresent(String.self, forKey: .bookingNumber)
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt)
+        service = try c.decodeIfPresent(ServiceData.self, forKey: .service)
+        department = try c.decodeIfPresent(DepartmentData.self, forKey: .department)
+        user = try c.decodeIfPresent(UserData.self, forKey: .user)
+        patient = try c.decodeIfPresent(UserData.self, forKey: .patient)
+        assignedDoctor = try c.decodeIfPresent(AssignedDoctorData.self, forKey: .assignedDoctor)
+    }
+}
+
 public struct ServiceData: Codable, Hashable {
     let id: Int
     let name: String

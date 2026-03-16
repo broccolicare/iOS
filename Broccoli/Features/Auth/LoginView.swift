@@ -73,42 +73,7 @@ struct LoginView: View {
                 }
                 .disabled(authVM.isLoading || email.isEmpty || password.isEmpty)
                 .padding(.top, theme.spacing.sm)
-                
-                // "Or login with" text
-                Text("Or login with")
-                    .font(theme.typography.callout)
-                    .foregroundStyle(theme.colors.textSecondary)
-                    .padding(.top, theme.spacing.md)
-                
-                // Social buttons (Google / Facebook) horizontally then Apple full width
-                HStack(spacing: theme.spacing.md) {
-                    SocialButton(
-                        title: "Google",
-                        systemImageName: "google_icon",
-                        background: theme.colors.surface,
-                        foreground: theme.colors.textPrimary,
-                        action: googleSignIn
-                    )
-                    
-                    SocialButton(
-                        title: "Facebook",
-                        systemImageName: "facebook_icon",
-                        background: Color(#colorLiteral(red: 0.176, green: 0.447, blue: 0.886, alpha: 1)), // facebook-blue
-                        foreground: .white,
-                        action: facebookSignIn
-                    )
-                }
-                .frame(height: 48)
-                
-                SocialButton(
-                    title: "Sign in with Apple",
-                    systemImageName: "apple_icon",
-                    background: .black,
-                    foreground: .white,
-                    action: appleSignIn
-                )
-                .frame(height: 48)
-                
+                Spacer()
                 // Bottom signup chips
                 HStack(spacing: theme.spacing.md) {
                     Button {

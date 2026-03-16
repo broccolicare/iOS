@@ -82,22 +82,34 @@ struct DoctorHomeView: View {
                 
                 Spacer()
                 
-                // Notification Bell
-                Button(action: {
-                    router.push(.notifications)
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(theme.colors.primary.opacity(0.1))
-                            .frame(width: 44, height: 44)
-                        
-                        Image("notification-icon").frame(width: 40, height: 40)
-                        
-                        // Notification badge
-                        Circle()
-                            .fill(Color.red)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 10, y: -10)
+                HStack(spacing: 8) {
+                    // Edit Profile
+                    Button(action: { router.push(.doctorProfile) }) {
+                        Image("edit-profile-icon")
+                                .resizable()
+                                .renderingMode(.template)
+                                .scaledToFit()
+                                .frame(width: 36, height: 36)
+                                .foregroundStyle(theme.colors.primary)
+                    }
+                    
+                    // Notification Bell
+                    Button(action: {
+                        router.push(.notifications)
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(theme.colors.primary.opacity(0.1))
+                                .frame(width: 44, height: 44)
+                            
+                            Image("notification-icon").frame(width: 40, height: 40)
+                            
+                            // Notification badge
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 10, y: -10)
+                        }
                     }
                 }
             }

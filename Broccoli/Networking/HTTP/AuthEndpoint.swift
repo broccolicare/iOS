@@ -22,6 +22,7 @@ public enum AuthEndpoint: Endpoint {
     case resendOtp(userId: String)
     case forgotPassword(email: String)
     case resetPassword(email: String, otp: String, newPassword: String, confirmPassword: String)
+    case disableAccount(userId: Int)
     
     public var path: String {
         switch self {
@@ -38,12 +39,13 @@ public enum AuthEndpoint: Endpoint {
         case .resendOtp: return "/auth/resend-otp"
         case .forgotPassword: return "/auth/forgot-password"
         case .resetPassword: return "/auth/reset-password"
+        case .disableAccount(let userId): return "/admin/users/\(userId)/disable"
         }
     }
     
     public var method: HTTPMethod {
         switch self {
-        case .login, .socialLogin, .register, .refreshToken, .logout, .verifyEmail, .resendOtp, .forgotPassword, .resetPassword, .verifyOtp:
+        case .login, .socialLogin, .register, .refreshToken, .logout, .verifyEmail, .resendOtp, .forgotPassword, .resetPassword, .verifyOtp, .disableAccount:
             return .POST
         case .terms, .privacy, .about:
             return .GET
@@ -60,7 +62,7 @@ public enum AuthEndpoint: Endpoint {
             return request.toDictionary() as [String : Any]
         case .refreshToken(let refreshToken):
             return ["refreshToken": refreshToken]
-        case .logout, .terms, .privacy, .about:
+        case .logout, .terms, .privacy, .about, .disableAccount:
             return nil
         case .verifyEmail(userId: let userId, otp: let otp):
             return ["user_id": userId, "otp": otp]

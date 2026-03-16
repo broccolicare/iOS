@@ -101,21 +101,13 @@ struct PatientHomeView: View {
                             .padding(.horizontal, theme.spacing.lg)
                             
                             // Upcoming appointments section
-                            VStack(alignment: .leading, spacing: theme.spacing.sm) {
-                                Text("Upcoming Appointments")
-                                    .font(theme.typography.subtitle)
-                                    .foregroundStyle(theme.colors.textPrimary)
-                                    .padding(.horizontal, theme.spacing.lg)
-                                
-                                if appointments.isEmpty {
-                                    // Empty state message
-                                    Text("No upcoming appointments")
-                                        .font(theme.typography.body)
-                                        .foregroundStyle(theme.colors.textSecondary)
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.vertical, 40)
+                            if !appointments.isEmpty {
+                                VStack(alignment: .leading, spacing: theme.spacing.sm) {
+                                    Text("Upcoming Appointments")
+                                        .font(theme.typography.subtitle)
+                                        .foregroundStyle(theme.colors.textPrimary)
                                         .padding(.horizontal, theme.spacing.lg)
-                                } else {
+                                    
                                     VerticalCarousel(items: appointments,
                                                      visibleCount: 4,
                                                      spacing: 12,

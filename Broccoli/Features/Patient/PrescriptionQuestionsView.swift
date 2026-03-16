@@ -111,6 +111,10 @@ struct PrescriptionQuestionsView: View {
                                             get: { bookingViewModel.questionnaireTextAnswers[question.id] ?? "" },
                                             set: { bookingViewModel.questionnaireTextAnswers[question.id] = $0 }
                                         ),
+                                        followUpAnswer: Binding(
+                                            get: { bookingViewModel.questionnaireFollowUpAnswers[question.id] ?? "" },
+                                            set: { bookingViewModel.questionnaireFollowUpAnswers[question.id] = $0 }
+                                        ),
                                         hasError: questionValidationErrors.contains(question.id)
                                     )
                                 }
@@ -219,6 +223,15 @@ struct PrescriptionQuestionsView: View {
                 let selectedOptions = bookingViewModel.questionnaireAnswers[question.id] ?? []
                 if selectedOptions.isEmpty {
                     questionValidationErrors.insert(question.id)
+                } else if questionType == "single_choice" || questionType == "singlechoice",
+                          let selectedOptionId = selectedOptions.first,
+                          let selectedOption = question.options.first(where: { $0.id == selectedOptionId }),
+                          selectedOption.hasFollowUp {
+                    // Follow-up text is required when selected option has hasFollowUp = true
+                    let followUp = bookingViewModel.questionnaireFollowUpAnswers[question.id] ?? ""
+                    if followUp.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        questionValidationErrors.insert(question.id)
+                    }
                 }
                 
             case "text", "text_input", "textinput":
@@ -244,6 +257,7 @@ struct QuestionnaireQuestionView: View {
     let question: QuestionnaireQuestion
     @Binding var selectedOptions: [Int]
     @Binding var textAnswer: String
+    @Binding var followUpAnswer: String
     let hasError: Bool
     
     var body: some View {
@@ -285,8 +299,38 @@ struct QuestionnaireQuestionView: View {
                             isSelected: selectedOptions.first == option.id
                         ) {
                             selectedOptions = [option.id]
+                            followUpAnswer = ""
                         }
                     }
+                }
+                
+                // Follow-up input when selected option requires additional details
+                if let selectedOptionId = selectedOptions.first,
+                   let selectedOption = question.options.first(where: { $0.id == selectedOptionId }),
+                   selectedOption.hasFollowUp {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Please provide more details")
+                            .font(theme.typography.regular14)
+                            .foregroundStyle(theme.colors.textSecondary)
+                        
+                        TextEditor(text: $followUpAnswer)
+                            .font(theme.typography.regular14)
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .frame(height: 120)
+                            .padding(12)
+                            .background(Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(
+                                        hasError && followUpAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                            ? Color.red
+                                            : Color(red: 0.9, green: 0.9, blue: 0.9),
+                                        lineWidth: 1
+                                    )
+                            )
+                            .cornerRadius(8)
+                    }
+                    .padding(.top, 8)
                 }
                 
             case "text", "text_input", "textinput":
@@ -311,10 +355,16 @@ struct QuestionnaireQuestionView: View {
             
             // Error Message
             if hasError {
-                Text("Please answer this question")
-                    .font(theme.typography.regular12)
-                    .foregroundStyle(.red)
-                    .padding(.top, 4)
+                Text(
+                    (!selectedOptions.isEmpty &&
+                     question.options.first(where: { $0.id == selectedOptions.first })?.hasFollowUp == true &&
+                     followUpAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        ? "Please provide additional details"
+                        : "Please answer this question"
+                )
+                .font(theme.typography.regular12)
+                .foregroundStyle(.red)
+                .padding(.top, 4)
             }
         }
     }
