@@ -148,7 +148,8 @@ struct AppointmentCard: View {
         ),
         user: nil,
         patient: nil,
-        assignedDoctor: AssignedDoctorData(id: 29, name: "Sarah Johnson", email: nil, profileImage: nil)
+        assignedDoctor: AssignedDoctorData(id: 29, name: "Sarah Johnson", email: nil, profileImage: nil),
+        attachments: nil
     )
     AppointmentCard(booking: sampleBooking)
         .environment(\.appTheme, AppTheme.default)

@@ -14,6 +14,7 @@ struct EditDoctorProfileView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppGlobalViewModel
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
     @EnvironmentObject private var userVM: UserGlobalViewModel
     @EnvironmentObject private var router: Router
     
@@ -78,11 +79,9 @@ struct EditDoctorProfileView: View {
                                                 }
                                             }
                                         } else {
-                                            Image("doctor-square-placeholder")
-                                                .resizable()
-                                                .scaledToFill()
-                                                .frame(width: 120, height: 120)
-                                                .clipShape(Circle())
+                                            Image(systemName: "person.fill")
+                                                .font(.system(size: 50))
+                                                .foregroundStyle(.gray)
                                         }
                                     }
                                 )
@@ -295,7 +294,7 @@ struct EditDoctorProfileView: View {
             if !appVM.isMetadataLoaded {
                 await appVM.loadMetadata()
             }
-
+            
             if appVM.specializations.isEmpty {
                 await appVM.loadSpecializations()
             }
@@ -347,6 +346,9 @@ struct EditDoctorProfileView: View {
             vm.errorMessage = userVM.errorMessage ?? "Failed to update profile"
         } else {
             vm.showSuccessToast = true
+            if let profile = userVM.profileData {
+                authVM.syncCurrentUser(from: profile)
+            }
             
             // Dismiss after a delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -363,6 +365,9 @@ struct EditDoctorProfileView: View {
         if success {
             vm.showSuccessToast = true
             vm.errorMessage = ""
+            if let profile = userVM.profileData {
+                authVM.syncCurrentUser(from: profile)
+            }
         } else {
             selectedImage = nil
             vm.showErrorToast = true

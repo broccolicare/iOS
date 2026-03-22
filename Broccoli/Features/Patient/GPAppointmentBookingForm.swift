@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
+import PhotosUI
 
 struct GPAppointmentBookingForm: View {
     @Environment(\.appTheme) private var theme
@@ -18,6 +20,10 @@ struct GPAppointmentBookingForm: View {
     @State private var selectedDate: Date? = Date()
     @State private var additionalDescription: String = ""
     @State private var currentMonth: Date = Date()
+    @State private var showDocumentPicker = false
+    @State private var showAttachmentOptions = false
+    @State private var showPhotoPicker = false
+    @State private var showCameraPicker = false
     
     // Computed property for selected time slot from view model
     private var selectedTimeSlot: String? {
@@ -256,27 +262,64 @@ struct GPAppointmentBookingForm: View {
                         
                         // Upload Document Section (visible after selecting date and time)
                         if selectedDate != nil && selectedTimeSlot != nil {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Button(action: {
-                                    // Handle document upload
-                                    print("Upload document tapped")
-                                }) {
-                                    VStack(spacing: 12) {
-                                        Image(systemName: "doc.fill")
-                                            .font(.system(size: 32))
-                                            .foregroundStyle(theme.colors.primary.opacity(0.6))
-                                        
-                                        Text("Upload Document")
-                                            .font(theme.typography.regular14)
-                                            .foregroundStyle(theme.colors.primary)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 120)
-                                    .background(Color(red: 0.95, green: 0.97, blue: 0.98))
-                                    .cornerRadius(12)
+                            VStack(alignment: .leading, spacing: 12) {
+                                // Header row
+                                HStack {
+                                    Text("Documents")
+                                        .font(theme.typography.semiBold16)
+                                        .foregroundStyle(theme.colors.textPrimary)
+                                    Spacer()
+                                    Text("\(bookingViewModel.pendingAttachments.count)/5")
+                                        .font(theme.typography.regular12)
+                                        .foregroundStyle(theme.colors.textSecondary)
                                 }
                                 .padding(.horizontal, 20)
-                                
+
+                                // Selected files list
+                                ForEach(Array(bookingViewModel.pendingAttachments.enumerated()), id: \.element.id) { index, file in
+                                    HStack(spacing: 10) {
+                                        Image(systemName: fileIcon(for: file.mimeType))
+                                            .font(.system(size: 16))
+                                            .foregroundStyle(theme.colors.primary)
+                                        Text(file.fileName)
+                                            .font(theme.typography.regular14)
+                                            .foregroundStyle(theme.colors.textPrimary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                        Spacer()
+                                        Button(action: { bookingViewModel.removePendingAttachment(at: index) }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.system(size: 18))
+                                                .foregroundStyle(.gray.opacity(0.6))
+                                        }
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color(red: 0.96, green: 0.97, blue: 0.98))
+                                    .cornerRadius(8)
+                                    .padding(.horizontal, 20)
+                                }
+
+                                // Add file button (hidden when at max 5)
+                                if bookingViewModel.pendingAttachments.count < 5 {
+                                    Button(action: { showAttachmentOptions = true }) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "plus.circle")
+                                                .font(.system(size: 18))
+                                            Text(bookingViewModel.pendingAttachments.isEmpty
+                                                 ? "Upload Document (optional)"
+                                                 : "Add Another File")
+                                                .font(theme.typography.regular14)
+                                        }
+                                        .foregroundStyle(theme.colors.primary)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 60)
+                                        .background(Color(red: 0.95, green: 0.97, blue: 0.98))
+                                        .cornerRadius(12)
+                                    }
+                                    .padding(.horizontal, 20)
+                                }
+
                                 // Additional Descriptions
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Additional Descriptions")
@@ -338,6 +381,27 @@ struct GPAppointmentBookingForm: View {
                     .padding(.bottom, 20)
                     .background(Color.white)
                 }
+            }
+        }
+        .confirmationDialog("Add Document", isPresented: $showAttachmentOptions) {
+            Button("Camera") { showCameraPicker = true }
+            Button("Photo Library") { showPhotoPicker = true }
+            Button("Browse Files") { showDocumentPicker = true }
+            Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $showDocumentPicker) {
+            DocumentPicker { files in
+                for file in files { bookingViewModel.addPendingAttachment(file) }
+            }
+        }
+        .sheet(isPresented: $showPhotoPicker) {
+            PhotoLibraryPicker { file in
+                bookingViewModel.addPendingAttachment(file)
+            }
+        }
+        .sheet(isPresented: $showCameraPicker) {
+            CameraPicker { file in
+                bookingViewModel.addPendingAttachment(file)
             }
         }
         .navigationBarHidden(true)
@@ -416,6 +480,12 @@ struct GPAppointmentBookingForm: View {
         return formatter.string(from: date)
     }
     
+    private func fileIcon(for mimeType: String) -> String {
+        if mimeType.hasPrefix("image/") { return "photo" }
+        if mimeType == "application/pdf" { return "doc.richtext" }
+        return "doc.fill"
+    }
+
     private func generateCalendarDays(for month: Date) -> [Date?] {
         var days: [Date?] = []
         let calendar = Calendar.current
@@ -447,6 +517,116 @@ struct GPAppointmentBookingForm: View {
         }
         
         return days
+    }
+}
+
+// MARK: - Photo Library Picker
+struct PhotoLibraryPicker: UIViewControllerRepresentable {
+    let onPicked: (AttachmentFile) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.filter = .images
+        config.selectionLimit = 5
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: PhotoLibraryPicker
+        init(_ parent: PhotoLibraryPicker) { self.parent = parent }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            picker.dismiss(animated: true)
+            for result in results {
+                result.itemProvider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                    guard let data else { return }
+                    let fileName = (result.itemProvider.suggestedName ?? "photo") + ".jpg"
+                    let file = AttachmentFile(fileName: fileName, mimeType: "image/jpeg", data: data)
+                    DispatchQueue.main.async { self.parent.onPicked(file) }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Camera Picker
+struct CameraPicker: UIViewControllerRepresentable {
+    let onPicked: (AttachmentFile) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraPicker
+        init(_ parent: CameraPicker) { self.parent = parent }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            picker.dismiss(animated: true)
+            guard let image = info[.originalImage] as? UIImage,
+                  let data = image.jpegData(compressionQuality: 0.8) else { return }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyyMMdd_HHmmss"
+            let fileName = "photo_\(formatter.string(from: Date())).jpg"
+            let file = AttachmentFile(fileName: fileName, mimeType: "image/jpeg", data: data)
+            parent.onPicked(file)
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            picker.dismiss(animated: true)
+        }
+    }
+}
+
+// MARK: - Document Picker
+struct DocumentPicker: UIViewControllerRepresentable {
+    let onPicked: ([AttachmentFile]) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let types: [UTType] = [
+            .pdf, .jpeg, .png, .gif, .webP,
+            UTType("com.microsoft.word.doc") ?? .data,
+            UTType("org.openxmlformats.wordprocessingml.document") ?? .data
+        ]
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types)
+        picker.allowsMultipleSelection = true
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let parent: DocumentPicker
+        init(_ parent: DocumentPicker) { self.parent = parent }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            let files: [AttachmentFile] = urls.compactMap { url in
+                guard url.startAccessingSecurityScopedResource() else { return nil }
+                defer { url.stopAccessingSecurityScopedResource() }
+                guard let data = try? Data(contentsOf: url) else { return nil }
+                let mimeType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+                return AttachmentFile(fileName: url.lastPathComponent, mimeType: mimeType, data: data)
+            }
+            parent.onPicked(files)
+        }
+
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {}
     }
 }
 

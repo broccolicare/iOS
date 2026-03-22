@@ -188,7 +188,8 @@ struct VideoCallButton: View {
         department: nil,
         user: nil,
         patient: nil,
-        assignedDoctor: nil
+        assignedDoctor: nil,
+        attachments: nil
     )
 
     VStack(spacing: 16) {

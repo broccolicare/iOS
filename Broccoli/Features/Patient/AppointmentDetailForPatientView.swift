@@ -12,6 +12,9 @@ struct AppointmentDetailForPatientView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var bookingVM: BookingGlobalViewModel
     let booking: BookingData
+
+    @State private var selectedAttachmentURL: URL? = nil
+    @State private var selectedAttachmentName: String = ""
     
     /// Returns the window's real top safe-area inset so the gradient height
     /// adapts across devices (e.g. iPhone 11 ≈ 44 pt, iPhone 16 ≈ 59 pt).
@@ -252,6 +255,53 @@ struct AppointmentDetailForPatientView: View {
                             }
                         }
                     }
+
+                    // Uploaded Documents
+                    if let attachments = booking.attachments, !attachments.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(theme.colors.profileDetailSectionBackground)
+                                        .frame(width: 48, height: 48)
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(theme.colors.primary)
+                                }
+                                Text("Uploaded Documents")
+                                    .font(theme.typography.bold18)
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                Spacer()
+                            }
+
+                            ForEach(attachments) { attachment in
+                                Button(action: {
+                                    if let url = URL(string: attachment.url) {
+                                        selectedAttachmentName = attachment.fileName
+                                        selectedAttachmentURL = url
+                                    }
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: attachmentIcon(for: attachment.mimeType))
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(theme.colors.primary)
+                                        Text(attachment.fileName)
+                                            .font(theme.typography.regular14)
+                                            .foregroundStyle(theme.colors.textPrimary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                        Spacer()
+                                        Image(systemName: "arrow.down.circle")
+                                            .font(.system(size: 16))
+                                            .foregroundStyle(theme.colors.textSecondary)
+                                    }
+                                    .padding(12)
+                                    .background(Color(red: 0.96, green: 0.97, blue: 0.98))
+                                    .cornerRadius(8)
+                                }
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 100)
@@ -289,6 +339,9 @@ struct AppointmentDetailForPatientView: View {
                 .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: -2)
             }
         }
+        .sheet(item: $selectedAttachmentURL) { url in
+            AttachmentViewer(url: url, fileName: selectedAttachmentName)
+        }
         .navigationBarHidden(true)
         .onAppear {
             print("Booking Detail: -- \(booking)")
@@ -297,6 +350,13 @@ struct AppointmentDetailForPatientView: View {
     
     // MARK: - Helper Methods
     
+    private func attachmentIcon(for mimeType: String?) -> String {
+        guard let mimeType else { return "doc.fill" }
+        if mimeType.hasPrefix("image/") { return "photo" }
+        if mimeType == "application/pdf" { return "doc.richtext" }
+        return "doc.fill"
+    }
+
     private func statusColor(for status: String) -> Color {
         switch status.lowercased() {
         case "confirmed": return Color.green
@@ -376,7 +436,8 @@ struct AppointmentDetailForPatientView: View {
             name: "Emily Carter",
             email: nil,
             profileImage: nil
-        )
+        ),
+        attachments: nil
     )
     
     NavigationStack {

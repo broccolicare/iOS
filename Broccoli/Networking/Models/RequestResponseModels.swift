@@ -474,6 +474,7 @@ public struct BookingData: Codable, Hashable, Identifiable {
     let user: UserData?
     let patient: UserData?
     let assignedDoctor: AssignedDoctorData?
+    let attachments: [BookingAttachment]?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -505,6 +506,7 @@ public struct BookingData: Codable, Hashable, Identifiable {
         case user
         case patient
         case assignedDoctor = "assigned_doctor"
+        case attachments
     }
 }
 
@@ -515,8 +517,17 @@ extension BookingData {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(Int.self, forKey: .id)
         userId = try c.decodeIfPresent(Int.self, forKey: .userId)
-        departmentId = try c.decodeIfPresent(Int.self, forKey: .departmentId)
-        serviceId = try c.decodeIfPresent(Int.self, forKey: .serviceId)
+        // department_id and service_id may arrive as a String ("1") or Int
+        if let str = try? c.decodeIfPresent(String.self, forKey: .departmentId) {
+            departmentId = str.isEmpty ? nil : Int(str)
+        } else {
+            departmentId = try c.decodeIfPresent(Int.self, forKey: .departmentId)
+        }
+        if let str = try? c.decodeIfPresent(String.self, forKey: .serviceId) {
+            serviceId = str.isEmpty ? nil : Int(str)
+        } else {
+            serviceId = try c.decodeIfPresent(Int.self, forKey: .serviceId)
+        }
         assignedDoctorId = try c.decodeIfPresent(Int.self, forKey: .assignedDoctorId)
         date = try c.decode(String.self, forKey: .date)
         time = try c.decode(String.self, forKey: .time)
@@ -551,6 +562,7 @@ extension BookingData {
         user = try c.decodeIfPresent(UserData.self, forKey: .user)
         patient = try c.decodeIfPresent(UserData.self, forKey: .patient)
         assignedDoctor = try c.decodeIfPresent(AssignedDoctorData.self, forKey: .assignedDoctor)
+        attachments = try c.decodeIfPresent([BookingAttachment].self, forKey: .attachments)
     }
 }
 
@@ -660,6 +672,33 @@ public struct BookingDetailResponse: Codable {
     let success: Bool
     let data: BookingData?
     let message: String?
+}
+
+/// Represents a file attached to a booking (as returned by the API).
+public struct BookingAttachment: Codable, Hashable, Identifiable {
+    public let id: Int
+    public let fileName: String
+    public let fileType: String?
+    public let mimeType: String?
+    public let fileSize: Int?
+    public let url: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case fileName = "file_name"
+        case fileType = "file_type"
+        case mimeType = "mime_type"
+        case fileSize = "file_size"
+        case url
+    }
+}
+
+/// Local carry type for a file selected by the user before upload.
+public struct AttachmentFile: Identifiable {
+    public let id = UUID()
+    public let fileName: String
+    public let mimeType: String
+    public let data: Data
 }
 
 public struct DocumentUploadResponse: Codable {

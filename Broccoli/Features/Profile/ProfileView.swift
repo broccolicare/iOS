@@ -91,13 +91,13 @@ struct ProfileView: View {
                     }) {
                         VStack(alignment: .leading, spacing: 4) {
                             // Name
-                            Text(authVM.currentUser?.name ?? "James Hudson")
+                            Text(userVM.profileData?.name ?? authVM.currentUser?.name ?? "")
                                 .font(theme.typography.semiBold22)
                                 .foregroundStyle(.white)
                             
                             // Email with arrow
                             HStack(spacing: 8) {
-                                Text(verbatim: authVM.currentUser?.email ?? "")
+                                Text(verbatim: userVM.profileData?.email ?? authVM.currentUser?.email ?? "")
                                     .font(theme.typography.regular14)
                                     .foregroundColor(.white)
                                 Spacer()

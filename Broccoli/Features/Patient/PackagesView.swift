@@ -149,6 +149,7 @@ struct PackagesView: View {
                                             isProcessing: selectedPackageForPurchase?.id == package.id && packageViewModel.isProcessingPayment,
                                             isDisabled: packageViewModel.isProcessingPayment && selectedPackageForPurchase?.id != package.id,
                                             isActive: isPackageActive(package),
+                                            isDowngrade: isDowngrade(package),
                                             onBuy: { handleBuyPackage(package) }
                                         )
                                     }
@@ -248,6 +249,23 @@ struct PackagesView: View {
               active.subscriptionStatus == "active" else { return false }
         return active.stripePriceId == package.stripePriceId
     }
+    
+    // Maps billingPeriod string to a tier integer for comparison
+    private func billingPeriodTier(_ period: String) -> Int {
+        switch period {
+        case "quarterly":   return 1
+        case "half_yearly": return 2
+        case "yearly":      return 3
+        default:            return 0
+        }
+    }
+    
+    // Returns true when the package is a lower tier than the user's active plan
+    private func isDowngrade(_ package: Package) -> Bool {
+        guard let active = userViewModel.activePackage,
+              active.subscriptionStatus == "active" else { return false }
+        return billingPeriodTier(package.billingPeriod) < billingPeriodTier(active.billingPeriod)
+    }
 }
 
 // MARK: - Package Card Component
@@ -258,6 +276,7 @@ struct PackageCard: View {
     let isProcessing: Bool
     let isDisabled: Bool
     let isActive: Bool
+    let isDowngrade: Bool
     let onBuy: () -> Void
     
     var body: some View {
@@ -309,8 +328,14 @@ struct PackageCard: View {
             
             Spacer(minLength: 20)
             
-            // Buy Now / Active Plan Button
-            if isProcessing {
+            // Buy Now / Active Plan / Upgrade-only Button
+            if isDowngrade {
+                // Lower-tier plan — hide buy button when user is on a higher plan
+                Color.clear
+                    .frame(height: 70)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+            } else if isProcessing {
                 HStack(spacing: 8) {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: theme.colors.primary))

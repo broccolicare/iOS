@@ -10,6 +10,7 @@ struct PatientHomeView: View {
     @EnvironmentObject private var authVM: AuthGlobalViewModel
     @EnvironmentObject private var appVM: AppGlobalViewModel
     @EnvironmentObject private var bookingVM: BookingGlobalViewModel
+    @EnvironmentObject private var userVM: UserGlobalViewModel
     
     // screen state
     @State private var searchText: String = ""
@@ -36,7 +37,7 @@ struct PatientHomeView: View {
                             Text(DateHelper.greetingText())
                                 .font(theme.typography.callout)
                                 .foregroundStyle(theme.colors.textSecondary)
-                            Text(authVM.currentUser?.name ?? "Guest")
+                            Text(userVM.profileData?.name ?? authVM.currentUser?.name ?? "Guest")
                                 .font(theme.typography.title)
                                 .foregroundStyle(theme.colors.textPrimary)
                         }
@@ -64,6 +65,7 @@ struct PatientHomeView: View {
                     
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: theme.spacing.lg) {
+
                             // Search
                             SearchBar(text: $searchText)
                                 .padding(.horizontal, theme.spacing.lg)
@@ -162,6 +164,10 @@ struct PatientHomeView: View {
                         }
                         .padding(.top, theme.spacing.lg)
                     } // ScrollView
+                        .refreshable {
+                            await appVM.loadSlidersData()
+                            await bookingVM.fetchUpcomingConfirmedAppointments()
+                        }
                 } // VStack
             }
             .navigationBarHidden(true)
@@ -174,6 +180,9 @@ struct PatientHomeView: View {
                     await appVM.loadSlidersData()
                 }
                 await bookingVM.fetchUpcomingConfirmedAppointments()
+                if userVM.profileData == nil {
+                    await userVM.fetchProfileDetail()
+                }
             }
     }
     

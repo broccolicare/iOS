@@ -40,6 +40,8 @@ public protocol HTTPClientProtocol {
     func request<T: Codable>(_ endpoint: Endpoint) async throws -> T
     func request(_ endpoint: Endpoint) async throws -> Data
     func multipartUpload<T: Codable>(_ endpoint: Endpoint, fileData: Data, fileName: String, mimeType: String, fieldName: String) async throws -> T
+    /// Posts multipart/form-data with arbitrary text fields and zero-or-more file attachments.
+    func multipartFormUpload<T: Codable>(_ endpoint: Endpoint, textFields: [String: String], files: [AttachmentFile]) async throws -> T
 }
 
 public class HTTPClient: HTTPClientProtocol {
@@ -217,6 +219,66 @@ public class HTTPClient: HTTPClientProtocol {
         print("\n--- Multipart Upload ---")
         print("URL: \(url.absoluteString)")
         print("Field: \(fieldName), File: \(fileName), MIME: \(mimeType), Size: \(fileData.count) bytes")
+        
+        let (data, response) = try await session.data(for: request)
+        logResponse(response: response, data: data)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw HTTPError.invalidResponse
+        }
+        
+        guard 200...299 ~= httpResponse.statusCode else {
+            let decoder = JSONDecoder()
+            if let serverError = try? decoder.decode(ServerErrorResponse.self, from: data) {
+                throw HTTPError.serverError(statusCode: httpResponse.statusCode, message: serverError.combinedMessage, errors: serverError.errors)
+            }
+            throw HTTPError.serverError(statusCode: httpResponse.statusCode, message: nil, errors: nil)
+        }
+        
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+    
+    /// Sends a multipart/form-data POST with text fields and optional file attachments.
+    /// File field names follow the pattern `attachments[0]`, `attachments[1]`, etc.
+    public func multipartFormUpload<T: Codable>(_ endpoint: Endpoint, textFields: [String: String], files: [AttachmentFile]) async throws -> T {
+        let url = try buildURL(from: endpoint)
+        let boundary = "Boundary-\(UUID().uuidString)"
+        let crlf = "\r\n"
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        
+        if let token = try? secureStore.retrieve(for: SecureStore.Keys.accessToken) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        var body = Data()
+        
+        // Text fields
+        for (name, value) in textFields {
+            body.append("--\(boundary)\(crlf)".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(name)\"\(crlf)\(crlf)".data(using: .utf8)!)
+            body.append("\(value)\(crlf)".data(using: .utf8)!)
+        }
+        
+        // File attachments
+        for (index, file) in files.enumerated() {
+            body.append("--\(boundary)\(crlf)".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"attachments[\(index)]\"; filename=\"\(file.fileName)\"\(crlf)".data(using: .utf8)!)
+            body.append("Content-Type: \(file.mimeType)\(crlf)\(crlf)".data(using: .utf8)!)
+            body.append(file.data)
+            body.append(crlf.data(using: .utf8)!)
+        }
+        
+        body.append("--\(boundary)--\(crlf)".data(using: .utf8)!)
+        request.httpBody = body
+        
+        print("\n--- Multipart Form Upload ---")
+        print("URL: \(url.absoluteString)")
+        print("Text fields: \(textFields.keys.joined(separator: ", "))")
+        print("Files: \(files.count) attachment(s)")
         
         let (data, response) = try await session.data(for: request)
         logResponse(response: response, data: data)

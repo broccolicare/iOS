@@ -14,6 +14,7 @@ struct EditPatientProfileView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppGlobalViewModel
+    @EnvironmentObject private var authVM: AuthGlobalViewModel
     @EnvironmentObject private var userVM: UserGlobalViewModel
     @EnvironmentObject private var router: Router
     
@@ -76,15 +77,15 @@ struct EditPatientProfileView: View {
                                                         .frame(width: 120, height: 120)
                                                         .clipShape(Circle())
                                                 default:
-                                                    Image("patient-placeholder")
-                                                        .resizable()
-                                                        .frame(width: 100, height: 100)
+                                                    Image(systemName: "person.fill")
+                                                        .font(.system(size: 50))
+                                                        .foregroundStyle(.gray)
                                                 }
                                             }
                                         } else {
-                                            Image("patient-placeholder")
-                                                .resizable()
-                                                .frame(width: 100, height: 100)
+                                            Image(systemName: "person.fill")
+                                                .font(.system(size: 50))
+                                                .foregroundStyle(.gray)
                                         }
                                     }
                                 )
@@ -508,6 +509,9 @@ struct EditPatientProfileView: View {
             vm.errorMessage = userVM.errorMessage ?? "Failed to update profile"
         } else {
             vm.showSuccessToast = true
+            if let profile = userVM.profileData {
+                authVM.syncCurrentUser(from: profile)
+            }
             
             // Dismiss after a delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -524,6 +528,9 @@ struct EditPatientProfileView: View {
         if success {
             vm.showSuccessToast = true
             vm.errorMessage = ""
+            if let profile = userVM.profileData {
+                authVM.syncCurrentUser(from: profile)
+            }
         } else {
             // Revert preview on failure
             selectedImage = nil
@@ -537,7 +544,7 @@ struct EditPatientProfileView: View {
     EditPatientProfileView()
         .environment(\.appTheme, AppTheme.default)
         .environmentObject(AppGlobalViewModel(appService: AppService(httpClient: HTTPClient())))
-//        .environmentObject(UserGlobalViewModel(userService: UserService(httpClient: HTTPClient())))
+    //        .environmentObject(UserGlobalViewModel(userService: UserService(httpClient: HTTPClient())))
 }
 
 // MARK: - Camera Picker (UIImagePickerController wrapper)
@@ -546,9 +553,9 @@ struct ImageCameraPicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     var onPicked: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
-
+    
     func makeCoordinator() -> Coordinator { Coordinator(self) }
-
+    
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
         picker.sourceType = .camera
@@ -556,13 +563,13 @@ struct ImageCameraPicker: UIViewControllerRepresentable {
         picker.delegate = context.coordinator
         return picker
     }
-
+    
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
+    
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let parent: ImageCameraPicker
         init(_ parent: ImageCameraPicker) { self.parent = parent }
-
+        
         func imagePickerController(_ picker: UIImagePickerController,
                                    didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             let key: UIImagePickerController.InfoKey = info[.editedImage] != nil ? .editedImage : .originalImage
@@ -572,7 +579,7 @@ struct ImageCameraPicker: UIViewControllerRepresentable {
             }
             parent.dismiss()
         }
-
+        
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             parent.dismiss()
         }

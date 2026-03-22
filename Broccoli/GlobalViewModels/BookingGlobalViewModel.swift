@@ -38,6 +38,7 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var isGP: String? = nil // "0" or "1"
     @Published public var additionalNotes: String = ""
     @Published public var uploadedDocuments: [String] = [] // Document URLs or IDs
+    @Published public var pendingAttachments: [AttachmentFile] = [] // Files to upload with next confirm call
     
     // Available time slots (to be fetched from API)
     @Published public var availableTimeSlots: [String] = []
@@ -162,6 +163,7 @@ public final class BookingGlobalViewModel: ObservableObject {
         currentBookingId = nil
         errorMessage = nil
         showErrorToast = false
+        pendingAttachments = []
         
         // Reset service-related fields
         selectedService = nil
@@ -630,7 +632,12 @@ public final class BookingGlobalViewModel: ObservableObject {
         }
         
         do {
-            let response = try await bookingService.confirmPayment(data: confirmData)
+            let response: PaymentConfirmResponse
+            if pendingAttachments.isEmpty {
+                response = try await bookingService.confirmPayment(data: confirmData)
+            } else {
+                response = try await bookingService.confirmPaymentWithAttachments(data: confirmData, attachments: pendingAttachments)
+            }
             
             if response.success == true, let booking = response.booking {
                 currentBookingId = String(booking.id)
@@ -650,6 +657,29 @@ public final class BookingGlobalViewModel: ObservableObject {
             isLoading = false
             return nil
         }
+    }
+    
+    /// Add a file to be uploaded with the next confirm call.
+    /// Enforces max 5 files and max 10 MB per file.
+    public func addPendingAttachment(_ file: AttachmentFile) {
+        guard pendingAttachments.count < 5 else {
+            errorMessage = "Maximum 5 files allowed"
+            showErrorToast = true
+            return
+        }
+        let maxBytes = 10 * 1024 * 1024
+        guard file.data.count <= maxBytes else {
+            errorMessage = "\(file.fileName) exceeds the 10 MB size limit"
+            showErrorToast = true
+            return
+        }
+        pendingAttachments.append(file)
+    }
+    
+    /// Remove a pending attachment by index.
+    public func removePendingAttachment(at index: Int) {
+        guard pendingAttachments.indices.contains(index) else { return }
+        pendingAttachments.remove(at: index)
     }
     
     /// Upload document for booking

@@ -98,19 +98,19 @@ struct DoctorProfileView: View {
                             
                             VStack(alignment: .leading, spacing: 8) {
                                 // Name
-                                Text(authVM.currentUser?.name ?? "Doctor Name")
+                                Text(userVM.profileData?.name ?? authVM.currentUser?.name ?? "Doctor Name")
                                     .font(theme.typography.bold30)
                                     .foregroundStyle(.white)
                                 
                                 // Email
-                                if let email = authVM.currentUser?.email {
+                                if let email = userVM.profileData?.email ?? authVM.currentUser?.email {
                                     Text(email)
                                         .font(theme.typography.regular14)
                                         .foregroundColor(.white)
                                 }
                                 
                                 // Specialization
-                                if let specialization = authVM.currentUser?.specialization {
+                                if let specialization = userVM.profileData?.specialization ?? authVM.currentUser?.specialization {
                                     Text(specialization.name)
                                         .font(theme.typography.bold20)
                                         .foregroundStyle(.white)

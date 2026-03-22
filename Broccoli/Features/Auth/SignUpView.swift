@@ -84,9 +84,9 @@ struct SignUpView: View {
                 }
                 .padding(.horizontal, 0)
                 
-                if selectedUserType == .patient {
-                    socialSection()
-                }
+                // if selectedUserType == .patient {
+                //     socialSection()
+                // }
                 
                 footer()
                 

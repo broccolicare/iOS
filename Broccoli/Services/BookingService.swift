@@ -20,6 +20,7 @@ public protocol BookingServiceProtocol {
     func uploadDocument(bookingId: String, documentData: Data, fileName: String) async throws -> DocumentUploadResponse
     func initializePayment(data: [String: Any]) async throws -> PaymentInitializeResponse
     func confirmPayment(data: [String: Any]) async throws -> PaymentConfirmResponse
+    func confirmPaymentWithAttachments(data: [String: Any], attachments: [AttachmentFile]) async throws -> PaymentConfirmResponse
     func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse
     func fetchPatientBookings(type: String?, status: String?, perPage: Int, cursor: String?) async throws -> UpcomingAppointmentsResponse
     func fetchPrescriptions(type: String?, perPage: Int, cursor: String?) async throws -> PrescriptionsListResponse
@@ -136,6 +137,18 @@ public final class BookingService: BaseService, BookingServiceProtocol {
         return try await handleServiceError {
             let endpoint = BookingEndpoint.paymentConfirm(data)
             return try await httpClient.request(endpoint)
+        }
+    }
+    
+    /// Confirm payment and create booking, uploading optional file attachments via multipart.
+    public func confirmPaymentWithAttachments(data: [String: Any], attachments: [AttachmentFile]) async throws -> PaymentConfirmResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.paymentConfirm(data)
+            // Convert data dict values to strings for multipart text fields
+            let textFields = data.reduce(into: [String: String]()) { result, pair in
+                result[pair.key] = "\(pair.value)"
+            }
+            return try await httpClient.multipartFormUpload(endpoint, textFields: textFields, files: attachments)
         }
     }
     

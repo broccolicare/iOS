@@ -369,5 +369,44 @@ public final class AuthGlobalViewModel: ObservableObject {
         print("🏁 Authentication check completed. isAuthenticated: \(isAuthenticated)")
     }
     
+    // MARK: - Profile sync
+    
+    /// Updates `currentUser` (and its keychain copy) from a freshly-fetched `UserProfileData`.
+    /// Call this after a successful profile edit or avatar upload.
+    public func syncCurrentUser(from profile: UserProfileData) {
+        guard let existing = currentUser else { return }
+        let updatedProfile = UserProfile(
+            phone: profile.profile?.phone,
+            phoneCode: profile.profile?.phoneCode,
+            gender: profile.profile?.gender,
+            dateOfBirth: profile.profile?.dateOfBirth,
+            address: profile.profile?.address,
+            city: profile.profile?.city,
+            state: profile.profile?.state,
+            country: profile.profile?.country,
+            postalCode: profile.profile?.postalCode,
+            profileImage: profile.profile?.profileImage,
+            description: profile.profile?.description,
+            medicalLicenseNumber: nil,
+            createdAt: nil,
+            updatedAt: nil,
+            bloodGroupId: profile.profile?.bloodGroupId,
+            bloodGroup: profile.profile?.bloodGroup
+        )
+        let updatedUser = User(
+            id: existing.id,
+            email: profile.email,
+            name: profile.name,
+            roles: existing.roles,
+            profile: updatedProfile,
+            specialization: profile.specialization
+        )
+        currentUser = updatedUser
+        if let data = try? JSONEncoder().encode(updatedUser),
+           let str = String(data: data, encoding: .utf8) {
+            try? secureStore.store(str, for: SecureStore.Keys.userData)
+        }
+    }
+    
     
 }

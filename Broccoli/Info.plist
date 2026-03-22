@@ -44,6 +44,8 @@
 	<string>Light</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Broccoli needs access to your camera for video consultations with doctors.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Broccoli needs access to your photo library to upload documents for appointments.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Broccoli needs access to your microphone for audio during video consultations.</string>
 	<key>UIBackgroundModes</key>

@@ -159,7 +159,8 @@ struct ScheduledAppointmentCard: View {
             profileImage: nil
         ),
         patient: nil,
-        assignedDoctor: nil
+        assignedDoctor: nil,
+        attachments: nil
     )
     ScheduledAppointmentCard(booking: sampleBooking, theme: AppTheme.default)
         .padding()

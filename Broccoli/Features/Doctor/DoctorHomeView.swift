@@ -71,7 +71,7 @@ struct DoctorHomeView: View {
                                 .foregroundStyle(theme.colors.textSecondary)
                             
                             if let user = authVM.currentUser {
-                                Text(user.name)
+                                Text(userVM.profileData?.name ?? user.name)
                                     .font(theme.typography.bold28)
                                     .foregroundStyle(theme.colors.textPrimary)
                             }

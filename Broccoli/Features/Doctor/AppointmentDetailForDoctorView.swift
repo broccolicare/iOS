@@ -17,6 +17,8 @@ struct AppointmentDetailForDoctorView: View {
     
     @State private var showActionError = false
     @State private var actionErrorMessage = ""
+    @State private var selectedAttachmentURL: URL? = nil
+    @State private var selectedAttachmentName: String = ""
     @State private var showUploadSourceDialog = false
     @State private var showPhotoLibraryPicker = false
     @State private var showCameraPicker = false
@@ -269,6 +271,53 @@ struct AppointmentDetailForDoctorView: View {
                             }
                         }
                     }
+
+                    // Patient Documents
+                    if let attachments = booking.attachments, !attachments.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(theme.colors.profileDetailSectionBackground)
+                                        .frame(width: 48, height: 48)
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(theme.colors.primary)
+                                }
+                                Text("Patient Documents")
+                                    .font(theme.typography.bold18)
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                Spacer()
+                            }
+
+                            ForEach(attachments) { attachment in
+                                Button(action: {
+                                    if let url = URL(string: attachment.url) {
+                                        selectedAttachmentName = attachment.fileName
+                                        selectedAttachmentURL = url
+                                    }
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: attachmentIcon(for: attachment.mimeType))
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(theme.colors.primary)
+                                        Text(attachment.fileName)
+                                            .font(theme.typography.regular14)
+                                            .foregroundStyle(theme.colors.textPrimary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                        Spacer()
+                                        Image(systemName: "arrow.down.circle")
+                                            .font(.system(size: 16))
+                                            .foregroundStyle(theme.colors.textSecondary)
+                                    }
+                                    .padding(12)
+                                    .background(Color(red: 0.96, green: 0.97, blue: 0.98))
+                                    .cornerRadius(8)
+                                }
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 100)
@@ -412,6 +461,9 @@ struct AppointmentDetailForDoctorView: View {
             })
             .ignoresSafeArea()
         }
+        .sheet(item: $selectedAttachmentURL) { url in
+            AttachmentViewer(url: url, fileName: selectedAttachmentName)
+        }
         .alert(prescriptionResultSuccess ? "Upload Successful" : "Upload Failed", isPresented: $showPrescriptionResultAlert) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -440,6 +492,13 @@ struct AppointmentDetailForDoctorView: View {
         }
     }
     
+    private func attachmentIcon(for mimeType: String?) -> String {
+        guard let mimeType else { return "doc.fill" }
+        if mimeType.hasPrefix("image/") { return "photo" }
+        if mimeType == "application/pdf" { return "doc.richtext" }
+        return "doc.fill"
+    }
+
     private func formatDate(_ dateString: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -547,7 +606,8 @@ struct AppointmentDetailForDoctorView: View {
             profileImage: nil
         ),
         patient: nil,
-        assignedDoctor: nil
+        assignedDoctor: nil,
+        attachments: nil
     )
     
     NavigationStack {

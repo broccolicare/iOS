@@ -137,6 +137,10 @@ struct BookingConfirmationView: View {
                                 
                                 VStack(spacing: 12) {
                                     ChargeRow(label: serviceName, value: serviceCharge)
+
+                                    if !bookingViewModel.pendingAttachments.isEmpty {
+                                        SummaryRow(label: "Attachments :", value: "\(bookingViewModel.pendingAttachments.count) file(s)")
+                                    }
                                 }
                             }
                             .padding(.vertical,20)

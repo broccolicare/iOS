@@ -485,6 +485,16 @@ public struct User: Codable {
         try container.encodeIfPresent(profile, forKey: .profile)
         try container.encodeIfPresent(specialization, forKey: .specialization)
     }
+    
+    // Memberwise init for programmatic creation (e.g. profile sync)
+    public init(id: Int, email: String, name: String, roles: [String], profile: UserProfile?, specialization: Specialization?) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.roles = roles
+        self.profile = profile
+        self.specialization = specialization
+    }
 }
 
 public struct UserProfile: Codable {
