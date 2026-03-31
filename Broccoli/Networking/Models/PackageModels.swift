@@ -59,7 +59,7 @@ public struct PackageFeature: Codable, Identifiable, Hashable {
     public let description: String?
     public let featureType: String
     public let featureTypeLabel: String
-    public let quantity: Int
+    public let quantity: Int?
     public let isUnlimited: Bool
     
     private enum CodingKeys: String, CodingKey {

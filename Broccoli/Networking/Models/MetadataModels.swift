@@ -64,10 +64,10 @@ public struct Gender: Codable, Hashable {
 // MARK: - Slider
 public struct Slider: Codable, Identifiable, Hashable {
     public let id: Int
-    public let title: String
+    public let title: String?
     public let imageUrl: String
     public let description: String?
-    public let order: Int
+    public let order: Int?
     public let link: String?
     
     private enum CodingKeys: String, CodingKey {

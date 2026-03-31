@@ -274,9 +274,11 @@ private struct BannerCarousel: View {
                     // Text content
                     HStack {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(slider.title)
-                                .font(theme.typography.title)
-                                .foregroundStyle(.white)
+                            if let title = slider.title {
+                                Text(title)
+                                    .font(theme.typography.title)
+                                    .foregroundStyle(.white)
+                            }
                         }
                         Spacer()
                     }

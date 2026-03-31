@@ -146,6 +146,36 @@
             endingLineNumber = "104"
             landmarkName = "loadProfileData(from:appViewModel:)"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "B6C82D54-F0E4-4FF4-AE62-78A25FD08E7C - a5f5d493fb3136a9"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "Broccoli.EditPatientProfileViewModel.loadProfileData(from: Swift.Optional&lt;Broccoli.UserProfileData&gt;, appViewModel: Swift.Optional&lt;Broccoli.AppGlobalViewModel&gt;) -&gt; ()"
+                  moduleName = "Broccoli.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Volumes/jaigaurav17-001/Projects/iOS/Broccoli/Broccoli/ViewModels/EditPatientProfileViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "105"
+                  endingLineNumber = "105">
+               </Location>
+               <Location
+                  uuid = "B6C82D54-F0E4-4FF4-AE62-78A25FD08E7C - a5f5d493fb3136a9"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "Broccoli.EditPatientProfileViewModel.loadProfileData(from: Swift.Optional&lt;Broccoli.UserProfileData&gt;, appViewModel: Swift.Optional&lt;Broccoli.AppGlobalViewModel&gt;) -&gt; ()"
+                  moduleName = "Broccoli.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Volumes/jaigaurav17-001/Projects/iOS/Broccoli/Broccoli/ViewModels/EditPatientProfileViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "105"
+                  endingLineNumber = "105">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -190,10 +220,82 @@
             filePath = "Broccoli/GlobalViewModels/BookingGlobalViewModel.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1275"
-            endingLineNumber = "1275"
-            landmarkName = "uploadPrescription(bookingId:fileData:fileName:mimeType:)"
+            startingLineNumber = "1274"
+            endingLineNumber = "1274"
+            landmarkName = "generateTokenAndJoinCall(booking:)"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "8EAB9165-3731-41DE-8871-A035A4A5B337 - d48f6f2cea4a224"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(5) suspend resume partial function for Broccoli.BookingGlobalViewModel.generateTokenAndJoinCall(booking: Broccoli.BookingData) async -&gt; ()"
+                  moduleName = "Broccoli.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Volumes/jaigaurav17-001/Projects/iOS/Broccoli/Broccoli/GlobalViewModels/BookingGlobalViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "1274"
+                  endingLineNumber = "1274">
+               </Location>
+               <Location
+                  uuid = "8EAB9165-3731-41DE-8871-A035A4A5B337 - c29b0a3d8aef17ea"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(9) await resume partial function for Broccoli.BookingGlobalViewModel.generateTokenAndJoinCall(booking: Broccoli.BookingData) async -&gt; ()"
+                  moduleName = "Broccoli.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Volumes/jaigaurav17-001/Projects/iOS/Broccoli/Broccoli/GlobalViewModels/BookingGlobalViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "1274"
+                  endingLineNumber = "1274">
+               </Location>
+               <Location
+                  uuid = "8EAB9165-3731-41DE-8871-A035A4A5B337 - 6ba9166733e70a9e"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(11) suspend resume partial function for Broccoli.BookingGlobalViewModel.generateTokenAndJoinCall(booking: Broccoli.BookingData) async -&gt; ()"
+                  moduleName = "Broccoli.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Volumes/jaigaurav17-001/Projects/iOS/Broccoli/Broccoli/GlobalViewModels/BookingGlobalViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "1274"
+                  endingLineNumber = "1274">
+               </Location>
+               <Location
+                  uuid = "8EAB9165-3731-41DE-8871-A035A4A5B337 - 59cf4b52f8fa24e0"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(13) suspend resume partial function for Broccoli.BookingGlobalViewModel.generateTokenAndJoinCall(booking: Broccoli.BookingData) async -&gt; ()"
+                  moduleName = "Broccoli.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Volumes/jaigaurav17-001/Projects/iOS/Broccoli/Broccoli/GlobalViewModels/BookingGlobalViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "1274"
+                  endingLineNumber = "1274">
+               </Location>
+               <Location
+                  uuid = "8EAB9165-3731-41DE-8871-A035A4A5B337 - 4f07e1052dca2e31"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #3 @Swift.MainActor @Sendable () -&gt; () in Broccoli.BookingGlobalViewModel.generateTokenAndJoinCall(booking: Broccoli.BookingData) async -&gt; ()"
+                  moduleName = "Broccoli.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Volumes/jaigaurav17-001/Projects/iOS/Broccoli/Broccoli/GlobalViewModels/BookingGlobalViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "1275"
+                  endingLineNumber = "1275">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
