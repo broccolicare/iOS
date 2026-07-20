@@ -45,5 +45,6 @@ enum Route: Hashable {
     case appointmentDetailForPatient(booking: BookingData)
     case doctorAppointmentHistory
     case videoCall(booking: BookingData, token: String, channelName: String, uid: UInt)
+    case healthAssistant
     // add routes as needed
 }

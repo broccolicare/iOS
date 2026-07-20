@@ -163,6 +163,8 @@ struct BroccoliApp: App {
                                 bookingService: bookingViewModel.bookingService,
                                 userRole: authViewModel.currentUser?.primaryRole
                             )
+                        case .healthAssistant:
+                            HealthAssistantView()
                         }
                     }
             }

@@ -25,8 +25,19 @@
 		53FC16BE2E98D5A7004CA9CE /* Toasts in Frameworks */ = {isa = PBXBuildFile; productRef = 53FC16BD2E98D5A7004CA9CE /* Toasts */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		53C4A7002F00000000000008 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 535BAF552E95347A00C4A634 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 535BAF5C2E95347A00C4A634;
+			remoteInfo = Broccoli;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		535BAF5D2E95347A00C4A634 /* Broccoli.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Broccoli.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		53C4A7002F00000000000002 /* BroccoliTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BroccoliTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		53D688D22F4A863B00F4350C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -48,6 +59,11 @@
 				539E14532E9777F400FE4F67 /* Exceptions for "Broccoli" folder in "Broccoli" target */,
 			);
 			path = Broccoli;
+			sourceTree = "<group>";
+		};
+		53C4A7002F00000000000003 /* BroccoliTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BroccoliTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -74,6 +90,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		53C4A7002F00000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -91,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				535BAF5D2E95347A00C4A634 /* Broccoli.app */,
+				53C4A7002F00000000000002 /* BroccoliTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -135,6 +159,29 @@
 			productReference = 535BAF5D2E95347A00C4A634 /* Broccoli.app */;
 			productType = "com.apple.product-type.application";
 		};
+		53C4A7002F00000000000001 /* BroccoliTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53C4A7002F00000000000009 /* Build configuration list for PBXNativeTarget "BroccoliTests" */;
+			buildPhases = (
+				53C4A7002F00000000000004 /* Sources */,
+				53C4A7002F00000000000005 /* Frameworks */,
+				53C4A7002F00000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				53C4A7002F00000000000007 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				53C4A7002F00000000000003 /* BroccoliTests */,
+			);
+			name = BroccoliTests;
+			packageProductDependencies = (
+			);
+			productName = BroccoliTests;
+			productReference = 53C4A7002F00000000000002 /* BroccoliTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -147,6 +194,10 @@
 				TargetAttributes = {
 					535BAF5C2E95347A00C4A634 = {
 						CreatedOnToolsVersion = 26.0.1;
+					};
+					53C4A7002F00000000000001 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 535BAF5C2E95347A00C4A634;
 					};
 				};
 			};
@@ -175,6 +226,7 @@
 			projectRoot = "";
 			targets = (
 				535BAF5C2E95347A00C4A634 /* Broccoli */,
+				53C4A7002F00000000000001 /* BroccoliTests */,
 			);
 		};
 /* End PBXProject section */
@@ -186,6 +238,13 @@
 			files = (
 				5381EE232E955FC90096B7DF /* LaunchScreen.storyboard in Resources */,
 				53D688D32F4A863B00F4350C /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53C4A7002F00000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -220,7 +279,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		53C4A7002F00000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		53C4A7002F00000000000007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 535BAF5C2E95347A00C4A634 /* Broccoli */;
+			targetProxy = 53C4A7002F00000000000008 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		535BAF6B2E95347C00C4A634 /* Debug */ = {
@@ -440,6 +514,58 @@
 			};
 			name = Release;
 		};
+		53C4A7002F0000000000000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DYGMRKM7YF;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ie.broccolicare.broccoli.BroccoliTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Broccoli.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Broccoli";
+			};
+			name = Debug;
+		};
+		53C4A7002F0000000000000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DYGMRKM7YF;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ie.broccolicare.broccoli.BroccoliTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Broccoli.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Broccoli";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -457,6 +583,15 @@
 			buildConfigurations = (
 				535BAF6E2E95347C00C4A634 /* Debug */,
 				535BAF6F2E95347C00C4A634 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		53C4A7002F00000000000009 /* Build configuration list for PBXNativeTarget "BroccoliTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53C4A7002F0000000000000A /* Debug */,
+				53C4A7002F0000000000000B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
