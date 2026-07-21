@@ -21,7 +21,7 @@ import SwiftUI
 struct StarterChipsView: View {
     @Environment(\.appTheme) private var theme
 
-    static let chips = ["My appointments", "Set reminder", "Health tips"]
+    static let chips = ["Book appointment", "My appointments", "Set reminder", "Health tips"]
 
     /// Invoked with the chip's label, which is then sent as a normal message.
     let onSelect: (String) -> Void

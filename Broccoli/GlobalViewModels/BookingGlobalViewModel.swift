@@ -55,6 +55,15 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var currentDepartment: DepartmentInfo? = nil
     @Published public var selectedService: Service? = nil
     
+    // Health Assistant handoff (P4-04)
+    /// Set by `ChatBookingCoordinator` immediately before pushing a booking form,
+    /// and consumed by that form once it has finished resetting itself.
+    ///
+    /// ⚠️ `resetBookingForm()` intentionally does NOT clear this — see the comment
+    /// there. Read it via `consumeChatPrefill()`, never directly, so it can't be
+    /// applied twice.
+    @Published public var pendingChatPrefill: ChatBookingPrefill? = nil
+
     // Questionnaire
     @Published public var currentQuestionnaire: TreatmentWithQuestionnaire? = nil
     @Published public var questionnaireAnswers: [Int: [Int]] = [:] // questionId: [optionIds] for multiple/single choice
@@ -169,8 +178,21 @@ public final class BookingGlobalViewModel: ObservableObject {
         selectedService = nil
         services = []
         currentDepartment = nil
+
+        // NOTE: `pendingChatPrefill` is deliberately NOT cleared here (P4-04).
+        // The booking forms call this method from `onAppear`, i.e. *after* the
+        // Health Assistant has handed the prefill over, so clearing it here would
+        // destroy the handoff before the form ever sees it. It is cleared by
+        // `consumeChatPrefill()` at the point of use instead.
     }
-    
+
+    /// Returns the pending Health Assistant prefill exactly once, clearing it.
+    /// Call from a booking form's `onAppear`, after `resetBookingForm()`.
+    public func consumeChatPrefill() -> ChatBookingPrefill? {
+        defer { pendingChatPrefill = nil }
+        return pendingChatPrefill
+    }
+
     /// Reset prescription flow to initial state
     public func resetPrescriptionFlow() {
         print("🔄 [Prescription] Resetting prescription flow")

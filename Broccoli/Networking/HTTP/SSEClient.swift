@@ -66,7 +66,15 @@ public final class SSEClient: SSEClientProtocol {
         _ endpoint: Endpoint,
         continuation: AsyncThrowingStream<TurnEvent, Error>.Continuation
     ) async throws {
-        let request = try buildRequest(for: endpoint)
+        let built = try buildRequest(for: endpoint)
+        let request = built.request
+
+        #if DEBUG
+        // Logged unconditionally (not just on error) so "nothing happens, nothing
+        // logs" can be told apart from "request sent, no response": if this line
+        // never appears, the turn never reached the network at all.
+        print("🌐 [SSEClient] → \(request.httpMethod ?? "?") \(request.url?.absoluteString ?? "?") hasToken=\(built.token != nil)")
+        #endif
 
         let (bytes, response) = try await session.bytes(for: request)
 
@@ -74,28 +82,78 @@ public final class SSEClient: SSEClientProtocol {
             throw HTTPError.invalidResponse
         }
 
+        #if DEBUG
+        print("🌐 [SSEClient] ← HTTP \(httpResponse.statusCode) \(request.url?.absoluteString ?? "?")")
+        #endif
+
         guard 200...299 ~= httpResponse.statusCode else {
             // Non-2xx always means the JSON error envelope, never SSE (guide §6).
             // Read the body and throw before parsing a single line as an event.
-            throw try await failure(from: bytes, statusCode: httpResponse.statusCode)
+            throw try await failure(
+                from: bytes,
+                statusCode: httpResponse.statusCode,
+                request: built,
+                response: httpResponse
+            )
         }
 
         let parser = SSEParser()
 
+        #if DEBUG
+        // Accumulate the whole streamed body so a "200 but nothing rendered" turn
+        // can be dumped verbatim — this is the response the backend team needs.
+        var rawBody = ""
+        var eventCount = 0
+        #endif
+
         for try await line in bytes.lines {
             try Task.checkCancellation()
+            #if DEBUG
+            // Each raw SSE line exactly as it arrived on the wire.
+            print("📥 [SSEClient] line: \(line)")
+            rawBody += line + "\n"
+            #endif
             if let event = parser.consume(line: line) {
+                #if DEBUG
+                eventCount += 1
+                print("✅ [SSEClient] parsed event #\(eventCount): \(event)")
+                #endif
                 continuation.yield(event)
             }
         }
 
         // Flush a final event that arrived without a trailing blank line.
         if let event = parser.finish() {
+            #if DEBUG
+            eventCount += 1
+            print("✅ [SSEClient] parsed event #\(eventCount) (final flush): \(event)")
+            #endif
             continuation.yield(event)
         }
+
+        #if DEBUG
+        print("""
+        📄 [SSEClient] stream complete — \(eventCount) event(s) parsed from /chatbot/turn.
+        ----- RAW RESPONSE BODY -----
+        \(rawBody.isEmpty ? "<empty — server streamed no bytes>" : rawBody)
+        -----------------------------
+        """)
+        if eventCount == 0 {
+            print("⚠️ [SSEClient] 0 events parsed despite HTTP 200 — the body above did not match the expected SSE shape (event:/data: lines with token/tool_result/done). This is why the chat UI shows nothing.")
+        }
+        #endif
     }
 
-    private func buildRequest(for endpoint: Endpoint) throws -> URLRequest {
+    /// A built request plus the pieces the diagnostics need but that cannot be
+    /// recovered from `URLRequest` alone — the correlation id we generated and
+    /// the raw token, which is redacted out of the headers.
+    private struct BuiltRequest {
+        let request: URLRequest
+        let correlationId: String
+        let token: String?
+    }
+
+    private func buildRequest(for endpoint: Endpoint) throws -> BuiltRequest {
         guard let url = URL(string: baseURL + endpoint.path) else {
             throw HTTPError.invalidURL
         }
@@ -112,24 +170,31 @@ public final class SSEClient: SSEClientProtocol {
 
         // Read the token once, at connect. A turn can run for two minutes; there is
         // no point re-reading mid-stream since the request is already authenticated.
-        if let token = try? secureStore.retrieve(for: SecureStore.Keys.accessToken) {
+        let token: String? = try? secureStore.retrieve(for: SecureStore.Keys.accessToken)
+        if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
         // Echoed in the response headers and stamped on all server logs for this
         // request — log it so a user-reported issue can be matched to server logs.
-        request.setValue(UUID().uuidString, forHTTPHeaderField: "X-Correlation-ID")
+        let correlationId = UUID().uuidString
+        request.setValue(correlationId, forHTTPHeaderField: "X-Correlation-ID")
 
         if let body = endpoint.body {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
 
-        return request
+        return BuiltRequest(request: request, correlationId: correlationId, token: token)
     }
 
     /// Builds the error for a non-2xx response, draining the (small) JSON body.
-    private func failure(from bytes: URLSession.AsyncBytes, statusCode: Int) async throws -> Error {
+    private func failure(
+        from bytes: URLSession.AsyncBytes,
+        statusCode: Int,
+        request: BuiltRequest,
+        response: HTTPURLResponse
+    ) async throws -> Error {
         var data = Data()
         for try await byte in bytes {
             data.append(byte)
@@ -137,10 +202,25 @@ public final class SSEClient: SSEClientProtocol {
 
         let envelope = try? JSONDecoder().decode(ChatErrorEnvelope.self, from: data)
         let message = envelope?.error.message
-        let correlationId = envelope?.error.correlationId
+
+        // Prefer the id the server echoed; fall back to the one we generated.
+        // The envelope omits it on some error paths, and logging "-" leaves the
+        // backend team with nothing to grep for.
+        let correlationId = envelope?.error.correlationId ?? request.correlationId
+
+        // Full request/response capture, so a chat failure can be handed to the
+        // AI-backend team without needing a proxy to reproduce it.
+        ChatNetworkDiagnostics.capture(
+            request: request.request,
+            correlationId: correlationId,
+            token: request.token,
+            statusCode: statusCode,
+            response: response,
+            responseBody: data
+        )
 
         #if DEBUG
-        print("❌ [SSEClient] HTTP \(statusCode) code=\(envelope?.error.code ?? "-") correlation_id=\(correlationId ?? "-")")
+        print("❌ [SSEClient] HTTP \(statusCode) code=\(envelope?.error.code ?? "-") correlation_id=\(correlationId)")
         #endif
 
         switch statusCode {

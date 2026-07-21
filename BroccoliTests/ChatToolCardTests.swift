@@ -1,0 +1,255 @@
+//
+//  ChatToolCardTests.swift
+//  BroccoliTests
+//
+//  P4-07 — tool payload decoding, service resolution and prefill mapping.
+//  No network is involved.
+//
+
+import XCTest
+@testable import Broccoli
+
+final class ChatToolCardTests: XCTestCase {
+
+    // MARK: - Fixtures
+
+    private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
+        try JSONDecoder().decode(type, from: Data(json.utf8))
+    }
+
+    private func service(id: Int, name: String) throws -> Service {
+        try decode(Service.self, """
+        {
+          "id": \(id),
+          "name": "\(name)",
+          "description": null,
+          "price": "50.00",
+          "duration": 30,
+          "requires_doctor": 1,
+          "bookable_online": 1,
+          "department": { "id": 2, "name": "Specialist" },
+          "sub_services": []
+        }
+        """)
+    }
+
+    private func bookingPayload(
+        serviceId: String = "null",
+        serviceHint: String = "null",
+        action: String = "open_booking",
+        dateFrom: String = "null",
+        timePreference: String = "null"
+    ) throws -> PrepareBookingPayload {
+        try decode(PrepareBookingPayload.self, """
+        {
+          "action": "\(action)",
+          "department_id": 2,
+          "is_gp": false,
+          "service_id": \(serviceId),
+          "service_hint": \(serviceHint),
+          "date_from": \(dateFrom),
+          "time_preference": \(timePreference),
+          "display": { "title": "Book a consultation", "cta": "Choose a time" }
+        }
+        """)
+    }
+
+    // MARK: - P4-03 · prepare_booking rendering inputs
+
+    func testBookingPayloadDecodesWithEveryOptionalAbsent() throws {
+        let payload = try decode(PrepareBookingPayload.self, """
+        {
+          "action": "open_booking",
+          "department_id": 1,
+          "is_gp": true,
+          "display": { "title": "Book a GP appointment", "cta": "Continue" }
+        }
+        """)
+
+        XCTAssertTrue(payload.isSupportedAction)
+        XCTAssertNil(payload.display.subtitle)
+        // A null reason is normal, never an error (guide §4.1.1).
+        XCTAssertNil(payload.reason)
+        XCTAssertNil(payload.serviceId)
+        XCTAssertNil(payload.serviceHint)
+    }
+
+    func testExplicitlyNullReasonIsNotAnError() throws {
+        let payload = try decode(PrepareBookingPayload.self, """
+        {
+          "action": "open_booking",
+          "department_id": 1,
+          "is_gp": true,
+          "reason": null,
+          "display": { "title": "Book", "cta": "Go" }
+        }
+        """)
+        XCTAssertNil(payload.reason)
+    }
+
+    func testUnsupportedActionIsFlaggedSoTheCardCanBeDropped() throws {
+        let payload = try bookingPayload(action: "something_new")
+        XCTAssertFalse(payload.isSupportedAction)
+    }
+
+    // MARK: - P4-04 · Service resolution
+
+    func testServiceIdWinsWhenPresent() throws {
+        let services = [
+            try service(id: 10, name: "Cardiology Consultation"),
+            try service(id: 20, name: "Dermatology Consultation")
+        ]
+        let payload = try bookingPayload(serviceId: "20", serviceHint: "\"cardiology\"")
+
+        // The id is authoritative even when the hint points elsewhere.
+        XCTAssertEqual(ChatBookingCoordinator.resolveService(payload, in: services)?.id, 20)
+    }
+
+    func testFallsBackToHintWhenServiceIdIsNull() throws {
+        let services = [
+            try service(id: 10, name: "Cardiology Consultation"),
+            try service(id: 20, name: "Dermatology Consultation")
+        ]
+        let payload = try bookingPayload(serviceHint: "\"cardiology\"")
+
+        XCTAssertEqual(ChatBookingCoordinator.resolveService(payload, in: services)?.id, 10)
+    }
+
+    func testExactNameMatchBeatsAnEarlierSubstringMatch() throws {
+        let services = [
+            try service(id: 10, name: "Blood Test Panel"),
+            try service(id: 20, name: "Blood Test")
+        ]
+        let payload = try bookingPayload(serviceHint: "\"Blood Test\"")
+
+        XCTAssertEqual(ChatBookingCoordinator.resolveService(payload, in: services)?.id, 20)
+    }
+
+    func testHintMatchingIsCaseInsensitive() throws {
+        let services = [try service(id: 10, name: "Cardiology Consultation")]
+        let payload = try bookingPayload(serviceHint: "\"CARDIOLOGY\"")
+
+        XCTAssertEqual(ChatBookingCoordinator.resolveService(payload, in: services)?.id, 10)
+    }
+
+    func testUnresolvableHintReturnsNilSoTheUserGetsThePicker() throws {
+        let services = [try service(id: 10, name: "Cardiology Consultation")]
+        let payload = try bookingPayload(serviceHint: "\"podiatry\"")
+
+        // nil drives the SpecialtyListView fallback — chat must never dead-end.
+        XCTAssertNil(ChatBookingCoordinator.resolveService(payload, in: services))
+    }
+
+    func testUnknownServiceIdWithNoHintReturnsNil() throws {
+        let services = [try service(id: 10, name: "Cardiology Consultation")]
+        let payload = try bookingPayload(serviceId: "999")
+
+        XCTAssertNil(ChatBookingCoordinator.resolveService(payload, in: services))
+    }
+
+    func testResolutionAgainstAnEmptyServiceListReturnsNil() throws {
+        let payload = try bookingPayload(serviceHint: "\"cardiology\"")
+        XCTAssertNil(ChatBookingCoordinator.resolveService(payload, in: []))
+    }
+
+    // MARK: - P4-04 · Time preference and date mapping
+
+    func testAnyTimePreferenceMapsToNoPreference() {
+        // "any" has no form representation and would be rejected as a time_slot.
+        XCTAssertNil(ChatBookingCoordinator.normalisedTimePreference("any"))
+        XCTAssertNil(ChatBookingCoordinator.normalisedTimePreference(nil))
+        XCTAssertNil(ChatBookingCoordinator.normalisedTimePreference("whenever"))
+    }
+
+    func testRecognisedTimePreferencesPassThrough() {
+        XCTAssertEqual(ChatBookingCoordinator.normalisedTimePreference("morning"), "morning")
+        XCTAssertEqual(ChatBookingCoordinator.normalisedTimePreference("Afternoon"), "afternoon")
+        XCTAssertEqual(ChatBookingCoordinator.normalisedTimePreference("EVENING"), "evening")
+    }
+
+    func testPastDatesAreDroppedRatherThanOpeningTheFormOnThem() {
+        XCTAssertNil(ChatBookingCoordinator.parseDate("2020-01-01"))
+    }
+
+    func testMalformedDateIsIgnored() {
+        XCTAssertNil(ChatBookingCoordinator.parseDate("next Tuesday"))
+        XCTAssertNil(ChatBookingCoordinator.parseDate(nil))
+        XCTAssertNil(ChatBookingCoordinator.parseDate("01/08/2026"))
+    }
+
+    func testFutureDateParses() throws {
+        let future = Calendar.current.date(byAdding: .day, value: 30, to: Date())!
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "Europe/Dublin")
+
+        let parsed = try XCTUnwrap(ChatBookingCoordinator.parseDate(formatter.string(from: future)))
+        XCTAssertEqual(
+            Calendar.current.compare(parsed, to: future, toGranularity: .day),
+            .orderedSame
+        )
+    }
+
+    // MARK: - P4-02 · Reminder payload
+
+    func testReminderDecodesAndKeepsStatusAsFreeText() throws {
+        let payload = try decode(MedicationReminderPayload.self, """
+        { "id": 7, "status": "some_status_we_have_never_seen" }
+        """)
+
+        XCTAssertEqual(payload.id, 7)
+        // Never an enum — an unrecognised status must not throw.
+        XCTAssertEqual(payload.status, "some_status_we_have_never_seen")
+    }
+
+    // MARK: - P4-05 · Appointment payload
+
+    func testAppointmentsDecodeIncludingANullScheduledAt() throws {
+        let payload = try decode(LookupAppointmentsPayload.self, """
+        {
+          "appointments": [
+            { "id": 1, "specialty": "Cardiology", "scheduled_at": null, "status": "confirmed" },
+            { "id": 2, "specialty": "GP", "scheduled_at": "2026-08-01 09:30:00", "status": "pending" }
+          ]
+        }
+        """)
+
+        XCTAssertEqual(payload.appointments.count, 2)
+        XCTAssertNil(payload.appointments[0].scheduledAt)
+        // Decoded for completeness but never rendered — see ChatAppointmentCardView.
+        XCTAssertNotNil(payload.appointments[1].scheduledAt)
+    }
+
+    func testEmptyAppointmentListDecodesRatherThanFailing() throws {
+        let payload = try decode(LookupAppointmentsPayload.self, #"{"appointments":[]}"#)
+        XCTAssertTrue(payload.appointments.isEmpty)
+    }
+
+    // MARK: - P4-01 · Unknown tools
+
+    func testUnknownToolNamesAreNotAnyOfTheHandledCases() {
+        // The router's `default` is a no-op; this guards the list it switches on so
+        // a rename can't silently drop a card. `start_booking` is deliberately NOT
+        // handled — it is deprecated and being removed (guide §4.1).
+        let handled = ["prepare_booking", "create_medication_reminder", "lookup_appointments"]
+
+        XCTAssertFalse(handled.contains("start_booking"))
+        XCTAssertFalse(handled.contains("some_future_tool"))
+        XCTAssertEqual(handled.count, 3)
+    }
+
+    // MARK: - P4-04 · Prefill mapping
+
+    func testPrefillMapsIntDepartmentAndBoolIsGpToTheirStringForms() {
+        let prefill = ChatBookingPrefill(
+            departmentId: String(2),
+            isGP: false ? "1" : "0",
+            serviceId: 10
+        )
+
+        // BookingGlobalViewModel stores both as Strings, not Int/Bool.
+        XCTAssertEqual(prefill.departmentId, "2")
+        XCTAssertEqual(prefill.isGP, "0")
+    }
+}

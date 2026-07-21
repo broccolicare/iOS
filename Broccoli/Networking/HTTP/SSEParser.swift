@@ -37,7 +37,15 @@ public final class SSEParser {
         }
 
         if let value = value(of: "event", in: line) {
+            // Spec-compliant streams separate events with a blank line, which
+            // `flush`es above. This server does NOT (it streams event/data pairs
+            // back-to-back with no blank line), so without this a whole turn's
+            // events accumulate into one buffer and fail to decode as a single
+            // event. Treat the start of a new `event:` as a boundary: dispatch the
+            // event already buffered before beginning the next one.
+            let pending = dataLines.isEmpty ? nil : flush()
             eventName = value
+            return pending
         } else if let value = value(of: "data", in: line) {
             dataLines.append(value)
         }
@@ -69,28 +77,50 @@ public final class SSEParser {
 
         switch eventName {
         case "token":
-            guard let token = try? JSONDecoder().decode(TokenPayload.self, from: data) else {
+            do {
+                let token = try JSONDecoder().decode(TokenPayload.self, from: data)
+                return .token(token.text)
+            } catch {
+                logDecodeFailure(event: "token", payload: payload, error: error)
                 return nil
             }
-            return .token(token.text)
 
         case "tool_result":
-            guard let envelope = try? JSONDecoder().decode(ToolResultEnvelope.self, from: data) else {
+            do {
+                let envelope = try JSONDecoder().decode(ToolResultEnvelope.self, from: data)
+                return .toolResult(tool: envelope.tool, data: envelope.data.raw)
+            } catch {
+                logDecodeFailure(event: "tool_result", payload: payload, error: error)
                 return nil
             }
-            return .toolResult(tool: envelope.tool, data: envelope.data.raw)
 
         case "done":
-            guard let done = try? JSONDecoder().decode(TurnDone.self, from: data) else {
+            do {
+                let done = try JSONDecoder().decode(TurnDone.self, from: data)
+                return .done(done)
+            } catch {
+                logDecodeFailure(event: "done", payload: payload, error: error)
                 return nil
             }
-            return .done(done)
 
         default:
             // Unknown event name — ignore, so the server can add events without a
             // client release.
+            #if DEBUG
+            print("⚠️ [SSEParser] ignored unknown event=\"\(eventName)\" payload=\(payload)")
+            #endif
             return nil
         }
+    }
+
+    /// A decode failure here means the wire shape diverged from the client's model
+    /// for a *known* event — the single most likely reason a 200 turn renders
+    /// nothing. Log the event, the raw payload, and the exact mismatch so it can be
+    /// handed straight to the backend team.
+    private func logDecodeFailure(event: String, payload: String, error: Error) {
+        #if DEBUG
+        print("❌ [SSEParser] failed to decode event=\"\(event)\": \(error)\n   payload: \(payload)")
+        #endif
     }
 
     /// Parses `field: value`, tolerating both `field:value` and `field: value`.

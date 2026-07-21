@@ -19,9 +19,9 @@ reference them in commits and PRs.
 | 1 · Plumbing | 10 / 11 | 🟨 In progress — P1-10 needs a staging run |
 | 2 · Shell & nav | 8 / 10 | 🟨 In progress — P2-03 artwork, P2-10 mockup check |
 | 3 · Conversation loop | 9 / 10 | 🟨 In progress — P3-09 needs a device check |
-| 4 · Tool cards | 0 / 7 | ⬜ Not started |
+| 4 · Tool cards | 6 / 7 | 🟨 In progress — P4-04 needs an end-to-end run |
 | 5 · Safety | 0 / 6 | ⬜ Not started |
-| **Total** | **27 / 44** | |
+| **Total** | **33 / 44** | |
 
 ---
 
@@ -293,9 +293,6 @@ Compose P2-05…P2-09 with hardcoded sample messages.
 > Covered by `BroccoliTests/ChatViewModelTests.swift` (18 tests) against a stubbed
 > service. **Not yet exercised against staging** — that lands with P5-06, alongside
 > the still-pending P1-10 run.
->
-> Tool cards currently render as a dashed placeholder showing the tool name. P4-01
-> replaces it with the real router.
 
 ---
 
@@ -377,13 +374,26 @@ On disappear, cancel any in-flight stream and drop `conversationId`.
 
 ### ✅ Phase 4 checklist
 
-- [ ] **P4-01** · `tool_result` routing · S
-- [ ] **P4-02** · `ChatReminderCardView` · S
-- [ ] **P4-03** · `ChatBookingCardView` · M
-- [ ] **P4-04** · Booking prefill + navigation · M
-- [ ] **P4-05** · `ChatAppointmentCardView` (minimal) · M
-- [ ] **P4-06** · Appointment card tap-through · S
-- [ ] **P4-07** · Card tests · S
+- [x] **P4-01** · `tool_result` routing · S
+- [x] **P4-02** · `ChatReminderCardView` · S
+- [x] **P4-03** · `ChatBookingCardView` · M
+- [~] **P4-04** · Booking prefill + navigation · M — *implemented; needs an end-to-end run*
+- [x] **P4-05** · `ChatAppointmentCardView` (minimal) · M
+- [x] **P4-06** · Appointment card tap-through · S
+- [x] **P4-07** · Card tests · S
+
+> **Prefill hazard, resolved.** Both booking forms call `resetBookingForm()` in
+> `onAppear`, which destroys anything set before the push. The handoff therefore
+> goes through `BookingGlobalViewModel.pendingChatPrefill`, which that reset
+> deliberately does **not** clear, consumed via `consumeChatPrefill()` after the
+> form has reset itself. Touching either `onAppear` means re-checking this ordering.
+>
+> ⚠️ `additionalNotes` (where `reason` lands) is **never sent to the backend** —
+> `initializePayment` / `confirmPayment` don't include it. The prefill is display-only
+> until that changes.
+>
+> P4-04 stays `[~]` until the card → form → `BookingConfirmationView` path is walked
+> on device (P5-06).
 
 ---
 

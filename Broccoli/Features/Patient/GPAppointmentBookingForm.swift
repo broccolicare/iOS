@@ -408,13 +408,28 @@ struct GPAppointmentBookingForm: View {
         .onAppear {
             // Reset booking form state first
             bookingViewModel.resetBookingForm()
-            
+
             // Initialize view model with current date
             bookingViewModel.selectedDate = selectedDate
-            
+
             // Set GP booking parameters
             bookingViewModel.isGP = "1"
             bookingViewModel.selectedDepartmentId = "1"
+
+            // Health Assistant handoff (P4-04). Must come AFTER resetBookingForm()
+            // above, which would otherwise wipe it. `selectedDate` is also written
+            // to the local @State because the calendar reads from that, not from
+            // the view model — setting only the VM would leave the two disagreeing.
+            if let prefill = bookingViewModel.consumeChatPrefill() {
+                if let date = prefill.preferredDate {
+                    selectedDate = date
+                    bookingViewModel.selectedDate = date
+                }
+                bookingViewModel.selectedTimeSlotPeriod = prefill.timeSlotPeriod
+                if let reason = prefill.reason {
+                    bookingViewModel.additionalNotes = reason
+                }
+            }
         }
         .task {
             // Use .task instead of .onAppear with Task to ensure proper lifecycle management

@@ -85,7 +85,20 @@ final class ChatViewModel: ObservableObject {
 
     func send(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, canSend else { return }
+
+        #if DEBUG
+        // A tap that "does nothing" almost always dies on this guard: either the
+        // text trimmed to empty, or a previous turn is still in flight. Log both
+        // sides so a silent no-op is never invisible again.
+        print("📨 [ChatViewModel] send(\"\(trimmed.prefix(40))\") isTurnInFlight=\(isTurnInFlight) canSend=\(canSend)")
+        #endif
+
+        guard !trimmed.isEmpty, canSend else {
+            #if DEBUG
+            print("⏹️ [ChatViewModel] send ignored — empty=\(trimmed.isEmpty) canSend=\(canSend)")
+            #endif
+            return
+        }
 
         messages.append(.user(trimmed))
         clearRetry()
@@ -125,6 +138,9 @@ final class ChatViewModel: ObservableObject {
     // MARK: - Turn loop
 
     private func startTurn(_ text: String) {
+        #if DEBUG
+        print("🚀 [ChatViewModel] startTurn — conversationId=\(conversationId.map(String.init) ?? "nil")")
+        #endif
         isTurnInFlight = true
         isAwaitingFirstEvent = true
         isTakingLonger = false

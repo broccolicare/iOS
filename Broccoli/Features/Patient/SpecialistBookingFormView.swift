@@ -310,12 +310,26 @@ struct SpecialistBookingFormView: View {
         .onAppear {
             // Initialize view model with current date
             bookingViewModel.selectedDate = selectedDate
-            
+
             // Set specialist booking parameters (isGP = 0 for specialists)
             bookingViewModel.isGP = "0"
             // Note: selectedDepartmentId should be set from the specialty selection
             //bookingViewModel.selectedDepartmentId = "2"
-            
+
+            // Health Assistant handoff (P4-04). Applied before the slot fetch below
+            // so the fetch runs against the suggested date, not today's. The local
+            // @State is updated too — the calendar reads from it, not the VM.
+            if let prefill = bookingViewModel.consumeChatPrefill() {
+                if let date = prefill.preferredDate {
+                    selectedDate = date
+                    bookingViewModel.selectedDate = date
+                }
+                bookingViewModel.selectedTimeSlotPeriod = prefill.timeSlotPeriod
+                if let reason = prefill.reason {
+                    bookingViewModel.additionalNotes = reason
+                }
+            }
+
             // Fetch time slots for current date on load
             if selectedDate != nil {
                 Task {

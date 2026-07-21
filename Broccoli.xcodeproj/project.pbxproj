@@ -37,8 +37,8 @@
 
 /* Begin PBXFileReference section */
 		535BAF5D2E95347A00C4A634 /* Broccoli.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Broccoli.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		53C4A7002F00000000000002 /* BroccoliTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BroccoliTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		53C4A7002F00000000000002 /* BroccoliTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BroccoliTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		53D688D22F4A863B00F4350C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -107,6 +107,7 @@
 				5381EE222E955FC90096B7DF /* LaunchScreen.storyboard */,
 				535BAF5F2E95347A00C4A634 /* Broccoli */,
 				535BAF5E2E95347A00C4A634 /* Products */,
+				538AE65F300E7171006C2537 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -117,6 +118,14 @@
 				53C4A7002F00000000000002 /* BroccoliTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		538AE65F300E7171006C2537 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				53C4A7002F00000000000003 /* BroccoliTests */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

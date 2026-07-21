@@ -11,6 +11,7 @@ import SwiftUI
 struct HealthAssistantView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
+    @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
 
     /// Feature-scoped and owned here, so the conversation dies with the screen.
     /// See the note on `ChatViewModel` — this is deliberately not a GlobalViewModel.
@@ -23,6 +24,12 @@ struct HealthAssistantView: View {
     @State private var isPinnedToBottom = true
 
     private static let bottomAnchor = "chat-bottom"
+
+    /// Built per-render rather than stored: it holds no state of its own, and the
+    /// environment objects it needs aren't available at `init`.
+    private var coordinator: ChatBookingCoordinator {
+        ChatBookingCoordinator(bookingViewModel: bookingViewModel, router: router)
+    }
 
     init(chatService: ChatServiceProtocol = ChatService(sseClient: SSEClient())) {
         _viewModel = StateObject(wrappedValue: ChatViewModel(chatService: chatService))
@@ -169,31 +176,21 @@ struct HealthAssistantView: View {
             }
 
         case .toolCard(let card):
-            // Phase 4 (P4-01) replaces this with the real card router. Rendering a
-            // visible placeholder now keeps P3-08 — cards disappearing when a turn
-            // ends guardrail-blocked — observable rather than invisible.
-            toolCardPlaceholder(card)
+            ChatToolCardView(
+                card: card,
+                onOpenBooking: { payload in
+                    Task { await coordinator.openBooking(payload) }
+                },
+                onOpenAppointment: { appointment in
+                    Task { await coordinator.openAppointment(id: appointment.id) }
+                }
+            )
+            // Aligns with the assistant bubbles, clear of the avatar column.
+            .padding(.leading, 40)
 
         case .systemNotice(let text):
             systemNotice(text)
         }
-    }
-
-    private func toolCardPlaceholder(_ card: ChatToolCard) -> some View {
-        Text(card.tool)
-            .font(theme.typography.regular12)
-            .foregroundStyle(theme.colors.textSecondary)
-            .padding(theme.spacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(theme.colors.surface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(theme.colors.border, style: StrokeStyle(lineWidth: 1, dash: [4]))
-            )
-            .padding(.leading, 40)
     }
 
     private func systemNotice(_ text: String) -> some View {
@@ -256,6 +253,14 @@ struct HealthAssistantView: View {
 
     private func send(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        #if DEBUG
+        // First breadcrumb in the chain: proves the chip/composer tap reached the
+        // handler at all. If even this doesn't print, the tap isn't landing on the
+        // button (hit-testing / z-order), not a send-logic problem.
+        print("👆 [HealthAssistantView] send(\"\(trimmed.prefix(40))\") canSend=\(viewModel.canSend)")
+        #endif
+
         guard !trimmed.isEmpty, viewModel.canSend else { return }
         viewModel.send(trimmed)
         composerText = ""
@@ -276,6 +281,7 @@ struct HealthAssistantView: View {
     }
     .environment(\.appTheme, AppTheme.default)
     .environmentObject(Router.shared)
+    .environmentObject(previewBookingViewModel())
 }
 
 #Preview("Streaming reply") {
@@ -290,6 +296,7 @@ struct HealthAssistantView: View {
     }
     .environment(\.appTheme, AppTheme.default)
     .environmentObject(Router.shared)
+    .environmentObject(previewBookingViewModel())
 }
 
 #Preview("Retryable failure") {
@@ -307,6 +314,12 @@ struct HealthAssistantView: View {
     }
     .environment(\.appTheme, AppTheme.default)
     .environmentObject(Router.shared)
+    .environmentObject(previewBookingViewModel())
+}
+
+@MainActor
+private func previewBookingViewModel() -> BookingGlobalViewModel {
+    BookingGlobalViewModel(bookingService: BookingService(httpClient: HTTPClient()))
 }
 
 /// Preview-only stand-in for `ChatService`. Replays a fixed script with a short

@@ -51,6 +51,29 @@ final class ChatSSETests: XCTestCase {
         XCTAssertNil(done.errorCode)
     }
 
+    /// Regression: the live `aiapp` server streams event/data pairs back-to-back
+    /// with NO blank line between them (non-spec, but this is what it sends). The
+    /// parser must still dispatch each event on the next `event:` boundary rather
+    /// than merging the whole turn into one undecodable buffer.
+    func testParsesConsecutiveEventsWithoutBlankSeparators() {
+        let events = parse([
+            "event: token",
+            #"data: {"text": "Could you provide a few details?"}"#,
+            "event: token",
+            #"data: {"text": "\n\nThis is an AI assistant, not a clinician."}"#,
+            "event: done",
+            #"data: {"status": "ok", "conversation_id": 7, "conversation_status": null, "error_code": null}"#,
+        ])
+
+        XCTAssertEqual(events.count, 3)
+        XCTAssertEqual(events[0], .token("Could you provide a few details?"))
+        XCTAssertEqual(events[1], .token("\n\nThis is an AI assistant, not a clinician."))
+
+        guard case .done(let done) = events[2] else { return XCTFail("expected done") }
+        XCTAssertEqual(done.status, .ok)
+        XCTAssertEqual(done.conversationId, 7)
+    }
+
     func testToolResultArrivesBeforeTokensAndKeepsRawData() {
         let events = parse([
             "event: tool_result",
