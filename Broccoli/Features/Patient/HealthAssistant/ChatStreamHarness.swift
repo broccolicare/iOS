@@ -46,6 +46,9 @@ final class ChatStreamHarnessModel: ObservableObject {
                         let json = String(data: data, encoding: .utf8) ?? "<undecodable>"
                         append("tool_result: \(tool) → \(json)")
 
+                    case .disclaimer(let text):
+                        append("disclaimer: \(text.debugDescription)")
+
                     case .done(let done):
                         conversationId = done.conversationId
                         append("""

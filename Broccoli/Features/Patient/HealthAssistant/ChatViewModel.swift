@@ -157,9 +157,15 @@ final class ChatViewModel: ObservableObject {
         // first token so a turn that only emits a card doesn't leave an empty
         // bubble behind.
         var assistantId: UUID?
-        // Cards emitted during THIS turn, so P3-08 can drop them if the turn ends
-        // blocked. Scoped to the turn — cards from earlier turns are unaffected.
-        var cardIds: [UUID] = []
+        // Cards emitted during THIS turn, buffered and rendered *after* the turn's
+        // text (below the message bubble) on `done` — the server streams cards
+        // before the text (P1-1.5), but reading them below the question is clearer,
+        // e.g. the booking chips sit under "What type of appointment…?". Buffering
+        // also means an output-phase block (P3-08) simply never renders them.
+        var pendingCards: [ChatToolCard] = []
+        // The turn's compliance notice, rendered as a muted caption at the very
+        // bottom of the turn (below the text and any cards).
+        var pendingDisclaimer: String?
 
         do {
             for try await event in chatService.streamTurn(message: text, conversationId: conversationId) {
@@ -171,18 +177,19 @@ final class ChatViewModel: ObservableObject {
                     appendToken(chunk, to: &assistantId)
 
                 case .toolResult(let tool, let data):
-                    let card = ChatToolCard(tool: tool, data: data)
-                    let message = ChatMessage(kind: .toolCard(card))
-                    messages.append(message)
-                    // The MESSAGE id, not the card's — `messages` is keyed by the
-                    // former, and P3-08 removes entries from `messages`.
-                    cardIds.append(message.id)
-                    // A card ends the current bubble: any text after it belongs to a
-                    // new one, so it renders below the card rather than jumping above.
-                    assistantId = nil
+                    pendingCards.append(ChatToolCard(tool: tool, data: data))
+
+                case .disclaimer(let text):
+                    pendingDisclaimer = text
 
                 case .done(let done):
-                    handleDone(done, sentMessage: text, assistantId: assistantId, cardIds: cardIds)
+                    handleDone(
+                        done,
+                        sentMessage: text,
+                        assistantId: assistantId,
+                        cards: pendingCards,
+                        disclaimer: pendingDisclaimer
+                    )
                 }
             }
         } catch is CancellationError {
@@ -199,7 +206,8 @@ final class ChatViewModel: ObservableObject {
         _ done: TurnDone,
         sentMessage: String,
         assistantId: UUID?,
-        cardIds: [UUID]
+        cards: [ChatToolCard],
+        disclaimer: String?
     ) {
         // Always, on every status: this is the only place a new conversation's id
         // is ever supplied (guide §4).
@@ -208,19 +216,25 @@ final class ChatViewModel: ObservableObject {
 
         switch done.status {
         case .ok:
-            // The streamed text is already in the bubble — nothing to finalise.
-            break
+            // Render the turn's cards now, below the text that just streamed, then
+            // the compliance caption at the very bottom.
+            appendCards(cards)
+            appendDisclaimer(disclaimer)
 
         case .guardrailBlocked:
             // The deflection text was streamed like any other reply and reads as
             // one, so it stays as a normal assistant message with no error styling.
             //
             // P3-08 — an output-phase block discards the turn's tool calls
-            // server-side (guide §6.2). Leaving the cards up would offer the user a
-            // booking or reminder the server never actually recorded.
-            removeCards(cardIds)
+            // server-side (guide §6.2). The cards were only buffered, so simply
+            // not rendering them offers the user no booking/reminder the server
+            // never recorded. A block emits no disclaimer event, so there is none
+            // to append here.
+            break
 
         case .error, .unknown:
+            appendCards(cards)
+            appendDisclaimer(disclaimer)
             // The server streams a user-facing fallback before `done` on most
             // errors. Only add our own line when THIS turn didn't produce one —
             // checking the whole transcript would wrongly suppress the notice
@@ -274,10 +288,17 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    private func removeCards(_ ids: [UUID]) {
-        guard !ids.isEmpty else { return }
-        let doomed = Set(ids)
-        messages.removeAll { doomed.contains($0.id) && $0.isToolCard }
+    /// Appends the turn's tool cards below its text, in the order they streamed.
+    private func appendCards(_ cards: [ChatToolCard]) {
+        for card in cards {
+            messages.append(ChatMessage(kind: .toolCard(card)))
+        }
+    }
+
+    /// Appends the turn's compliance notice as a muted caption, if one arrived.
+    private func appendDisclaimer(_ text: String?) {
+        guard let text, !text.isEmpty else { return }
+        messages.append(ChatMessage(kind: .disclaimer(text)))
     }
 
     /// Did this turn's assistant bubble receive any text?

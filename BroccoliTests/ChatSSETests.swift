@@ -96,6 +96,22 @@ final class ChatSSETests: XCTestCase {
         XCTAssertEqual(events[1], .token("Here they are"))
     }
 
+    func testDisclaimerEventParsesToItsOwnCase() {
+        let events = parse([
+            "event: token",
+            #"data: {"text": "What type of appointment would you like?"}"#,
+            "event: disclaimer",
+            #"data: {"text": "This is an AI assistant, not a clinician."}"#,
+            "event: done",
+            #"data: {"status": "ok", "conversation_id": 7, "conversation_status": null, "error_code": null}"#,
+        ])
+
+        XCTAssertEqual(events.count, 3)
+        XCTAssertEqual(events[0], .token("What type of appointment would you like?"))
+        XCTAssertEqual(events[1], .disclaimer("This is an AI assistant, not a clinician."))
+        guard case .done = events[2] else { return XCTFail("expected done") }
+    }
+
     func testUnknownEventNamesAreIgnored() {
         let events = parse([
             "event: some_future_event",

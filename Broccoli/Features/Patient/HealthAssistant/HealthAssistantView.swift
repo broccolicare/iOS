@@ -193,7 +193,22 @@ struct HealthAssistantView: View {
 
         case .systemNotice(let text):
             systemNotice(text)
+
+        case .disclaimer(let text):
+            disclaimerCaption(text)
         }
+    }
+
+    /// The per-turn compliance notice — deliberately small and muted so it reads as
+    /// a caption, not part of the assistant's reply. Aligned under the bubbles.
+    private func disclaimerCaption(_ text: String) -> some View {
+        Text(text)
+            .font(theme.typography.regular12)
+            .foregroundStyle(theme.colors.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 40)
+            .accessibilityLabel(text)
     }
 
     private func systemNotice(_ text: String) -> some View {

@@ -127,6 +127,9 @@ public enum TurnEvent: Equatable {
     /// — the shape depends on `tool` (guide §4.1). Unknown tool names are ignored
     /// downstream rather than here, so the routing rule lives in one place.
     case toolResult(tool: String, data: Data)
+    /// The turn's compliance notice, carried separately from the answer text so the
+    /// UI renders it as a de-emphasised caption. Zero or one, after the text.
+    case disclaimer(String)
     /// Exactly one, last.
     case done(TurnDone)
 }

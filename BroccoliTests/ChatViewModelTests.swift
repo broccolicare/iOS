@@ -318,6 +318,42 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertTrue(vm.messages.contains { $0.isToolCard })
     }
 
+    /// The server streams the card (and disclaimer) before/after the text, but the
+    /// UI reads better with the card *below* the message (e.g. booking chips under
+    /// the question) and the compliance caption at the very bottom. So cards and the
+    /// disclaimer are buffered and appended after the turn's text, in that order.
+    func testCardAndDisclaimerRenderAfterTheTurnsText() async {
+        let payload = Data(#"{"options":["GP","Specialist"]}"#.utf8)
+        let service = StubChatService()
+        service.script = [
+            .toolResult(tool: "offer_quick_replies", data: payload),
+            .token("What type of appointment would you like?"),
+            .disclaimer("This is an AI assistant, not a clinician."),
+            .done(TurnDone(status: .ok, conversationId: 9))
+        ]
+        let vm = makeVM(service)
+
+        vm.send("Book appointment")
+        await wait { !vm.isTurnInFlight }
+
+        // Order: user message, assistant text, the card, then the disclaimer caption.
+        let kinds = vm.messages.map { message -> String in
+            switch message.kind {
+            case .user: return "user"
+            case .assistant: return "assistant"
+            case .toolCard: return "card"
+            case .systemNotice: return "notice"
+            case .disclaimer: return "disclaimer"
+            }
+        }
+        XCTAssertEqual(kinds, ["user", "assistant", "card", "disclaimer"])
+        // The disclaimer is NOT concatenated into the assistant bubble.
+        XCTAssertEqual(
+            vm.messages.compactMap(\.assistantText),
+            ["What type of appointment would you like?"]
+        )
+    }
+
     // MARK: - P3-10 · Teardown
 
     func testEndSessionDropsTheConversationSoTheNextTurnStartsFresh() async {

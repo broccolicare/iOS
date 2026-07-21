@@ -94,6 +94,17 @@ public final class SSEParser {
                 return nil
             }
 
+        case "disclaimer":
+            // The compliance notice, delivered as its own event so the UI can show
+            // it as a de-emphasised caption. Same `{"text": …}` shape as a token.
+            do {
+                let payload = try JSONDecoder().decode(TokenPayload.self, from: data)
+                return .disclaimer(payload.text)
+            } catch {
+                logDecodeFailure(event: "disclaimer", payload: payload, error: error)
+                return nil
+            }
+
         case "done":
             do {
                 let done = try JSONDecoder().decode(TurnDone.self, from: data)

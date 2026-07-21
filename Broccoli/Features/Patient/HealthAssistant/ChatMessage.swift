@@ -31,6 +31,9 @@ struct ChatMessage: Identifiable, Equatable {
         /// Client-generated line — transport failures, turn errors. Never from the
         /// server, so it is styled distinctly from an assistant reply.
         case systemNotice(String)
+        /// The turn's compliance notice (server `disclaimer` event), shown as a
+        /// small muted caption below the reply rather than inside the bubble.
+        case disclaimer(String)
     }
 
     // MARK: - Convenience
