@@ -4,16 +4,16 @@
 //
 //  P2-07 — the three starter chips shown before the first user message.
 //
-//  ⚠️ These are LOCAL STATIC UI and stay that way — this is a decision, not a
-//  deferral (plan §2.2). Two contract facts make it the only option:
+//  ⚠️ These *starter* chips are LOCAL STATIC UI and stay that way — this is a
+//  decision, not a deferral (plan §2.2): there is no "create conversation" call,
+//  so nothing can stream before the user's first message, and no moment at which
+//  the server could supply chips for this pre-first-message screen.
 //
-//   1. There is no "create conversation" call, so nothing can stream before the
-//      user's first message — there is no moment at which the server could supply
-//      chips for this screen.
-//   2. `offer_quick_replies` is intake-exclusive; the chatbot tool set has no
-//      quick-reply tool at all (guide §4.1).
-//
-//  Do not build a server-driven chip renderer here. That belongs to intake.
+//  This is distinct from *server-driven* quick replies (BIC-1.5): the chatbot's
+//  booking flow now emits `offer_quick_replies` mid-conversation, rendered by
+//  `ChatQuickRepliesView` (which reuses `ChipFlowLayout` below). Keep the two
+//  separate — starter chips stay static here; server chips are driven by the
+//  tool_result stream.
 //
 
 import SwiftUI
@@ -53,7 +53,8 @@ struct StarterChipsView: View {
 
 /// Minimal flow layout — wraps chips onto a second row when they don't fit.
 /// A plain `HStack` would squash or clip them at large Dynamic Type sizes.
-private struct ChipFlowLayout: Layout {
+/// Shared by `StarterChipsView` and `ChatQuickRepliesView`.
+struct ChipFlowLayout: Layout {
     var spacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

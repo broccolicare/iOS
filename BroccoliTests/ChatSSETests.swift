@@ -313,6 +313,35 @@ final class ChatSSETests: XCTestCase {
         XCTAssertEqual(payload?.status, "whatever_laravel_sends")
     }
 
+    // MARK: - BIC-1.5 · offer_quick_replies (booking chips)
+
+    func testQuickRepliesToolResultParsesAndDecodesOptions() {
+        // The booking flow's care-type step: a tool_result carrying tappable labels.
+        let events = parse([
+            "event: tool_result",
+            #"data: {"tool": "offer_quick_replies", "data": {"options": ["GP", "Specialist", "Nutritionist", "Blood test"]}}"#,
+            "event: token",
+            #"data: {"text": "Which type of appointment do you need?"}"#,
+        ])
+
+        XCTAssertEqual(events.count, 2)
+        guard case .toolResult(let tool, let data) = events[0] else {
+            return XCTFail("expected tool_result first")
+        }
+        XCTAssertEqual(tool, "offer_quick_replies")
+
+        let payload = try? JSONDecoder().decode(QuickRepliesPayload.self, from: data)
+        XCTAssertEqual(payload?.options, ["GP", "Specialist", "Nutritionist", "Blood test"])
+        XCTAssertEqual(events[1], .token("Which type of appointment do you need?"))
+    }
+
+    func testQuickRepliesPayloadDecodesTimeOfDayOptions() {
+        let json = #"{"options": ["Morning", "Afternoon", "Evening", "Any time"]}"#
+        let payload = try? JSONDecoder().decode(QuickRepliesPayload.self, from: Data(json.utf8))
+
+        XCTAssertEqual(payload?.options, ["Morning", "Afternoon", "Evening", "Any time"])
+    }
+
     // MARK: - P1-05 · endpoint
 
     func testTurnRequestOmitsConversationIdWhenNil() {

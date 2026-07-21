@@ -288,6 +288,16 @@ public struct ChatAppointment: Decodable, Equatable {
     }
 }
 
+/// `offer_quick_replies` (BIC-1.5). Tappable answer chips for the question the
+/// assistant is about to ask; the tapped label is sent verbatim as the next
+/// `message`. The booking flow uses it for the care type ("GP" / "Specialist" /
+/// "Nutritionist" / "Blood test") and time of day ("Morning" / "Afternoon" /
+/// "Evening" / "Any time"). Shape: `{"options": ["…", "…"]}`.
+public struct QuickRepliesPayload: Decodable, Equatable {
+    /// 2–6 short labels, already trimmed/clamped server-side.
+    public let options: [String]
+}
+
 // MARK: - Non-streaming error envelope (guide §6)
 
 /// Returned as `application/json` on any non-2xx, *never* as SSE.
