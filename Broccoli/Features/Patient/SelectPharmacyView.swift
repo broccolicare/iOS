@@ -4,13 +4,12 @@
 //
 //  Part of the prescription booking flow.
 //  Shown after the patient completes the questionnaire.
-//  The patient may optionally choose a pharmacy, then
-//  taps "Pay Now" which creates the prescription order,
-//  initialises payment and opens the Stripe payment sheet.
+//  The patient may optionally choose a pharmacy, then taps
+//  "Pay Now" which navigates to PrescriptionConfirmationView,
+//  where the order is created and payment is actually taken.
 //
 
 import SwiftUI
-@_spi(CustomerSessionBetaAccess) import StripePaymentSheet
 
 struct SelectPharmacyView: View {
     @Environment(\.appTheme) private var theme
@@ -19,7 +18,6 @@ struct SelectPharmacyView: View {
     @EnvironmentObject private var pharmacyVM: PharmacyGlobalViewModel
 
     @State private var selectedPharmacy: Pharmacy? = nil
-    @State private var showPaymentSheet = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -126,30 +124,20 @@ struct SelectPharmacyView: View {
                         Spacer(minLength: 32)
 
                         // MARK: Pay Now button
-                        Button(action: initiatePayment) {
-                            if bookingVM.isLoading {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
-                                    .background(theme.colors.primary)
-                                    .cornerRadius(12)
-                            } else {
-                                Text("Pay Now")
-                                    .font(theme.typography.button)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
-                                    .background(theme.colors.primary)
-                                    .cornerRadius(12)
-                            }
+                        Button(action: goToConfirmation) {
+                            Text("Pay Now")
+                                .font(theme.typography.button)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(theme.colors.primary)
+                                .cornerRadius(12)
                         }
-                        .disabled(bookingVM.isLoading)
 
                         // MARK: Skip pharmacy link
                         Button(action: {
                             selectedPharmacy = nil
-                            initiatePayment()
+                            goToConfirmation()
                         }) {
                             Text("Continue without pharmacy")
                                 .font(theme.typography.regular14)
@@ -157,7 +145,6 @@ struct SelectPharmacyView: View {
                                 .underline()
                                 .frame(maxWidth: .infinity)
                         }
-                        .disabled(bookingVM.isLoading)
                         .opacity(selectedPharmacy == nil ? 0 : 1) // only visible when a pharmacy is selected
                     }
                     .padding(.horizontal, 20)
@@ -170,24 +157,6 @@ struct SelectPharmacyView: View {
         .task {
             await pharmacyVM.loadPharmacies()
         }
-        // MARK: Stripe payment sheet
-        .paymentSheet(
-            isPresented: $showPaymentSheet,
-            paymentSheet: bookingVM.paymentSheet ?? PaymentSheet(
-                paymentIntentClientSecret: "",
-                configuration: PaymentSheet.Configuration()
-            )
-        ) { result in
-            Task {
-                let response = await bookingVM.onPrescriptionPaymentCompletion(result: result)
-                if response?.success == true {
-                    router.push(.paymentSuccess(booking: nil))
-                }
-                bookingVM.paymentSheet = nil
-                bookingVM.isPaymentReady = false
-                showPaymentSheet = false
-            }
-        }
         .alert("Error", isPresented: $bookingVM.showErrorToast) {
             Button("OK", role: .cancel) { bookingVM.errorMessage = nil }
         } message: {
@@ -197,21 +166,9 @@ struct SelectPharmacyView: View {
 
     // MARK: - Private
 
-    private func initiatePayment() {
-        Task {
-            let success = await bookingVM.createPrescriptionOrder(
-                pharmacyId: selectedPharmacy?.id
-            )
-
-            guard success else { return }
-
-            if bookingVM.isPaymentReady && bookingVM.requiresPayment {
-                showPaymentSheet = true
-            } else {
-                // Covered by subscription or no payment required
-                router.push(.paymentSuccess(booking: nil))
-            }
-        }
+    private func goToConfirmation() {
+        bookingVM.selectedPharmacyForPrescription = selectedPharmacy
+        router.push(.prescriptionConfirmation)
     }
 }
 

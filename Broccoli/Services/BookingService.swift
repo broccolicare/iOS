@@ -20,6 +20,7 @@ public protocol BookingServiceProtocol {
     func uploadDocument(bookingId: String, documentData: Data, fileName: String) async throws -> DocumentUploadResponse
     func initializePayment(data: [String: Any]) async throws -> PaymentInitializeResponse
     func confirmPayment(data: [String: Any]) async throws -> PaymentConfirmResponse
+    func validateCoupon(data: [String: Any]) async throws -> CouponValidateResponse
     func confirmPaymentWithAttachments(data: [String: Any], attachments: [AttachmentFile]) async throws -> PaymentConfirmResponse
     func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse
     func fetchPatientBookings(type: String?, status: String?, perPage: Int, cursor: String?) async throws -> UpcomingAppointmentsResponse
@@ -152,6 +153,14 @@ public final class BookingService: BaseService, BookingServiceProtocol {
         }
     }
     
+    /// Validate a coupon code against the current purchase amount
+    public func validateCoupon(data: [String: Any]) async throws -> CouponValidateResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.validateCoupon(data)
+            return try await httpClient.request(endpoint)
+        }
+    }
+
     /// Fetch department services by department ID
     public func fetchDepartmentServices(departmentId: String) async throws -> ServicesResponse {
         return try await handleServiceError {

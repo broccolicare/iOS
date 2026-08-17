@@ -150,7 +150,7 @@ struct PackagesView: View {
                                             isDisabled: packageViewModel.isProcessingPayment && selectedPackageForPurchase?.id != package.id,
                                             isActive: isPackageActive(package),
                                             isDowngrade: isDowngrade(package),
-                                            onBuy: { handleBuyPackage(package) }
+                                            onBuy: { couponCode in handleBuyPackage(package, couponCode: couponCode) }
                                         )
                                     }
                                 }
@@ -159,8 +159,8 @@ struct PackagesView: View {
                             .padding(.vertical, 8)
                         }
                         
-                        // Bottom spacing
-                        Color.clear.frame(height: 20)
+                        // Bottom spacing (clears tab bar + floating chat button)
+                        Color.clear.frame(height: 150)
                     }
                 }
             }
@@ -226,14 +226,15 @@ struct PackagesView: View {
     }
     
     // Handle buy package action
-    private func handleBuyPackage(_ package: Package) {
+    private func handleBuyPackage(_ package: Package, couponCode: String?) {
         selectedPackageForPurchase = package
-        
+
         Task {
             // Initialize payment
             guard let paymentResponse = await packageViewModel.initializeSubscriptionPayment(
                 priceId: package.stripePriceId,
-                name: package.name
+                name: package.name,
+                couponCode: couponCode
             ) else {
                 return
             }
@@ -271,14 +272,34 @@ struct PackagesView: View {
 // MARK: - Package Card Component
 struct PackageCard: View {
     @Environment(\.appTheme) private var theme
+    @EnvironmentObject private var packageViewModel: PackageGlobalViewModel
     let package: Package
     let backgroundColor: Color
     let isProcessing: Bool
     let isDisabled: Bool
     let isActive: Bool
     let isDowngrade: Bool
-    let onBuy: () -> Void
-    
+    let onBuy: (String?) -> Void
+
+    @State private var couponCode: String = ""
+    @State private var isCouponLoading: Bool = false
+    @State private var isCouponApplied: Bool = false
+    @State private var couponMessage: String? = nil
+    @State private var couponErrorMessage: String? = nil
+    @State private var couponDiscountAmount: Double = 0
+
+    private var planPrice: Double {
+        Double(package.price) ?? 0
+    }
+
+    private var discountedTotal: Double {
+        max(planPrice - couponDiscountAmount, 0)
+    }
+
+    private func formatPrice(_ value: Double) -> String {
+        String(format: "€%.2f", value)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Package Info
@@ -324,7 +345,7 @@ struct PackageCard: View {
                 .padding(.top, 8)
             }
             .padding(20)
-            .frame(width: 280, alignment: .leading)
+            .frame(width: 310, alignment: .leading)
             
             Spacer(minLength: 20)
             
@@ -358,16 +379,22 @@ struct PackageCard: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             } else {
-                PrimaryPackageButton(
-                    title: "Buy Now",
-                    isDisabled: isDisabled,
-                    action: onBuy
-                )
+                VStack(spacing: 16) {
+                    couponSection
+
+                    PrimaryPackageButton(
+                        title: "Buy Now",
+                        isDisabled: isDisabled,
+                        action: {
+                            onBuy(isCouponApplied ? couponCode.trimmingCharacters(in: .whitespacesAndNewlines) : nil)
+                        }
+                    )
+                }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
         }
-        .frame(width: 280)
+        .frame(width: 310)
         .frame(minHeight: 480)
         .background(backgroundColor)
         .cornerRadius(16)
@@ -378,6 +405,149 @@ struct PackageCard: View {
     // Helper function to format price (defaults to EUR)
     private func formatPrice(_ price: String) -> String {
         return "€\(price)"
+    }
+
+    // MARK: - Coupon Section
+
+    private var couponSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Have a coupon?")
+                .font(theme.typography.semiBold16)
+                .foregroundStyle(theme.colors.textPrimary)
+
+            HStack(spacing: 10) {
+                TextField("Enter code", text: $couponCode)
+                    .textInputAutocapitalization(.characters)
+                    .disableAutocorrection(true)
+                    .font(theme.typography.body)
+                    .foregroundStyle(theme.colors.textPrimary)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: theme.cornerRadius)
+                            .stroke(theme.colors.primary, lineWidth: 1)
+                    )
+                    .cornerRadius(theme.cornerRadius)
+                    .onChange(of: couponCode) { _, _ in
+                        if isCouponApplied {
+                            isCouponApplied = false
+                            couponMessage = nil
+                            couponDiscountAmount = 0
+                        }
+                        couponErrorMessage = nil
+                    }
+
+                Button(action: { Task { await applyCoupon() } }) {
+                    Group {
+                        if isCouponLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Text(isCouponApplied ? "Applied" : "Apply")
+                                .font(theme.typography.button)
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 76, height: 40)
+                }
+                .background(theme.colors.primary)
+                .cornerRadius(theme.cornerRadius)
+                .disabled(isCouponApplied || isCouponLoading || couponCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+
+            if let couponMessage {
+                Label(couponMessage, systemImage: "checkmark.circle.fill")
+                    .font(theme.typography.regular14)
+                    .foregroundStyle(theme.colors.lightGreen)
+            } else if let couponErrorMessage {
+                Text(couponErrorMessage)
+                    .font(theme.typography.regular14)
+                    .foregroundStyle(theme.colors.error)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(spacing: 6) {
+                HStack {
+                    Text("Plan price")
+                        .font(theme.typography.regular14)
+                        .foregroundStyle(theme.colors.textSecondary)
+                    Spacer()
+                    Text(formatPrice(planPrice))
+                        .font(theme.typography.regular14)
+                        .foregroundStyle(theme.colors.textPrimary)
+                }
+
+                if isCouponApplied && couponDiscountAmount > 0 {
+                    HStack {
+                        Text("Coupon discount")
+                            .font(theme.typography.regular14)
+                            .foregroundStyle(theme.colors.textSecondary)
+                        Spacer()
+                        Text("-\(formatPrice(couponDiscountAmount))")
+                            .font(theme.typography.regular14)
+                            .foregroundStyle(theme.colors.lightGreen)
+                    }
+                }
+
+                Divider()
+
+                HStack {
+                    Text("Total")
+                        .font(theme.typography.semiBold16)
+                        .foregroundStyle(theme.colors.textPrimary)
+                    Spacer()
+                    Text(formatPrice(isCouponApplied ? discountedTotal : planPrice))
+                        .font(theme.typography.semiBold16)
+                        .foregroundStyle(theme.colors.textPrimary)
+                }
+            }
+            .padding(.top, 4)
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+    }
+
+    private func applyCoupon() async {
+        let trimmedCode = couponCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedCode.isEmpty else {
+            couponErrorMessage = "Please enter a coupon code"
+            couponMessage = nil
+            return
+        }
+
+        isCouponLoading = true
+        couponErrorMessage = nil
+        couponMessage = nil
+
+        do {
+            let response = try await packageViewModel.validateCoupon(code: trimmedCode, amount: planPrice, packageId: package.id)
+            isCouponLoading = false
+
+            guard response.success else {
+                isCouponApplied = false
+                couponDiscountAmount = 0
+                couponErrorMessage = response.message ?? "Invalid coupon code"
+                return
+            }
+
+            isCouponApplied = true
+            couponDiscountAmount = response.discountAmount ?? 0
+            if let message = response.message, !message.isEmpty {
+                couponMessage = message
+            } else if let type = response.discountType, let value = response.discountValue, type.lowercased().contains("percent") {
+                couponMessage = "Flat \(Int(value))% applied successfully."
+            } else {
+                couponMessage = "Coupon applied successfully."
+            }
+        } catch {
+            isCouponLoading = false
+            isCouponApplied = false
+            couponDiscountAmount = 0
+            couponErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
     }
 }
 

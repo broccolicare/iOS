@@ -36,19 +36,32 @@ public final class PackageGlobalViewModel: ObservableObject {
     // Eligibility state
     @Published public var isEligible: Bool = false
     @Published public var eligibilityMessage: String? = nil
-    
+
     public init(packageService: PackageServiceProtocol) {
         self.packageService = packageService
     }
-    
+
     // MARK: - Computed Properties
-    
+
     public var hasPackages: Bool {
         return !packages.isEmpty
     }
-    
+
     // MARK: - Methods
-    
+
+    /// Validate a coupon code against a package's price. Throws on network/service failure
+    /// so callers (each package card) can surface their own error state.
+    public func validateCoupon(code: String, amount: Double, packageId: Int) async throws -> CouponValidateResponse {
+        let trimmedCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        let data: [String: Any] = [
+            "code": trimmedCode,
+            "purchase_type": "package",
+            "amount": amount,
+            "entity_id": packageId
+        ]
+        return try await packageService.validateCoupon(data: data)
+    }
+
     /// Load available packages
     public func loadPackages() async {
         isLoading = true
@@ -96,13 +109,13 @@ public final class PackageGlobalViewModel: ObservableObject {
     }
     
     /// Initialize subscription payment
-    public func initializeSubscriptionPayment(priceId: String, name: String) async -> PaymentInitializeResponse? {
+    public func initializeSubscriptionPayment(priceId: String, name: String, couponCode: String? = nil) async -> PaymentInitializeResponse? {
         isProcessingPayment = true
         errorMessage = nil
         showErrorToast = false
-        
+
         do {
-            let response = try await packageService.initializeSubscriptionPayment(priceId: priceId, name: name)
+            let response = try await packageService.initializeSubscriptionPayment(priceId: priceId, name: name, couponCode: couponCode)
             
             print("🔍 [PackageViewModel] Initialize Subscription Payment Response:")
             print("   - setupIntent: \(response.setupIntent != nil ? "exists" : "nil")")

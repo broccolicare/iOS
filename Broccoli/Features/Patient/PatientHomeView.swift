@@ -158,19 +158,9 @@ struct PatientHomeView: View {
                                     )
                                     .frame(height: 130)
                                 }.buttonStyle(.plain)
-
-                                Button(action: {
-                                    router.push(.healthAssistant)
-                                }) {
-                                    SmallActionTile(
-                                        title: "Health Assistant",
-                                        backgroundImage: "health-assistant"
-                                    )
-                                    .frame(height: 130)
-                                }.buttonStyle(.plain)
                             }
                             .padding(.horizontal, theme.spacing.lg)
-                            .padding(.bottom, 80) // space for tab bar
+                            .padding(.bottom, 150) // space for tab bar + floating chat button
                         }
                         .padding(.top, theme.spacing.lg)
                     } // ScrollView

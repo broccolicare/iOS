@@ -15,6 +15,7 @@ enum AppTab: Hashable {
 /// A container that shows a content view for each tab and renders a custom tab bar.
 struct MainTabContainer<Content: View>: View {
     @Environment(\.appTheme) private var theme
+    @EnvironmentObject private var router: Router
 
     /// current selected tab
     @Binding var selected: AppTab
@@ -26,6 +27,9 @@ struct MainTabContainer<Content: View>: View {
         self._selected = selected
         self.content = content
     }
+
+    /// Matches `CustomPillTabBar`'s fixed height so the floating button clears it.
+    private let tabBarHeight: CGFloat = 70
 
     var body: some View {
         ZStack {
@@ -47,6 +51,20 @@ struct MainTabContainer<Content: View>: View {
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: selected)
+
+            // Floating Health Assistant button - visible above the tab bar on every tab
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    FloatingChatButton {
+                        router.push(.healthAssistant)
+                    }
+                    .padding(.trailing, theme.spacing.lg)
+                }
+            }
+            .padding(.bottom, tabBarHeight + (safeBottomPadding() > 0 ? safeBottomPadding() - 4 : 10) + theme.spacing.sm)
+            .ignoresSafeArea(edges: .bottom)
 
             // Custom Tab Bar overlay
             VStack {

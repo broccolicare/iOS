@@ -26,7 +26,15 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var isPaymentReady: Bool = false
     @Published public var currentPaymentIntentId: String? = nil
     @Published public var confirmedBooking: BookingData? = nil
-    
+
+    // Coupon state
+    @Published public var couponCode: String = ""
+    @Published public var isCouponLoading: Bool = false
+    @Published public var isCouponApplied: Bool = false
+    @Published public var couponMessage: String? = nil
+    @Published public var couponErrorMessage: String? = nil
+    @Published public var couponDiscountAmount: Double = 0
+
     // Booking form data
     @Published public var selectedDate: Date? = nil
     @Published public var selectedTimeSlot: String? = nil
@@ -74,6 +82,7 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var currentPrescriptionOrder: PrescriptionOrder? = nil
     @Published public var requiresPayment: Bool = false
     @Published public var promptAddPharmacy: Bool = false
+    @Published public var selectedPharmacyForPrescription: Pharmacy? = nil
     
     // Booking history
     @Published public var currentBookingId: String? = nil
@@ -179,6 +188,8 @@ public final class BookingGlobalViewModel: ObservableObject {
         services = []
         currentDepartment = nil
 
+        resetCoupon()
+
         // NOTE: `pendingChatPrefill` is deliberately NOT cleared here (P4-04).
         // The booking forms call this method from `onAppear`, i.e. *after* the
         // Health Assistant has handed the prefill over, so clearing it here would
@@ -204,13 +215,16 @@ public final class BookingGlobalViewModel: ObservableObject {
         currentPrescriptionOrder = nil
         requiresPayment = false
         promptAddPharmacy = false
-        
+        selectedPharmacyForPrescription = nil
+
         // Reset payment-related state
         paymentSheet = nil
         paymentResult = nil
         isPaymentReady = false
         currentPaymentIntentId = nil
-        
+
+        resetCoupon()
+
         errorMessage = nil
         print("✅ [Prescription] Reset complete")
     }
@@ -398,7 +412,12 @@ public final class BookingGlobalViewModel: ObservableObject {
             "answers": answers
         ]
         if let pharmacyId { requestData["pharmacy_id"] = pharmacyId }
-        
+
+        let trimmedCouponCode = couponCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isCouponApplied, !trimmedCouponCode.isEmpty {
+            requestData["coupon"] = trimmedCouponCode
+        }
+
         do {
             let response = try await bookingService.createPrescriptionOrder(data: requestData)
             
@@ -555,6 +574,68 @@ public final class BookingGlobalViewModel: ObservableObject {
         }
     }
     
+    /// Validate a coupon code against the current purchase amount.
+    /// `purchaseType`/`entityId` default to the booking flow; pass `"prescription"` and the treatment id for prescriptions.
+    public func validateCoupon(amount: Double, purchaseType: String = "booking", entityId: Int? = nil) async {
+        let trimmedCode = couponCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedCode.isEmpty else {
+            couponErrorMessage = "Please enter a coupon code"
+            couponMessage = nil
+            isCouponApplied = false
+            return
+        }
+
+        isCouponLoading = true
+        couponErrorMessage = nil
+        couponMessage = nil
+
+        var data: [String: Any] = [
+            "code": trimmedCode,
+            "purchase_type": purchaseType,
+            "amount": amount
+        ]
+        if let resolvedEntityId = entityId ?? selectedService?.id {
+            data["entity_id"] = resolvedEntityId
+        }
+
+        do {
+            let response = try await bookingService.validateCoupon(data: data)
+            isCouponLoading = false
+
+            guard response.success else {
+                isCouponApplied = false
+                couponDiscountAmount = 0
+                couponErrorMessage = response.message ?? "Invalid coupon code"
+                return
+            }
+
+            isCouponApplied = true
+            couponDiscountAmount = response.discountAmount ?? 0
+            if let message = response.message, !message.isEmpty {
+                couponMessage = message
+            } else if let type = response.discountType, let value = response.discountValue, type.lowercased().contains("percent") {
+                couponMessage = "Flat \(Int(value))% applied successfully."
+            } else {
+                couponMessage = "Coupon applied successfully."
+            }
+        } catch {
+            isCouponLoading = false
+            isCouponApplied = false
+            couponDiscountAmount = 0
+            couponErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    /// Clear coupon state, e.g. when the user edits the applied code or resets the form
+    public func resetCoupon() {
+        couponCode = ""
+        isCouponLoading = false
+        isCouponApplied = false
+        couponMessage = nil
+        couponErrorMessage = nil
+        couponDiscountAmount = 0
+    }
+
     /// Initialize payment - Step 1: Check subscription and get payment intent
     public func initializePayment() async -> PaymentInitializeResponse? {
         guard isBookingFormValid else {
@@ -595,7 +676,13 @@ public final class BookingGlobalViewModel: ObservableObject {
         if let service = selectedService {
             paymentData["service_id"] = service.id
         }
-        
+
+        // Optional: coupon code, when a coupon has been applied
+        let trimmedCouponCode = couponCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isCouponApplied, !trimmedCouponCode.isEmpty {
+            paymentData["coupon"] = trimmedCouponCode
+        }
+
         do {
             let response = try await bookingService.initializePayment(data: paymentData)
             isLoading = false

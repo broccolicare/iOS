@@ -10,8 +10,9 @@ import Foundation
 public protocol PackageServiceProtocol {
     func getPackages() async throws -> PackagesResponse
     func getServiceEligibility(serviceId: String) async throws -> PackageEligibilityResponse
-    func initializeSubscriptionPayment(priceId: String, name: String) async throws -> PaymentInitializeResponse
+    func initializeSubscriptionPayment(priceId: String, name: String, couponCode: String?) async throws -> PaymentInitializeResponse
     func confirmSubscriptionPayment(priceId: String, paymentMethodId: String, name: String) async throws -> PaymentConfirmResponse
+    func validateCoupon(data: [String: Any]) async throws -> CouponValidateResponse
 }
 
 public final class PackageService: BaseService, PackageServiceProtocol {
@@ -41,17 +42,25 @@ public final class PackageService: BaseService, PackageServiceProtocol {
     }
     
     /// Initialize subscription payment for a package
-    public func initializeSubscriptionPayment(priceId: String, name: String) async throws -> PaymentInitializeResponse {
+    public func initializeSubscriptionPayment(priceId: String, name: String, couponCode: String?) async throws -> PaymentInitializeResponse {
         return try await handleServiceError {
-            let endpoint = PackageEndpoint.initializeSubscriptionPayment(priceId: priceId, name: name)
+            let endpoint = PackageEndpoint.initializeSubscriptionPayment(priceId: priceId, name: name, couponCode: couponCode)
             return try await httpClient.request(endpoint)
         }
     }
-    
+
     /// Confirm subscription payment after successful payment
     public func confirmSubscriptionPayment(priceId: String, paymentMethodId: String, name: String) async throws -> PaymentConfirmResponse {
         return try await handleServiceError {
             let endpoint = PackageEndpoint.confirmSubscriptionPayment(priceId: priceId, paymentMethodId: paymentMethodId, name: name)
+            return try await httpClient.request(endpoint)
+        }
+    }
+
+    /// Validate a coupon code for a package purchase
+    public func validateCoupon(data: [String: Any]) async throws -> CouponValidateResponse {
+        return try await handleServiceError {
+            let endpoint = PackageEndpoint.validateCoupon(data)
             return try await httpClient.request(endpoint)
         }
     }

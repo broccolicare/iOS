@@ -958,6 +958,77 @@ public struct SubscriptionData: Codable {
     }
 }
 
+// MARK: - Coupon Models
+
+public struct CouponValidateResponse: Codable {
+    public let success: Bool
+    public let message: String?
+    public let code: String?
+    public let discountType: String?
+    public let discountValue: Double?
+    public let discountAmount: Double?
+    public let finalAmount: Double?
+    public let currency: String?
+
+    public init(from decoder: Decoder) throws {
+        guard let container = try? decoder.container(keyedBy: AnyCodingKey.self) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Cannot decode container"))
+        }
+
+        if let successBool = try? container.decode(Bool.self, forKey: AnyCodingKey("success")) {
+            success = successBool
+        } else if let validBool = try? container.decode(Bool.self, forKey: AnyCodingKey("valid")) {
+            success = validBool
+        } else if let statusString = try? container.decode(String.self, forKey: AnyCodingKey("status")) {
+            success = statusString.lowercased() == "success"
+        } else {
+            success = true
+        }
+
+        message = try? container.decode(String.self, forKey: AnyCodingKey("message"))
+
+        // Coupon metadata is nested under "coupon" (or "data" for older API shapes); fall back to top-level keys otherwise.
+        let couponContainer = (try? container.nestedContainer(keyedBy: AnyCodingKey.self, forKey: AnyCodingKey("coupon")))
+            ?? (try? container.nestedContainer(keyedBy: AnyCodingKey.self, forKey: AnyCodingKey("data")))
+            ?? container
+
+        code = (try? couponContainer.decode(String.self, forKey: AnyCodingKey("code")))
+            ?? (try? container.decode(String.self, forKey: AnyCodingKey("code")))
+
+        discountType = (try? couponContainer.decode(String.self, forKey: AnyCodingKey("discount_type")))
+            ?? (try? couponContainer.decode(String.self, forKey: AnyCodingKey("discountType")))
+            ?? (try? couponContainer.decode(String.self, forKey: AnyCodingKey("type")))
+
+        discountValue = Self.decodeFlexibleDouble(couponContainer, keys: ["discount_value", "discountValue", "value"])
+
+        // "pricing" carries the amounts to charge in minor currency units (e.g. cents); convert to major units.
+        let pricingContainer = try? container.nestedContainer(keyedBy: AnyCodingKey.self, forKey: AnyCodingKey("pricing"))
+        currency = try? pricingContainer?.decode(String.self, forKey: AnyCodingKey("currency"))
+
+        if let pricingContainer, let discountMinor = Self.decodeFlexibleDouble(pricingContainer, keys: ["discount"]) {
+            discountAmount = discountMinor / 100
+        } else {
+            discountAmount = Self.decodeFlexibleDouble(couponContainer, keys: ["discount_amount", "discountAmount", "discount"])
+        }
+
+        if let pricingContainer, let totalMinor = Self.decodeFlexibleDouble(pricingContainer, keys: ["total"]) {
+            finalAmount = totalMinor / 100
+        } else {
+            finalAmount = Self.decodeFlexibleDouble(couponContainer, keys: ["final_amount", "finalAmount", "total", "payable_amount"])
+        }
+    }
+
+    private static func decodeFlexibleDouble(_ container: KeyedDecodingContainer<AnyCodingKey>, keys: [String]) -> Double? {
+        for key in keys {
+            let codingKey = AnyCodingKey(key)
+            if let doubleValue = try? container.decode(Double.self, forKey: codingKey) { return doubleValue }
+            if let intValue = try? container.decode(Int.self, forKey: codingKey) { return Double(intValue) }
+            if let stringValue = try? container.decode(String.self, forKey: codingKey), let parsed = Double(stringValue) { return parsed }
+        }
+        return nil
+    }
+}
+
 // MARK: - Treatments Models
 
 public struct TreatmentsResponse: Codable {

@@ -11,11 +11,12 @@ import Foundation
 public enum PackageEndpoint: Endpoint {
     case getPackages
     case getServiceEligibility(serviceId: String)
-    case initializeSubscriptionPayment(priceId: String, name: String)
+    case initializeSubscriptionPayment(priceId: String, name: String, couponCode: String?)
     case confirmSubscriptionPayment(priceId: String, paymentMethodId: String, name: String)
     case paymentInitialize([String: Any])
     case paymentConfirm([String: Any])
-    
+    case validateCoupon([String: Any])
+
     public var path: String {
         switch self {
         case .getPackages:
@@ -30,27 +31,33 @@ public enum PackageEndpoint: Endpoint {
             return "/payments/bookings/initialize"
         case .paymentConfirm:
             return "/payments/bookings/confirm"
+        case .validateCoupon:
+            return "/coupons/validate"
         }
     }
-    
+
     public var method: HTTPMethod {
         switch self {
         case .getPackages, .getServiceEligibility:
             return .GET
-        case .initializeSubscriptionPayment, .confirmSubscriptionPayment, .paymentInitialize, .paymentConfirm:
+        case .initializeSubscriptionPayment, .confirmSubscriptionPayment, .paymentInitialize, .paymentConfirm, .validateCoupon:
             return .POST
         }
     }
-    
+
     public var body: [String: Any]? {
         switch self {
         case .getPackages, .getServiceEligibility:
             return nil
-        case .initializeSubscriptionPayment(let priceId, let name):
-            return [
+        case .initializeSubscriptionPayment(let priceId, let name, let couponCode):
+            var data: [String: Any] = [
                 "price_id": priceId,
                 "name": name
             ]
+            if let couponCode, !couponCode.isEmpty {
+                data["coupon"] = couponCode
+            }
+            return data
         case .confirmSubscriptionPayment(let priceId, let paymentMethodId, let name):
             return [
                 "price_id": priceId,
@@ -60,6 +67,8 @@ public enum PackageEndpoint: Endpoint {
         case .paymentInitialize(let data):
             return data
         case .paymentConfirm(let data):
+            return data
+        case .validateCoupon(let data):
             return data
         }
     }

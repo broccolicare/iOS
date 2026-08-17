@@ -37,7 +37,7 @@ public struct AppEnvironment {
     }
     
     public static let development = AppEnvironment(
-        apiBaseURL: "https://admin.broccolicare.ie/api",
+        apiBaseURL: "https://broccolicare.stagingdemo.tech/api",
         aiBaseURL: "https://aiapp.broccolicare.ie",
         isDebug: true,
         enableLogging: true,

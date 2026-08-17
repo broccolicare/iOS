@@ -118,8 +118,8 @@ struct PrescriptionView: View {
                             }
                         }
                         
-                        // Bottom spacing
-                        Color.clear.frame(height: 40)
+                        // Bottom spacing (clears tab bar + floating chat button)
+                        Color.clear.frame(height: 150)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)

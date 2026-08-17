@@ -38,6 +38,7 @@ enum Route: Hashable {
     case bookPrescription
     case prescriptionQuestions
     case selectPharmacy
+    case prescriptionConfirmation
     case settings
     case contactUs
     case search

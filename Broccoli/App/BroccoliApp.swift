@@ -141,6 +141,8 @@ struct BroccoliApp: App {
                             PrescriptionQuestionsView()
                         case .selectPharmacy:
                             SelectPharmacyView()
+                        case .prescriptionConfirmation:
+                            PrescriptionConfirmationView()
                         case .settings:
                             SettingsView()
                         case .contactUs:

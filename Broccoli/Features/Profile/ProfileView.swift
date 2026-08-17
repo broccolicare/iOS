@@ -253,7 +253,7 @@ struct ProfileView: View {
             .background(Color(red: 0.96, green: 0.97, blue: 0.98))
             .padding(.top, 20)
         }
-        .padding(.bottom, 80)
+        .padding(.bottom, 150) // clears tab bar + floating chat button
         .navigationBarHidden(true)
         
         

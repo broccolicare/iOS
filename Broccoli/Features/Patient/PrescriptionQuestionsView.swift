@@ -218,12 +218,12 @@ struct PrescriptionQuestionsView: View {
             let questionType = question.questionType.lowercased()
             
             switch questionType {
-            case "single_choice", "singlechoice", "multiple_choice", "multiplechoice":
+            case "single_choice", "singlechoice", "multiple_choice", "multiplechoice", "true_false", "truefalse", "boolean":
                 // Check if option is selected
                 let selectedOptions = bookingViewModel.questionnaireAnswers[question.id] ?? []
                 if selectedOptions.isEmpty {
                     questionValidationErrors.insert(question.id)
-                } else if questionType == "single_choice" || questionType == "singlechoice",
+                } else if questionType == "single_choice" || questionType == "singlechoice" || questionType == "true_false" || questionType == "truefalse" || questionType == "boolean",
                           let selectedOptionId = selectedOptions.first,
                           let selectedOption = question.options.first(where: { $0.id == selectedOptionId }),
                           selectedOption.hasFollowUp {
@@ -290,7 +290,7 @@ struct QuestionnaireQuestionView: View {
                     }
                 }
                 
-            case "single_choice", "singlechoice":
+            case "single_choice", "singlechoice", "true_false", "truefalse", "boolean":
                 // Single selection - button group
                 FlowLayout(spacing: 12) {
                     ForEach(question.options.sorted(by: { $0.order < $1.order })) { option in

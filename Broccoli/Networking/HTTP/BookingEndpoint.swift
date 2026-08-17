@@ -16,6 +16,7 @@ public enum BookingEndpoint: Endpoint {
     case uploadDocument(bookingId: String, documentData: Data, fileName: String)
     case paymentInitialize([String: Any])
     case paymentConfirm([String: Any])
+    case validateCoupon([String: Any])
     case activeTreatments
     case treatmentDetails(String)
     case createPrescriptionOrder([String: Any])
@@ -49,6 +50,8 @@ public enum BookingEndpoint: Endpoint {
             return "/payments/bookings/initialize"
         case .paymentConfirm:
             return "/payments/bookings/confirm"
+        case .validateCoupon:
+            return "/coupons/validate"
         case .activeTreatments:
             return "/prescriptions/treatments"
         case .treatmentDetails(let treatment):
@@ -88,7 +91,7 @@ public enum BookingEndpoint: Endpoint {
         switch self {
         case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .prescriptions, .doctorBookings:
             return .GET
-        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .consultationJoined, .uploadPrescription:
+        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .validateCoupon, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .consultationJoined, .uploadPrescription:
             return .POST
         case .endConsultation:
             return .PUT
@@ -104,6 +107,8 @@ public enum BookingEndpoint: Endpoint {
         case .paymentInitialize(let data):
             return data
         case .paymentConfirm(let data):
+            return data
+        case .validateCoupon(let data):
             return data
         case .createPrescriptionOrder(let data):
             return data
