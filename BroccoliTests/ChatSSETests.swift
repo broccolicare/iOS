@@ -273,26 +273,56 @@ final class ChatSSETests: XCTestCase {
         XCTAssertNil(payload?.serviceId)
         XCTAssertNil(payload?.dateFrom)
         XCTAssertNil(payload?.reason)
+        XCTAssertNil(payload?.serviceName)
+        XCTAssertEqual(payload?.slots, [], "an absent `slots` key means no times, not a decode failure")
         XCTAssertEqual(payload?.isSupportedAction, true)
     }
 
     func testPrepareBookingDecodesWithEveryFieldPresent() {
         let json = #"""
         {"action": "open_booking", "department_id": 4, "is_gp": false,
-         "service_hint": "full blood count", "service_id": null,
+         "service_hint": "full blood count", "service_id": 12,
+         "service_name": "Full Blood Count",
          "date_from": "2026-07-27", "date_to": "2026-08-03",
          "time_preference": "morning", "reason": "Follow-up bloods requested by GP",
+         "slots": [{"date": "2026-07-27", "display_date": "Monday 27 July",
+                    "period": "morning", "time": "09:00", "display_time": "9:00 AM",
+                    "price": "45.00", "currency": "EUR"}],
          "display": {"title": "Blood test", "subtitle": "Mornings, week of 27 July",
                      "cta": "Choose a time"}}
         """#
         let payload = try? JSONDecoder().decode(PrepareBookingPayload.self, from: Data(json.utf8))
 
         XCTAssertEqual(payload?.serviceHint, "full blood count")
-        XCTAssertNil(payload?.serviceId, "service_id is always null today")
+        XCTAssertEqual(payload?.serviceId, 12, "the server now resolves the service itself")
+        XCTAssertEqual(payload?.serviceName, "Full Blood Count")
         XCTAssertEqual(payload?.dateFrom, "2026-07-27")
         XCTAssertEqual(payload?.timePreference, "morning")
         XCTAssertEqual(payload?.reason, "Follow-up bloods requested by GP")
         XCTAssertEqual(payload?.display.subtitle, "Mornings, week of 27 July")
+        XCTAssertEqual(payload?.slots.count, 1)
+        XCTAssertEqual(payload?.slots.first?.time, "09:00", "`time` is what the form books with")
+        XCTAssertEqual(payload?.slots.first?.displayTime, "9:00 AM")
+        XCTAssertEqual(payload?.slots.first?.price, "45.00", "price stays a string, never a Double")
+    }
+
+    /// `service_id` null with a hint present is the ordinary degraded card — the
+    /// server's own match failed, or Laravel was unreachable. It must still decode
+    /// and still be actionable via the hint.
+    func testPrepareBookingDecodesUnresolvedService() {
+        let json = #"""
+        {"action": "open_booking", "department_id": 2, "is_gp": false,
+         "service_hint": "dermatology", "service_id": null, "service_name": null,
+         "slots": [],
+         "display": {"title": "Specialist appointment", "cta": "Choose a time"}}
+        """#
+        let payload = try? JSONDecoder().decode(PrepareBookingPayload.self, from: Data(json.utf8))
+
+        XCTAssertNotNil(payload)
+        XCTAssertNil(payload?.serviceId)
+        XCTAssertNil(payload?.serviceName)
+        XCTAssertEqual(payload?.slots, [], "no slots is the normal degraded state, not an error")
+        XCTAssertEqual(payload?.serviceHint, "dermatology")
     }
 
     func testPrepareBookingTolerantOfUnknownKeys() {

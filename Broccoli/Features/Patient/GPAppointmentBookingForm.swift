@@ -24,7 +24,11 @@ struct GPAppointmentBookingForm: View {
     @State private var showAttachmentOptions = false
     @State private var showPhotoPicker = false
     @State private var showCameraPicker = false
-    
+    /// A time tapped on a Health Assistant booking card, held until the slot fetch
+    /// in `.task` can confirm it is still available. Never applied directly.
+    @State private var pendingChatExactTime: String? = nil
+
+
     // Computed property for selected time slot from view model
     private var selectedTimeSlot: String? {
         bookingViewModel.selectedTimeSlot
@@ -429,6 +433,7 @@ struct GPAppointmentBookingForm: View {
                 if let reason = prefill.reason {
                     bookingViewModel.additionalNotes = reason
                 }
+                pendingChatExactTime = prefill.exactTime
             }
         }
         .task {
@@ -446,6 +451,13 @@ struct GPAppointmentBookingForm: View {
                     bookingViewModel.selectedService = firstService
                 }
                 await bookingViewModel.fetchAvailableTimeSlots()
+
+                // A time tapped on a chat card is only selected once this screen's
+                // own fetch confirms it is still free — see `applyChatExactTime`.
+                // Consumed either way, so it can't re-apply after a date change.
+                let exactTime = pendingChatExactTime
+                pendingChatExactTime = nil
+                bookingViewModel.applyChatExactTime(exactTime)
             }
         }
         .alert("Error", isPresented: shouldShowErrorAlert) {

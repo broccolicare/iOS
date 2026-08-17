@@ -191,6 +191,57 @@ final class ChatToolCardTests: XCTestCase {
         )
     }
 
+    // MARK: - Offered slots
+
+    func testSlotsDecodeWithTheirServerRenderedCopy() throws {
+        let payload = try decode(PrepareBookingPayload.self, """
+        {
+          "action": "open_booking", "department_id": 2, "is_gp": false,
+          "service_id": 10, "service_name": "Cardiology Consultation",
+          "slots": [
+            {"date": "2026-08-01", "display_date": "Saturday 1 August",
+             "period": "morning", "time": "09:00", "display_time": "9:00 AM",
+             "price": "80.00", "currency": "EUR"},
+            {"date": "2026-08-01", "display_date": "Saturday 1 August",
+             "period": "afternoon", "time": "14:20", "display_time": "2:20 PM",
+             "price": null, "currency": null}
+          ],
+          "display": { "title": "Specialist appointment", "cta": "Choose a time" }
+        }
+        """)
+
+        XCTAssertEqual(payload.serviceName, "Cardiology Consultation")
+        XCTAssertEqual(payload.slots.count, 2)
+        // Both renderings are the server's; the client formats neither.
+        XCTAssertEqual(payload.slots[1].displayTime, "2:20 PM")
+        XCTAssertEqual(payload.slots[1].time, "14:20")
+        XCTAssertEqual(payload.slots[1].displayDate, "Saturday 1 August")
+        // A slot with no price is still bookable — dynamic pricing is optional.
+        XCTAssertNil(payload.slots[1].price)
+    }
+
+    func testAbsentSlotsKeyDecodesAsNoSlots() throws {
+        // Pre-slots servers, and any future one that drops the key, must render as
+        // the plain card rather than failing to decode.
+        XCTAssertEqual(try bookingPayload().slots, [])
+    }
+
+    func testClockTimesNormaliseToHourAndMinute() {
+        // Whether Laravel sends "14:00" or "14:00:00" is not ours to assume.
+        XCTAssertEqual(ChatBookingCoordinator.normalisedClockTime("14:00"), "14:00")
+        XCTAssertEqual(ChatBookingCoordinator.normalisedClockTime("14:00:00"), "14:00")
+        XCTAssertEqual(ChatBookingCoordinator.normalisedClockTime(" 9:05 "), "09:05")
+    }
+
+    func testUnparseableClockTimeIsDroppedRatherThanGuessed() {
+        // Selecting the wrong slot is worse than selecting none.
+        XCTAssertNil(ChatBookingCoordinator.normalisedClockTime("2:00 PM"))
+        XCTAssertNil(ChatBookingCoordinator.normalisedClockTime("morning"))
+        XCTAssertNil(ChatBookingCoordinator.normalisedClockTime("25:00"))
+        XCTAssertNil(ChatBookingCoordinator.normalisedClockTime(""))
+        XCTAssertNil(ChatBookingCoordinator.normalisedClockTime(nil))
+    }
+
     // MARK: - P4-02 · Reminder payload
 
     func testReminderDecodesAndKeepsStatusAsFreeText() throws {

@@ -221,9 +221,14 @@ public struct PrepareBookingPayload: Decodable, Equatable {
     public let display: BookingDisplay
 
     public let serviceHint: String?
-    /// Key is always present but the value is always `null` today. The rule to
-    /// write now: if non-nil use it, otherwise resolve `serviceHint`.
+    /// Resolved server-side against the department's real service catalogue when
+    /// it could be matched, `null` when it could not — and `null` is the normal
+    /// degraded state, not an error. The rule: if non-nil use it, otherwise
+    /// resolve `serviceHint` ourselves.
     public let serviceId: Int?
+    /// The catalogue name of the resolved service. Non-nil exactly when
+    /// `serviceId` is. Display only — never book against a name.
+    public let serviceName: String?
     /// A *window*, not a commitment. Impossible windows are stripped server-side,
     /// so these are either sane or nil — keep the "form default" path.
     public let dateFrom: String?
@@ -234,6 +239,14 @@ public struct PrepareBookingPayload: Decodable, Equatable {
     /// dropped server-side if it reads as a clinical interpretation. A nil `reason`
     /// is normal, never an error.
     public let reason: String?
+    /// Times the server found free, at most 8, already filtered to available ones
+    /// and ordered by date then time.
+    ///
+    /// ⚠️ **Advisory, never a reservation.** Nothing holds these — the booking
+    /// screen re-fetches and the slot may be gone by the time the user taps. An
+    /// empty list is the ordinary degraded state (Laravel outage, unmatched
+    /// service, nothing free) and must render as the plain card, not as an error.
+    public let slots: [BookingSlot]
 
     enum CodingKeys: String, CodingKey {
         case action
@@ -242,13 +255,65 @@ public struct PrepareBookingPayload: Decodable, Equatable {
         case display
         case serviceHint = "service_hint"
         case serviceId = "service_id"
+        case serviceName = "service_name"
         case dateFrom = "date_from"
         case dateTo = "date_to"
         case timePreference = "time_preference"
         case reason
+        case slots
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        action = try c.decode(String.self, forKey: .action)
+        departmentId = try c.decode(Int.self, forKey: .departmentId)
+        isGp = try c.decode(Bool.self, forKey: .isGp)
+        display = try c.decode(BookingDisplay.self, forKey: .display)
+        serviceHint = try c.decodeIfPresent(String.self, forKey: .serviceHint)
+        serviceId = try c.decodeIfPresent(Int.self, forKey: .serviceId)
+        serviceName = try c.decodeIfPresent(String.self, forKey: .serviceName)
+        dateFrom = try c.decodeIfPresent(String.self, forKey: .dateFrom)
+        dateTo = try c.decodeIfPresent(String.self, forKey: .dateTo)
+        timePreference = try c.decodeIfPresent(String.self, forKey: .timePreference)
+        reason = try c.decodeIfPresent(String.self, forKey: .reason)
+        // Absent on cards emitted before slots existed, and on any future server
+        // that drops the key — same meaning as an empty list, so don't fail.
+        slots = try c.decodeIfPresent([BookingSlot].self, forKey: .slots) ?? []
     }
 
     public var isSupportedAction: Bool { action == "open_booking" }
+}
+
+/// One offered time on a booking card.
+///
+/// Every string here is the server's or Laravel's own rendering, passed through
+/// untouched: `displayTime` is what the native booking screen shows for the same
+/// slot, so chat and the form can never disagree about it. Format nothing here.
+public struct BookingSlot: Decodable, Equatable, Identifiable, Hashable {
+    /// `yyyy-MM-dd`, in the clinic's timezone.
+    public let date: String
+    /// e.g. `"Thursday 23 July"` — pre-built copy, do not re-derive from `date`.
+    public let displayDate: String
+    /// `morning` / `afternoon` / `evening`. Feeds `time_slot` on the booking request.
+    public let period: String
+    /// `HH:mm`. **This is what you book with** — it matches `TimeSlot.time` from
+    /// `/api/time-slots`, which is what `BookingGlobalViewModel.selectedTimeSlot`
+    /// holds.
+    public let time: String
+    /// e.g. `"2:00 PM"`. Display only.
+    public let displayTime: String
+    /// Laravel's per-slot price under dynamic pricing. A string on purpose —
+    /// never parse it into a `Double` to re-format it.
+    public let price: String?
+    public let currency: String?
+
+    public var id: String { "\(date)T\(time)" }
+
+    enum CodingKeys: String, CodingKey {
+        case date, period, time, price, currency
+        case displayDate = "display_date"
+        case displayTime = "display_time"
+    }
 }
 
 public struct BookingDisplay: Decodable, Equatable {

@@ -33,6 +33,15 @@ public struct ChatBookingPrefill: Equatable {
     public let timeSlotPeriod: String?
     /// The patient's own words, shown in the notes field so they don't retype it.
     public let reason: String?
+    /// `HH:mm` — set only when the user tapped a specific time on the card, and
+    /// still only a *suggestion*.
+    ///
+    /// 🛑 The form must apply this **after** its own `fetchAvailableTimeSlots()`
+    /// and only if the time is still in the response. The card's times are
+    /// advisory and nothing reserves them, so a slot taken in between must leave
+    /// the user on an unselected form — never on a form showing a time the server
+    /// would reject at confirmation.
+    public let exactTime: String?
 
     public init(
         departmentId: String,
@@ -40,7 +49,8 @@ public struct ChatBookingPrefill: Equatable {
         serviceId: Int? = nil,
         preferredDate: Date? = nil,
         timeSlotPeriod: String? = nil,
-        reason: String? = nil
+        reason: String? = nil,
+        exactTime: String? = nil
     ) {
         self.departmentId = departmentId
         self.isGP = isGP
@@ -48,5 +58,6 @@ public struct ChatBookingPrefill: Equatable {
         self.preferredDate = preferredDate
         self.timeSlotPeriod = timeSlotPeriod
         self.reason = reason
+        self.exactTime = exactTime
     }
 }

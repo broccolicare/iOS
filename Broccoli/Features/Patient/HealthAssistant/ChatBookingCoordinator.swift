@@ -28,7 +28,11 @@ final class ChatBookingCoordinator {
 
     // MARK: - prepare_booking (P4-04)
 
-    func openBooking(_ payload: PrepareBookingPayload) async {
+    /// - Parameter slot: the time the user tapped on the card, if they tapped one
+    ///   rather than the card body. It narrows the prefill to that exact day and
+    ///   time — it does **not** shorten the journey: the same form, the same
+    ///   confirmation screen, the same tap to confirm.
+    func openBooking(_ payload: PrepareBookingPayload, slot: BookingSlot? = nil) async {
         // Anything other than `open_booking` is a card shape we don't understand.
         // Do nothing rather than guess at a destination.
         guard payload.isSupportedAction else { return }
@@ -36,14 +40,25 @@ final class ChatBookingCoordinator {
         let departmentId = String(payload.departmentId)
         let isGP = payload.isGp ? "1" : "0"
 
+        // A tapped slot is more specific than the window and period the model
+        // asked for, so it wins over both. Its date still goes through
+        // `parseDate`, which drops anything in the past.
+        let preferredDate = Self.parseDate(slot?.date ?? payload.dateFrom)
+        let period = slot.map { Self.normalisedTimePreference($0.period) }
+            ?? Self.normalisedTimePreference(payload.timePreference)
+
         func handOver(serviceId: Int?) {
             bookingViewModel.pendingChatPrefill = ChatBookingPrefill(
                 departmentId: departmentId,
                 isGP: isGP,
                 serviceId: serviceId,
-                preferredDate: Self.parseDate(payload.dateFrom),
-                timeSlotPeriod: Self.normalisedTimePreference(payload.timePreference),
-                reason: payload.reason
+                preferredDate: preferredDate,
+                timeSlotPeriod: period,
+                reason: payload.reason,
+                // Dropped if the date didn't survive `parseDate` — a time without
+                // the day it belongs to would select a slot on whatever day the
+                // form happens to open on.
+                exactTime: preferredDate == nil ? nil : slot?.time
             )
             bookingViewModel.selectedDepartmentId = departmentId
             bookingViewModel.isGP = isGP
@@ -98,9 +113,11 @@ final class ChatBookingCoordinator {
 
     /// `service_id` wins when present; otherwise match `service_hint` by name.
     ///
-    /// The key is always present on the wire but its value is always null today
-    /// (guide §4.1.1) — writing the id path now means nothing changes here when the
-    /// server starts populating it.
+    /// The server now resolves the service itself against the same catalogue and
+    /// sends the id back, so the id path is the usual one. The hint path is still
+    /// load-bearing: `service_id` is null whenever the server's own match failed
+    /// or Laravel was unreachable, and it stays the only path for a card the
+    /// server enriched without a client (guide §4.1.1).
     static func resolveService(_ payload: PrepareBookingPayload, in services: [Service]) -> Service? {
         if let serviceId = payload.serviceId,
            let match = services.first(where: { $0.id == serviceId }) {
@@ -133,6 +150,18 @@ final class ChatBookingCoordinator {
     static func normalisedTimePreference(_ raw: String?) -> String? {
         guard let raw = raw?.lowercased(), raw != "any" else { return nil }
         return ["morning", "afternoon", "evening"].contains(raw) ? raw : nil
+    }
+
+    /// Clock times for comparison: `"14:00"`, `"14:00:00"` and `"2:00 PM"` are all
+    /// the same slot to Laravel, and which one arrives is not ours to assume.
+    /// Compare on `HH:mm`, and give up rather than guess if it isn't one.
+    static func normalisedClockTime(_ raw: String?) -> String? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespaces), !raw.isEmpty else { return nil }
+        let parts = raw.split(separator: ":")
+        guard parts.count >= 2, let hour = Int(parts[0]), let minute = Int(parts[1].prefix(2)),
+              (0...23).contains(hour), (0...59).contains(minute)
+        else { return nil }
+        return String(format: "%02d:%02d", hour, minute)
     }
 
     /// `date_from` is `yyyy-MM-dd`. Impossible windows are stripped server-side, so

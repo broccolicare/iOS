@@ -18,7 +18,10 @@ struct SpecialistBookingFormView: View {
     @State private var selectedDate: Date? = Date()
     @State private var additionalDescription: String = ""
     @State private var currentMonth: Date = Date()
-    
+    /// A time tapped on a Health Assistant booking card, held until the slot fetch
+    /// below can confirm it is still available. Never applied directly.
+    @State private var pendingChatExactTime: String? = nil
+
     // Computed property for selected time slot from view model
     private var selectedTimeSlot: String? {
         bookingViewModel.selectedTimeSlot
@@ -328,12 +331,20 @@ struct SpecialistBookingFormView: View {
                 if let reason = prefill.reason {
                     bookingViewModel.additionalNotes = reason
                 }
+                pendingChatExactTime = prefill.exactTime
             }
 
             // Fetch time slots for current date on load
             if selectedDate != nil {
                 Task {
                     await bookingViewModel.fetchAvailableTimeSlots()
+                    // A time tapped on a chat card is only selected once this
+                    // screen's own fetch confirms it is still free — see
+                    // `applyChatExactTime`. Consumed either way, so it can't
+                    // re-apply after the user changes the date.
+                    let exactTime = pendingChatExactTime
+                    pendingChatExactTime = nil
+                    bookingViewModel.applyChatExactTime(exactTime)
                 }
             }
         }

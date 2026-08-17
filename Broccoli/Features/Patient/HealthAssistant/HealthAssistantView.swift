@@ -178,8 +178,8 @@ struct HealthAssistantView: View {
         case .toolCard(let card):
             ChatToolCardView(
                 card: card,
-                onOpenBooking: { payload in
-                    Task { await coordinator.openBooking(payload) }
+                onOpenBooking: { payload, slot in
+                    Task { await coordinator.openBooking(payload, slot: slot) }
                 },
                 onOpenAppointment: { appointment in
                     Task { await coordinator.openAppointment(id: appointment.id) }

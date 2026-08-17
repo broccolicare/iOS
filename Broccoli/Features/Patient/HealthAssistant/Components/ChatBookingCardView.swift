@@ -7,17 +7,55 @@
 
 import SwiftUI
 
-/// Renders entirely from `display` — the server owns this copy so the wording can
-/// change without a client release. Nothing here is derived from the booking
-/// fields, which are a *suggestion* carried into the form, not a commitment
-/// (guide §4.1.1).
+/// Renders entirely from `display` and `slots` — the server owns this copy so the
+/// wording can change without a client release. Nothing here is derived from the
+/// booking fields, which are a *suggestion* carried into the form, not a
+/// commitment (guide §4.1.1).
+///
+/// 🛑 **Tapping a time is not booking a time.** Both the card body and a time chip
+/// land on the same booking form and the same confirmation screen; a chip only
+/// arrives there with the day and time already filled in. Never let a chip become
+/// a shortcut past the confirmation step.
 struct ChatBookingCardView: View {
     @Environment(\.appTheme) private var theme
 
     let payload: PrepareBookingPayload
     let onTap: () -> Void
+    /// Nil-safe by construction: only called for a slot this view was given.
+    var onSelectSlot: (BookingSlot) -> Void = { _ in }
+
+    /// Chips are grouped under their day so "Thursday" isn't repeated eight times.
+    /// `slots` arrives ordered by date then time, so first-seen order is already
+    /// chronological — no sorting, and no re-deriving the day name from `date`.
+    private var slotsByDay: [(day: String, slots: [BookingSlot])] {
+        payload.slots.reduce(into: []) { groups, slot in
+            if let index = groups.firstIndex(where: { $0.day == slot.displayDate }) {
+                groups[index].slots.append(slot)
+            } else {
+                groups.append((day: slot.displayDate, slots: [slot]))
+            }
+        }
+    }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            cardBody
+
+            if !payload.slots.isEmpty {
+                slotPicker
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(theme.colors.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(theme.colors.primary.opacity(0.25), lineWidth: 1)
+        )
+    }
+
+    private var cardBody: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: theme.spacing.sm) {
                 HStack(spacing: theme.spacing.sm) {
@@ -43,7 +81,10 @@ struct ChatBookingCardView: View {
                 }
 
                 HStack(spacing: 4) {
-                    Text(payload.display.cta)
+                    // With times on the card the body is the "none of these" path,
+                    // so it says so rather than repeating the server's "Choose a
+                    // time" next to eight chips that already are times.
+                    Text(payload.slots.isEmpty ? payload.display.cta : "See more times")
                         .font(theme.typography.medium14)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .semibold))
@@ -53,14 +94,7 @@ struct ChatBookingCardView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(theme.spacing.lg)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(theme.colors.surface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(theme.colors.primary.opacity(0.25), lineWidth: 1)
-            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -69,6 +103,110 @@ struct ChatBookingCardView: View {
             .joined(separator: ". "))
         .accessibilityHint(payload.display.cta)
         .accessibilityAddTraits(.isButton)
+    }
+
+    /// The offered times. Laid out as wrapping rows rather than a horizontal
+    /// scroller: eight chips fit, and a scroller hides times behind a gesture the
+    /// user has no reason to expect inside a chat transcript.
+    private var slotPicker: some View {
+        VStack(alignment: .leading, spacing: theme.spacing.sm) {
+            Divider().overlay(theme.colors.primary.opacity(0.15))
+
+            ForEach(slotsByDay, id: \.day) { group in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(group.day)
+                        .font(theme.typography.regular12)
+                        .foregroundStyle(theme.colors.textSecondary)
+
+                    FlowLayout(spacing: 6) {
+                        ForEach(group.slots) { slot in
+                            slotChip(slot)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, theme.spacing.lg)
+        .padding(.bottom, theme.spacing.lg)
+        .padding(.top, 2)
+    }
+
+    private func slotChip(_ slot: BookingSlot) -> some View {
+        Button {
+            onSelectSlot(slot)
+        } label: {
+            // `displayTime` verbatim — Laravel's own rendering, the same string
+            // the native booking screen shows for this slot.
+            Text(slot.displayTime)
+                .font(theme.typography.medium14)
+                .foregroundStyle(theme.colors.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule().fill(theme.colors.primary.opacity(0.08))
+                )
+                .overlay(
+                    Capsule().stroke(theme.colors.primary.opacity(0.35), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(slot.displayDate) at \(slot.displayTime)")
+        .accessibilityHint("Opens the booking form with this time selected")
+    }
+}
+
+/// Minimal wrapping HStack. `Layout` is iOS 16+, which the app already requires;
+/// this exists because SwiftUI still has no built-in wrapping stack.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = layout(subviews: subviews, width: proposal.width ?? .infinity)
+        let height = rows.last.map { $0.y + $0.height } ?? 0
+        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: height)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()
+    ) {
+        for row in layout(subviews: subviews, width: bounds.width) {
+            var x = bounds.minX
+            for index in row.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(
+                    at: CGPoint(x: x, y: bounds.minY + row.y),
+                    proposal: ProposedViewSize(size)
+                )
+                x += size.width + spacing
+            }
+        }
+    }
+
+    private struct Row {
+        var indices: [Int] = []
+        var y: CGFloat = 0
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+
+    private func layout(subviews: Subviews, width: CGFloat) -> [Row] {
+        var rows: [Row] = []
+        var current = Row()
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            let needed = current.indices.isEmpty ? size.width : current.width + spacing + size.width
+            if needed > width, !current.indices.isEmpty {
+                rows.append(current)
+                current = Row(y: current.y + current.height + spacing)
+                current.width = size.width
+            } else {
+                current.width = needed
+            }
+            current.indices.append(index)
+            current.height = max(current.height, size.height)
+        }
+        if !current.indices.isEmpty { rows.append(current) }
+        return rows
     }
 }
 
@@ -79,7 +217,18 @@ struct ChatBookingCardView: View {
       "department_id": 2,
       "is_gp": false,
       "service_hint": "cardiology",
-      "service_id": null,
+      "service_id": 17,
+      "service_name": "Cardiology Consultation",
+      "slots": [
+        {"date": "2026-08-01", "display_date": "Saturday 1 August", "period": "morning",
+         "time": "09:00", "display_time": "9:00 AM", "price": "80.00", "currency": "EUR"},
+        {"date": "2026-08-01", "display_date": "Saturday 1 August", "period": "morning",
+         "time": "09:20", "display_time": "9:20 AM", "price": "80.00", "currency": "EUR"},
+        {"date": "2026-08-01", "display_date": "Saturday 1 August", "period": "morning",
+         "time": "11:40", "display_time": "11:40 AM", "price": "80.00", "currency": "EUR"},
+        {"date": "2026-08-02", "display_date": "Sunday 2 August", "period": "morning",
+         "time": "10:00", "display_time": "10:00 AM", "price": "80.00", "currency": "EUR"}
+      ],
       "date_from": "2026-08-01",
       "date_to": "2026-08-08",
       "time_preference": "morning",

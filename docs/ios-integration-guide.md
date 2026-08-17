@@ -285,17 +285,28 @@ Learn that intake finished from `done.conversation_status == "completed"` only.
 
 ### 4.1.1 `prepare_booking` — the booking card
 
-Replaces the old `start_booking` browser redirect. It makes **no network call** — pure
-local mapping — so booking from chat keeps working through a Laravel outage. Chat
-produces booking *parameters*; our existing native flow runs unchanged.
+Replaces the old `start_booking` browser redirect. Chat produces booking *parameters*;
+our existing native flow runs unchanged.
+
+The server now enriches the card with the resolved service and real free times, read
+from Laravel with the clinic's own API key. **That enrichment can never fail the
+card:** on any outage, timeout, unmatched service or full day, the server emits
+exactly the parameter-only card it always did (`service_id`/`service_name` null,
+`slots` empty). Booking from chat keeps working through a Laravel outage — so treat
+every enriched field as a bonus, never as a precondition.
 
 ```json
 { "tool": "prepare_booking",
   "data": { "action": "open_booking", "department_id": 4, "is_gp": false,
-            "service_hint": "full blood count", "service_id": null,
+            "service_hint": "full blood count", "service_id": 12,
+            "service_name": "Full Blood Count",
             "date_from": "2026-07-27", "date_to": "2026-08-03",
             "time_preference": "morning",
             "reason": "Follow-up bloods requested by GP",
+            "slots": [ { "date": "2026-07-27", "display_date": "Monday 27 July",
+                         "period": "morning", "time": "09:00",
+                         "display_time": "9:00 AM",
+                         "price": "45.00", "currency": "EUR" } ],
             "display": { "title": "Blood test",
                          "subtitle": "Mornings, week of 27 July",
                          "cta": "Choose a time" } } }
@@ -307,20 +318,28 @@ produces booking *parameters*; our existing native flow runs unchanged.
 | `department_id` | int | Always present. 1 GP · 2 specialist · 3 nutritionist · 4 blood test |
 | `is_gp` | bool | Always present. Mirrors our `isGP` `"1"`/`"0"` |
 | `service_hint` | string \| null | Free text for us to resolve |
-| `service_id` | int \| null | Key always present, **value always `null` today** |
+| `service_id` | int \| null | Resolved server-side against the real catalogue; null when it couldn't be |
+| `service_name` | string \| null | Catalogue name. Non-null exactly when `service_id` is. Display only |
 | `date_from` / `date_to` | ISO date \| null | A *window*, not a commitment |
 | `time_preference` | enum \| null | `morning`/`afternoon`/`evening`/`any` |
 | `reason` | string \| null | Patient's own words |
+| `slots` | array | Up to 8 available times, ordered by date then time. **May be empty; key may be absent** |
 | `display` | object | Always present. `title`/`cta` non-null; `subtitle` may be null |
+
+Each slot: `date` (`yyyy-MM-dd`), `display_date`, `period`, `time` (`HH:mm` — **what
+you book with**, matching `TimeSlot.time` from `/api/time-slots`), `display_time`
+(Laravel's own rendering — show this, format nothing yourself), `price` (string,
+nullable), `currency` (nullable).
 
 **Only `action`, `department_id`, `is_gp` and `display` are guaranteed non-null —
 decode everything else as optional.**
 
-Three behaviours to build against:
+Four behaviours to build against:
 
-1. **`service_id` is always `null` today but the key is always present.** Write the
-   rule now — *if `service_id` is non-null use it, otherwise resolve `service_hint`* —
-   and we need **no release** when the server starts populating it.
+1. **`service_id` is now usually populated, but `null` is still normal.** The rule is
+   unchanged: *if `service_id` is non-null use it, otherwise resolve `service_hint`.*
+   Null means the server's own match failed or Laravel was unreachable — fall back,
+   don't error.
 2. **Impossible date windows are already stripped server-side.** A past `date_from` is
    dropped, and both are dropped if `date_to < date_from`. You'll never get a
    nonsensical window, but you *will* get `null` — keep the "open on the form's
@@ -330,8 +349,16 @@ Three behaviours to build against:
    description ("knee pain following a fall") — a diagnosis must not reach a
    clinician's record via chat. **The card always ships regardless; only the field
    goes.** Never treat a null `reason` as an error or an empty card.
+4. **`slots` are advisory, never a reservation.** Nothing holds them and they were
+   read mid-conversation, so a time may be gone by the time the user taps it. Render
+   them as chips using `display_time`; on tap, prefill the form with the slot's date
+   and time and **re-fetch** — select the time only if the form's own
+   `fetchAvailableTimeSlots()` still lists it, otherwise leave it unselected on the
+   right day. An empty `slots` renders as the plain card, never as an error.
 
-**Integration:** prefill `BookingGlobalViewModel` and push the existing form. If
+**Integration:** prefill `BookingGlobalViewModel` and push the existing form. A tapped
+slot chip goes to the *same* form and the *same* confirmation screen as the card body
+— it only arrives with the day and time filled in. If
 `service_hint` doesn't resolve, push `SpecialtyListView` — the user lands where they'd
 have been anyway. Chat only saves taps; it must never dead-end.
 

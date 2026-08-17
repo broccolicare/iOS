@@ -204,6 +204,40 @@ public final class BookingGlobalViewModel: ObservableObject {
         return pendingChatPrefill
     }
 
+    /// Selects the time the user tapped on a chat booking card — but only if this
+    /// screen's own `fetchAvailableTimeSlots()` still lists it as available.
+    ///
+    /// 🛑 **Call this only after that fetch, never before.** The card's times come
+    /// from a read the assistant made mid-conversation and nothing reserved them.
+    /// Selecting one blind would put a stale time in front of the user with a live
+    /// price beside it, and let them tap through to a confirmation the server
+    /// rejects. When the slot is gone we select nothing: the user lands on the
+    /// day they asked for with the real times shown, which is the same
+    /// never-dead-end rule the card itself follows.
+    ///
+    /// The period is taken from whichever list the slot was found in rather than
+    /// from the card, so `time_slot` on the booking request can never disagree
+    /// with `time`.
+    public func applyChatExactTime(_ rawTime: String?) {
+        guard let wanted = ChatBookingCoordinator.normalisedClockTime(rawTime) else { return }
+
+        let periods: [(String, [TimeSlot])] = [
+            ("morning", morningSlots),
+            ("afternoon", afternoonSlots),
+            ("evening", eveningSlots),
+        ]
+
+        for (period, slots) in periods {
+            guard let match = slots.first(where: {
+                $0.available && ChatBookingCoordinator.normalisedClockTime($0.time) == wanted
+            }) else { continue }
+
+            selectedTimeSlot = match.time
+            selectedTimeSlotPeriod = period
+            return
+        }
+    }
+
     /// Reset prescription flow to initial state
     public func resetPrescriptionFlow() {
         print("🔄 [Prescription] Resetting prescription flow")

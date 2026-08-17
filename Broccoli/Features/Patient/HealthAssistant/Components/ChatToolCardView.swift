@@ -20,7 +20,9 @@ import SwiftUI
 struct ChatToolCardView: View {
 
     let card: ChatToolCard
-    let onOpenBooking: (PrepareBookingPayload) -> Void
+    /// The slot is non-nil when the user tapped one of the card's offered times
+    /// rather than the card body. Both land on the same form.
+    let onOpenBooking: (PrepareBookingPayload, BookingSlot?) -> Void
     let onOpenAppointment: (ChatAppointment) -> Void
     /// Sends the given text as the next turn's `message` (a tapped quick-reply).
     let onSendMessage: (String) -> Void
@@ -39,9 +41,11 @@ struct ChatToolCardView: View {
                // A card whose action we don't understand is dropped entirely
                // rather than rendered with a button that goes nowhere (P4-03).
                payload.isSupportedAction {
-                ChatBookingCardView(payload: payload) {
-                    onOpenBooking(payload)
-                }
+                ChatBookingCardView(
+                    payload: payload,
+                    onTap: { onOpenBooking(payload, nil) },
+                    onSelectSlot: { slot in onOpenBooking(payload, slot) }
+                )
             }
 
         case "create_medication_reminder":
