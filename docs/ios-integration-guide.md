@@ -243,6 +243,8 @@ The `tool` field is the tool's internal name, streamed verbatim.
 | `lookup_appointments` | `{"appointments": [{"id": int, "specialty": string, "scheduled_at": ISO-8601 string, "status": string}]}` | List may be empty. ⚠️ See the timezone warning below. |
 | `create_medication_reminder` | `{"id": int, "status": string}` | Confirmation of a created reminder. ⚠️ Create-only — see below. |
 | `prepare_booking` | See §4.1.1 | **Prefills our existing native booking flow.** Does not book. Stable — build against this. |
+| `offer_quick_replies` | `{"options": [string, …]}` | The booking flow's chips: care type, service, time of day, and the exact time. Identical shape to intake's — see §5. |
+| `offer_booking_days` | `{"options": [string, …]}` | The day chips. **Same payload and same rendering as `offer_quick_replies`** — a separate tool only because the server computes the dates. Route both to the same view. |
 | ~~`start_booking`~~ | — | 🛑 **Deprecated — do NOT write a handler.** Still registered only so chat booking keeps working until our `prepare_booking` handler ships; removed the release after. Ignoring it is safe under the unknown-tool rule. |
 
 **Intake (`/intake/turn`):**
@@ -251,9 +253,9 @@ The `tool` field is the tool's internal name, streamed verbatim.
 |--------|--------------|-------|
 | `offer_quick_replies` | `{"options": [string, string, …]}` | 2–6 plain strings, each ≤ 60 chars. See §5. |
 
-**The two surfaces have disjoint tool sets — there is no overlap.**
-`offer_quick_replies` is **intake-exclusive**; build the quick-reply button UI on the
-intake surface only. The booking/appointment/reminder tools are chatbot-only.
+**`offer_quick_replies` is now shared by both surfaces** — intake's questionnaire
+answers and the chatbot's booking chips use one tool and one renderer. The
+booking/appointment/reminder tools remain chatbot-only.
 
 ⚠️ **`lookup_appointments[].status` and `.specialty`, and
 `create_medication_reminder.status`, are free text — not enums.** They are forwarded
@@ -302,6 +304,7 @@ every enriched field as a bonus, never as a precondition.
             "service_name": "Full Blood Count",
             "date_from": "2026-07-27", "date_to": "2026-08-03",
             "time_preference": "morning",
+            "selected_time": "09:00",
             "reason": "Follow-up bloods requested by GP",
             "slots": [ { "date": "2026-07-27", "display_date": "Monday 27 July",
                          "period": "morning", "time": "09:00",
@@ -322,6 +325,7 @@ every enriched field as a bonus, never as a precondition.
 | `service_name` | string \| null | Catalogue name. Non-null exactly when `service_id` is. Display only |
 | `date_from` / `date_to` | ISO date \| null | A *window*, not a commitment |
 | `time_preference` | enum \| null | `morning`/`afternoon`/`evening`/`any` |
+| `selected_time` | `"HH:mm"` \| null | The slot the patient picked **in chat**. Advisory — nothing is reserved. **Key may be absent** |
 | `reason` | string \| null | Patient's own words |
 | `slots` | array | Up to 8 available times, ordered by date then time. **May be empty; key may be absent** |
 | `display` | object | Always present. `title`/`cta` non-null; `subtitle` may be null |
@@ -333,6 +337,14 @@ nullable), `currency` (nullable).
 
 **Only `action`, `department_id`, `is_gp` and `display` are guaranteed non-null —
 decode everything else as optional.**
+
+**`selected_time` decides which screen to open.** Chat now walks the patient through
+service → day → time-of-day → exact time, so when this field is set there is nothing
+left for the day/time picker to ask: re-fetch that day, and if the time is still free
+push `BookingConfirmationView` directly (`ChatBookingCoordinator.pushConfirmationIfStillFree`).
+If it is gone, fall back to the ordinary form so the patient sees the real times — and
+never select it without that live re-check. This is a shortcut past the *picker*, never
+past the confirm tap.
 
 Four behaviours to build against:
 

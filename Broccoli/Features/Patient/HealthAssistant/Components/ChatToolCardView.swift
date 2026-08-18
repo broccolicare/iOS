@@ -29,9 +29,15 @@ struct ChatToolCardView: View {
 
     var body: some View {
         switch card.tool {
-        case "offer_quick_replies":
+        case "offer_quick_replies", "offer_booking_days":
             // Server-driven chips (BIC-1.5). The tapped label is sent as the next
-            // message; the booking flow uses this for care type / time of day.
+            // message; the booking flow uses this for care type, service, day,
+            // time of day and the exact time.
+            //
+            // `offer_booking_days` is the same chip row with the same payload
+            // shape — a separate tool only because the *server* computes the day
+            // labels and their dates rather than trusting the model to count
+            // forward. Nothing here needs to know the difference.
             if let payload = decode(QuickRepliesPayload.self), !payload.options.isEmpty {
                 ChatQuickRepliesView(options: payload.options, onSelect: onSendMessage)
             }

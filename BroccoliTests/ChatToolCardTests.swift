@@ -74,6 +74,27 @@ final class ChatToolCardTests: XCTestCase {
         XCTAssertNil(payload.serviceHint)
     }
 
+    func testSelectedTimeDecodesWhenTheUserChoseOneInChat() throws {
+        let payload = try decode(PrepareBookingPayload.self, """
+        {
+          "action": "open_booking",
+          "department_id": 2,
+          "is_gp": false,
+          "selected_time": "09:30",
+          "display": { "title": "Specialist appointment", "cta": "Choose a time" }
+        }
+        """)
+        // Drives the confirmation-screen shortcut in `ChatBookingCoordinator` —
+        // still re-checked against a live fetch before it is selected.
+        XCTAssertEqual(payload.selectedTime, "09:30")
+    }
+
+    func testAbsentSelectedTimeIsTheOrdinaryCard() throws {
+        // Every card before a time is picked, and every card from a server that
+        // predates the in-chat time step. Neither is an error.
+        XCTAssertNil(try bookingPayload().selectedTime)
+    }
+
     func testExplicitlyNullReasonIsNotAnError() throws {
         let payload = try decode(PrepareBookingPayload.self, """
         {

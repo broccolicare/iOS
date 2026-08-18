@@ -10,11 +10,16 @@ import Foundation
 
 /// Bridges the Health Assistant's cards to the existing native flows.
 ///
-/// 🛑 **This never books anything.** It prefills and pushes a form; the user still
-/// walks through `BookingConfirmationView` and taps confirm. That screen is the
-/// only human checkpoint before a real appointment is created — with
+/// 🛑 **This never books anything.** It prefills and pushes a screen; the user
+/// still walks through `BookingConfirmationView` and taps confirm. That screen is
+/// the only human checkpoint before a real appointment is created — with
 /// `covered: true` Stripe is skipped entirely, so there is no payment step to act
 /// as a second confirmation. Never add a path that routes past it.
+///
+/// Which screen depends on what chat already settled. When the assistant got as
+/// far as an exact time (service → day → period → time), the picker has nothing
+/// left to ask and we open the confirmation screen directly; otherwise the user
+/// lands on the ordinary form. Either way the confirm tap is untouched.
 @MainActor
 final class ChatBookingCoordinator {
 
@@ -30,8 +35,10 @@ final class ChatBookingCoordinator {
 
     /// - Parameter slot: the time the user tapped on the card, if they tapped one
     ///   rather than the card body. It narrows the prefill to that exact day and
-    ///   time — it does **not** shorten the journey: the same form, the same
-    ///   confirmation screen, the same tap to confirm.
+    ///   time. Together with `payload.selectedTime` (a time already chosen in
+    ///   chat) it decides whether the day/time picker is worth showing at all —
+    ///   it never shortens the *decision*: the same confirmation screen, the same
+    ///   tap to confirm.
     func openBooking(_ payload: PrepareBookingPayload, slot: BookingSlot? = nil) async {
         // Anything other than `open_booking` is a card shape we don't understand.
         // Do nothing rather than guess at a destination.
@@ -46,6 +53,9 @@ final class ChatBookingCoordinator {
         let preferredDate = Self.parseDate(slot?.date ?? payload.dateFrom)
         let period = slot.map { Self.normalisedTimePreference($0.period) }
             ?? Self.normalisedTimePreference(payload.timePreference)
+        // The time the user has already settled on — tapped on the card, or picked
+        // from the assistant's time chips before the card was ever shown.
+        let chosenTime = Self.normalisedClockTime(slot?.time ?? payload.selectedTime)
 
         func handOver(serviceId: Int?) {
             bookingViewModel.pendingChatPrefill = ChatBookingPrefill(
@@ -58,7 +68,7 @@ final class ChatBookingCoordinator {
                 // Dropped if the date didn't survive `parseDate` — a time without
                 // the day it belongs to would select a slot on whatever day the
                 // form happens to open on.
-                exactTime: preferredDate == nil ? nil : slot?.time
+                exactTime: preferredDate == nil ? nil : chosenTime
             )
             bookingViewModel.selectedDepartmentId = departmentId
             bookingViewModel.isGP = isGP
@@ -69,6 +79,18 @@ final class ChatBookingCoordinator {
             // its only service itself. Resolving a hint here would mean a network
             // call whose result the form immediately discards, so skip it entirely.
             handOver(serviceId: nil)
+            if preferredDate != nil, chosenTime != nil {
+                // Only for the confirmation shortcut, and only then: the slot fetch
+                // needs a service id, and GP's is "the department's one service" —
+                // exactly what `GPAppointmentBookingForm` resolves for itself. On
+                // the ordinary path the form still does it, so this stays a call we
+                // make only when it buys the user a screen.
+                await bookingViewModel.loadDepartmentServices(departmentId: departmentId)
+                bookingViewModel.selectedService = bookingViewModel.services.first
+                if await pushConfirmationIfStillFree(
+                    date: preferredDate, time: chosenTime, reason: payload.reason
+                ) { return }
+            }
             router.push(.gPAppointBookingForm)
             return
         }
@@ -89,7 +111,58 @@ final class ChatBookingCoordinator {
         }
 
         bookingViewModel.selectedService = resolved
+        if await pushConfirmationIfStillFree(
+            date: preferredDate, time: chosenTime, reason: payload.reason
+        ) { return }
         router.push(.specialistBookingForm)
+    }
+
+    /// Skip the day/time picker and open the confirmation screen — but only when
+    /// the user has genuinely already chosen, and the choice is still bookable.
+    ///
+    /// Chat now asks for the service, the day, the period and the exact time, so
+    /// by the time the card appears the picker has nothing left to ask. Sending
+    /// the user back to it is a screen of re-entering what they just answered.
+    ///
+    /// 🛑 **This does not route past the human checkpoint.** `BookingConfirmationView`
+    /// is where the user reviews the appointment and taps confirm (and pays);
+    /// this lands them *on* it, never beyond it.
+    ///
+    /// The live fetch is the whole safety story: the assistant's times were read
+    /// mid-conversation and nothing reserved them, so we re-fetch the day and let
+    /// `applyChatExactTime` select the slot only if it is still there. If it is
+    /// gone — or there is no date, or no time — we return `false` and the caller
+    /// falls back to the ordinary form, where the user sees the real times. Chat
+    /// saves taps; it never dead-ends.
+    ///
+    /// - Returns: `true` when the confirmation screen was pushed.
+    private func pushConfirmationIfStillFree(
+        date: Date?,
+        time: String?,
+        reason: String?
+    ) async -> Bool {
+        guard let date, let time else { return false }
+
+        bookingViewModel.selectedDate = date
+        // Cleared first: this path skips the forms, so nothing else calls
+        // `resetBookingForm()`, and a slot left over from an earlier booking would
+        // make the check below pass on a time this conversation never chose.
+        bookingViewModel.selectedTimeSlot = nil
+        bookingViewModel.selectedTimeSlotPeriod = nil
+
+        await bookingViewModel.fetchAvailableTimeSlots()
+        bookingViewModel.applyChatExactTime(time)
+        guard bookingViewModel.selectedTimeSlot != nil else { return false }
+
+        if let reason, !reason.isEmpty {
+            bookingViewModel.additionalNotes = reason
+        }
+        // Consume the prefill we just parked: nothing downstream of here calls
+        // `consumeChatPrefill()`, and leaving it set would prefill whatever
+        // booking form the user opens next with this conversation's answers.
+        _ = bookingViewModel.consumeChatPrefill()
+        router.push(.bookingConfirmation)
+        return true
     }
 
     // MARK: - lookup_appointments tap-through (P4-06)

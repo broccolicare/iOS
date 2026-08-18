@@ -235,6 +235,14 @@ public struct PrepareBookingPayload: Decodable, Equatable {
     public let dateTo: String?
     /// `morning` / `afternoon` / `evening` / `any`
     public let timePreference: String?
+    /// `HH:mm` — the slot the patient already chose **in chat**, non-nil only once
+    /// they picked one from the assistant's time chips.
+    ///
+    /// ⚠️ Advisory like `slots`: nothing is reserved, so it must be re-checked
+    /// against a live fetch before it is shown as a chosen time. It is what lets
+    /// the card skip the picker and open the confirmation screen — the human
+    /// checkpoint stays exactly where it was.
+    public let selectedTime: String?
     /// The patient's own words. May be nil even when one was clearly given — it is
     /// dropped server-side if it reads as a clinical interpretation. A nil `reason`
     /// is normal, never an error.
@@ -259,6 +267,7 @@ public struct PrepareBookingPayload: Decodable, Equatable {
         case dateFrom = "date_from"
         case dateTo = "date_to"
         case timePreference = "time_preference"
+        case selectedTime = "selected_time"
         case reason
         case slots
     }
@@ -275,6 +284,9 @@ public struct PrepareBookingPayload: Decodable, Equatable {
         dateFrom = try c.decodeIfPresent(String.self, forKey: .dateFrom)
         dateTo = try c.decodeIfPresent(String.self, forKey: .dateTo)
         timePreference = try c.decodeIfPresent(String.self, forKey: .timePreference)
+        // Absent on every card the patient has not picked a time on, and on any
+        // server older than the in-chat time step — same meaning either way.
+        selectedTime = try c.decodeIfPresent(String.self, forKey: .selectedTime)
         reason = try c.decodeIfPresent(String.self, forKey: .reason)
         // Absent on cards emitted before slots existed, and on any future server
         // that drops the key — same meaning as an empty list, so don't fail.
