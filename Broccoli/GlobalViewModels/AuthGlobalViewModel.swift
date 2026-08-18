@@ -305,6 +305,10 @@ public final class AuthGlobalViewModel: ObservableObject {
         // Clear Crashlytics user identity
         CrashlyticsLogger.clearUser()
 
+        // Drop remembered intake conversations. They are scoped to the appointments
+        // of the patient signing out, so the next account must never inherit one.
+        IntakeSessionStore().clearAll()
+
         // Clear navigation stack
         await MainActor.run {
             Router.shared.popToRoot()

@@ -15,6 +15,12 @@ struct AppointmentDetailForPatientView: View {
 
     @State private var selectedAttachmentURL: URL? = nil
     @State private var selectedAttachmentName: String = ""
+
+    /// Whether this appointment's intake has been started or finished. Read on
+    /// appear rather than held live — nothing else on this screen changes it, and
+    /// the intake screen writes it as the questionnaire progresses.
+    @State private var intakeIsComplete = false
+    @State private var intakeIsInProgress = false
     
     /// Returns the window's real top safe-area inset so the gradient height
     /// adapts across devices (e.g. iPhone 11 ≈ 44 pt, iPhone 16 ≈ 59 pt).
@@ -328,6 +334,15 @@ struct AppointmentDetailForPatientView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     
+                    // Pre-appointment questionnaire, for appointments still to
+                    // happen. Hidden once the appointment is past: the summary is
+                    // read by the clinician *before* the call, so there is nothing
+                    // for a late intake to inform.
+                    if showsIntakeButton {
+                        intakeButton
+                            .padding(.horizontal, 20)
+                    }
+
                     // Call Button (only for confirmed bookings)
                     if booking.status == "confirmed" {
                         VideoCallButton(booking: booking, role: .patient)
@@ -345,9 +360,78 @@ struct AppointmentDetailForPatientView: View {
         .navigationBarHidden(true)
         .onAppear {
             print("Booking Detail: -- \(booking)")
+            refreshIntakeState()
         }
     }
     
+    // MARK: - Pre-appointment intake
+
+    /// Offered while the appointment is still ahead and not cancelled.
+    ///
+    /// `pending` counts as well as `confirmed`: the questionnaire informs the
+    /// consultation rather than the payment, and a patient who fills it in early
+    /// is exactly the patient the module is for.
+    private var showsIntakeButton: Bool {
+        guard booking.status == "confirmed" || booking.status == "pending" else { return false }
+        return !isPastAppointment
+    }
+
+    private var isPastAppointment: Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: booking.date) else {
+            // An unparseable date is not a reason to hide the questionnaire — the
+            // server owns the real ownership/eligibility check either way.
+            return false
+        }
+        return date < Calendar.current.startOfDay(for: Date())
+    }
+
+    private var intakeButton: some View {
+        Button {
+            guard !intakeIsComplete else { return }
+            router.push(.intake(
+                appointmentId: booking.id,
+                doctorName: booking.assignedDoctor?.name
+            ))
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: intakeIsComplete ? "checkmark.circle.fill" : "list.clipboard")
+                    .font(.system(size: 15, weight: .semibold))
+                Text(intakeTitle)
+                    .font(theme.typography.medium16)
+            }
+            .foregroundStyle(intakeIsComplete ? theme.colors.textSecondary : theme.colors.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(
+                Capsule().fill(
+                    intakeIsComplete
+                        ? theme.colors.primary.opacity(0.06)
+                        : theme.colors.primary.opacity(0.12)
+                )
+            )
+        }
+        .buttonStyle(.plain)
+        // Finished intakes are shown, not hidden — the patient should be able to
+        // see it is done — but tapping does nothing: re-opening would start a
+        // second questionnaire whose summary silently supersedes the first.
+        .disabled(intakeIsComplete)
+        .accessibilityLabel(intakeTitle)
+    }
+
+    private var intakeTitle: String {
+        if intakeIsComplete { return "Pre-appointment questions completed" }
+        if intakeIsInProgress { return "Continue pre-appointment questions" }
+        return "Answer pre-appointment questions"
+    }
+
+    private func refreshIntakeState() {
+        let store = IntakeSessionStore()
+        intakeIsComplete = store.isCompleted(appointmentId: booking.id)
+        intakeIsInProgress = store.conversationId(forAppointment: booking.id) != nil
+    }
+
     // MARK: - Helper Methods
     
     private func attachmentIcon(for mimeType: String?) -> String {

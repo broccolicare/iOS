@@ -47,5 +47,9 @@ enum Route: Hashable {
     case doctorAppointmentHistory
     case videoCall(booking: BookingData, token: String, channelName: String, uid: UInt)
     case healthAssistant
+    /// The pre-appointment questionnaire for one appointment. Carries the id only
+    /// — the server re-checks that the appointment belongs to the caller, so the
+    /// route is not a capability.
+    case intake(appointmentId: Int, doctorName: String?)
     // add routes as needed
 }

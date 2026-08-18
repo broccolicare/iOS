@@ -167,6 +167,8 @@ struct BroccoliApp: App {
                             )
                         case .healthAssistant:
                             HealthAssistantView()
+                        case .intake(let appointmentId, let doctorName):
+                            IntakeView(appointmentId: appointmentId, doctorName: doctorName)
                         }
                     }
             }
