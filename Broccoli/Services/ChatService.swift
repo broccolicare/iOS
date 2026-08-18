@@ -21,15 +21,36 @@ public protocol ChatServiceProtocol {
         message: String,
         conversationId: Int?
     ) -> AsyncThrowingStream<TurnEvent, Error>
+
+    /// The greeting + starter chips for the pre-first-message screen.
+    ///
+    /// A plain JSON GET against the AI backend (no SSE). Callers must fall back to
+    /// `ChatStarters.bundledFallback` on failure — the screen renders before this
+    /// can land and must never open empty.
+    func fetchStarters() async throws -> ChatStarters
 }
 
 public final class ChatService: BaseService, ChatServiceProtocol {
 
     private let sseClient: SSEClientProtocol
+    private let httpClient: HTTPClientProtocol
 
-    public init(sseClient: SSEClientProtocol) {
+    /// ⚠️ The HTTP client must be pointed at `aiBaseURL` — `HTTPClient`'s own
+    /// default is Laravel's base URL, and `/chatbot/starters` lives on the AI
+    /// backend alongside the turn endpoint.
+    public init(
+        sseClient: SSEClientProtocol,
+        httpClient: HTTPClientProtocol = HTTPClient(baseURL: AppEnvironment.current.aiBaseURL)
+    ) {
         self.sseClient = sseClient
+        self.httpClient = httpClient
         super.init()
+    }
+
+    public func fetchStarters() async throws -> ChatStarters {
+        try await handleServiceError {
+            try await httpClient.request(ChatEndpoint.starters)
+        }
     }
 
     public func streamTurn(

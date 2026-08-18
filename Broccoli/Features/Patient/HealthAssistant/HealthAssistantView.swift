@@ -65,6 +65,9 @@ struct HealthAssistantView: View {
             }
         }
         .navigationBarHidden(true)
+        // Server-supplied greeting + chips. Cancelled with the screen; the bundled
+        // fallback is already rendered, so a slow or failed fetch changes nothing.
+        .task { await viewModel.loadStarters() }
         // P3-10 — cancel any in-flight stream and drop the conversation id.
         .onDisappear { viewModel.endSession() }
     }
@@ -113,10 +116,10 @@ struct HealthAssistantView: View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: theme.spacing.md) {
-                    ChatBubbleView(
-                        role: .assistant,
-                        text: "Hi! I'm your health assistant. I can help you book appointments, set medication reminders, and answer general health questions."
-                    )
+                    // Server-supplied copy (GET /chatbot/starters), pre-seeded with
+                    // the bundled fallback so this paints without waiting on it.
+                    // Not part of `viewModel.messages` — it's never sent to the server.
+                    ChatBubbleView(role: .assistant, text: viewModel.starters.greeting)
 
                     ForEach(viewModel.messages) { message in
                         row(for: message)
@@ -127,8 +130,8 @@ struct HealthAssistantView: View {
                     }
 
                     if viewModel.showsStarterChips {
-                        StarterChipsView { chip in
-                            send(chip)
+                        StarterChipsView(chips: viewModel.starters.chips) { message in
+                            send(message)
                         }
                         .padding(.top, theme.spacing.xs)
                         // Chips align under the assistant bubble, not the avatar.
@@ -357,4 +360,7 @@ private struct PreviewChatService: ChatServiceProtocol {
             }
         }
     }
+
+    /// Previews render the bundled copy — no network in a canvas.
+    func fetchStarters() async throws -> ChatStarters { .bundledFallback }
 }

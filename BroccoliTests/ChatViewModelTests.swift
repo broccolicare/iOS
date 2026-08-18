@@ -19,6 +19,9 @@ final class ChatViewModelTests: XCTestCase {
     private final class StubChatService: ChatServiceProtocol, @unchecked Sendable {
         var script: [TurnEvent] = []
         var error: Error?
+        /// `nil` → `fetchStarters` throws (the offline / server-error path).
+        var starters: ChatStarters?
+        private(set) var startersFetchCount = 0
         /// Every (message, conversationId) pair the VM asked for, in order.
         private(set) var calls: [(message: String, conversationId: Int?)] = []
 
@@ -38,6 +41,12 @@ final class ChatViewModelTests: XCTestCase {
                     }
                 }
             }
+        }
+
+        func fetchStarters() async throws -> ChatStarters {
+            startersFetchCount += 1
+            guard let starters else { throw ServiceError.unknown(message: "offline") }
+            return starters
         }
     }
 
@@ -401,5 +410,52 @@ final class ChatViewModelTests: XCTestCase {
         await wait { !vm.isTurnInFlight }
 
         XCTAssertFalse(vm.showsStarterChips)
+    }
+
+    func testStartersDefaultToBundledCopyBeforeAnyFetch() {
+        let vm = makeVM(StubChatService())
+
+        // The screen paints before `loadStarters` can land, so it must never be empty.
+        XCTAssertEqual(vm.starters, ChatStarters.bundledFallback)
+    }
+
+    func testLoadStartersReplacesBundledCopyWithServerCopy() async {
+        let service = StubChatService()
+        service.starters = ChatStarters(
+            greeting: "Hey there.",
+            chips: [StarterChip(label: "Flu jab", message: "Book a flu vaccination")]
+        )
+        let vm = makeVM(service)
+
+        await vm.loadStarters()
+
+        XCTAssertEqual(vm.starters.greeting, "Hey there.")
+        XCTAssertEqual(vm.starters.chips.map(\.label), ["Flu jab"])
+    }
+
+    func testFailedStartersFetchKeepsBundledCopyAndDoesNotSurfaceAnError() async {
+        let service = StubChatService()
+        service.starters = nil  // fetch throws
+        let vm = makeVM(service)
+
+        await vm.loadStarters()
+
+        XCTAssertEqual(vm.starters, ChatStarters.bundledFallback)
+        XCTAssertNil(vm.retryableMessage)
+    }
+
+    func testLoadStartersIsSkippedOnceTheConversationHasStarted() async {
+        let service = StubChatService()
+        service.script = [.done(TurnDone(status: .ok, conversationId: 1))]
+        service.starters = ChatStarters(greeting: "Late.", chips: [StarterChip(label: "x", message: "x")])
+        let vm = makeVM(service)
+
+        vm.send("hi")
+        await wait { !vm.isTurnInFlight }
+        await vm.loadStarters()
+
+        // The empty state is gone — a late response must not rewrite the greeting.
+        XCTAssertEqual(service.startersFetchCount, 0)
+        XCTAssertEqual(vm.starters, ChatStarters.bundledFallback)
     }
 }

@@ -50,6 +50,11 @@ final class ChatViewModel: ObservableObject {
     /// sign-off). Phase 3 stores it and does nothing else with it.
     @Published private(set) var conversationStatus: ConversationStatus?
 
+    /// Greeting + chips for the empty state. Starts as the bundled copy so the
+    /// screen paints immediately, then swaps in the server's copy if the fetch
+    /// lands. A failed fetch leaves the bundled values in place.
+    @Published private(set) var starters: ChatStarters = .bundledFallback
+
     /// The chips are a pre-first-message affordance only.
     var showsStarterChips: Bool { messages.isEmpty && !isTurnInFlight }
 
@@ -79,6 +84,27 @@ final class ChatViewModel: ObservableObject {
 
     init(chatService: ChatServiceProtocol) {
         self.chatService = chatService
+    }
+
+    // MARK: - Starters
+
+    /// Fetches the server's greeting + chips. Call from the view's `.task`.
+    ///
+    /// Silent on failure by design: the bundled copy is already on screen and is
+    /// perfectly usable, so an error banner here would report a problem the user
+    /// cannot see and cannot act on. Skipped once the conversation has started —
+    /// the empty state is gone by then, so a late response would change nothing.
+    func loadStarters() async {
+        guard messages.isEmpty else { return }
+        do {
+            let fetched = try await chatService.fetchStarters()
+            guard !fetched.chips.isEmpty else { return }
+            starters = fetched
+        } catch {
+            #if DEBUG
+            print("⚠️ [ChatViewModel] starters fetch failed, keeping bundled copy — \(error)")
+            #endif
+        }
     }
 
     // MARK: - Sending (P3-03)

@@ -4,16 +4,17 @@
 //
 //  P2-07 — the three starter chips shown before the first user message.
 //
-//  ⚠️ These *starter* chips are LOCAL STATIC UI and stay that way — this is a
-//  decision, not a deferral (plan §2.2): there is no "create conversation" call,
-//  so nothing can stream before the user's first message, and no moment at which
-//  the server could supply chips for this pre-first-message screen.
+//  These chips are now served by the AI backend (`GET /chatbot/starters`) so copy
+//  changes ship without an App Store release. This view is purely presentational:
+//  the caller passes the chips, `ChatViewModel` fetches them, and
+//  `ChatStarters.bundledFallback` covers the pre-fetch paint and any failure — the
+//  empty state must never render without chips.
 //
-//  This is distinct from *server-driven* quick replies (BIC-1.5): the chatbot's
-//  booking flow now emits `offer_quick_replies` mid-conversation, rendered by
-//  `ChatQuickRepliesView` (which reuses `ChipFlowLayout` below). Keep the two
-//  separate — starter chips stay static here; server chips are driven by the
-//  tool_result stream.
+//  Still distinct from *server-driven* quick replies (BIC-1.5): those are streamed
+//  mid-conversation by the booking flow's `offer_quick_replies` and rendered by
+//  `ChatQuickRepliesView` (which reuses `ChipFlowLayout` below). Starters are a
+//  static config read fetched once on appear; quick replies come off the
+//  `tool_result` stream. Keep the two paths separate.
 //
 
 import SwiftUI
@@ -21,18 +22,19 @@ import SwiftUI
 struct StarterChipsView: View {
     @Environment(\.appTheme) private var theme
 
-    static let chips = ["Book appointment", "My appointments", "Set reminder", "Health tips"]
+    let chips: [StarterChip]
 
-    /// Invoked with the chip's label, which is then sent as a normal message.
+    /// Invoked with the chip's `message` (not its label), which is then sent as a
+    /// normal message.
     let onSelect: (String) -> Void
 
     var body: some View {
         ChipFlowLayout(spacing: theme.spacing.sm) {
-            ForEach(Self.chips, id: \.self) { chip in
+            ForEach(chips) { chip in
                 Button {
-                    onSelect(chip)
+                    onSelect(chip.message)
                 } label: {
-                    Text(chip)
+                    Text(chip.label)
                         .font(theme.typography.medium14)
                         .foregroundStyle(theme.colors.primary)
                         .padding(.horizontal, theme.spacing.lg)
@@ -103,8 +105,8 @@ struct ChipFlowLayout: Layout {
 
 #Preview {
     VStack(alignment: .leading, spacing: 24) {
-        StarterChipsView { print("tapped \($0)") }
-        StarterChipsView { _ in }
+        StarterChipsView(chips: ChatStarters.bundledFallback.chips) { print("tapped \($0)") }
+        StarterChipsView(chips: ChatStarters.bundledFallback.chips) { _ in }
             .environment(\.dynamicTypeSize, .accessibility2)
     }
     .padding()

@@ -9,11 +9,15 @@ import Foundation
 
 public enum ChatEndpoint: Endpoint {
     case chatbotTurn(TurnRequest)
+    /// Greeting + starter chips for the pre-first-message screen. Plain JSON, not SSE.
+    case starters
 
     public var path: String {
         switch self {
         case .chatbotTurn:
             return "/chatbot/turn"
+        case .starters:
+            return "/chatbot/starters"
         }
     }
 
@@ -21,6 +25,8 @@ public enum ChatEndpoint: Endpoint {
         switch self {
         case .chatbotTurn:
             return .POST
+        case .starters:
+            return .GET
         }
     }
 
@@ -28,6 +34,8 @@ public enum ChatEndpoint: Endpoint {
         switch self {
         case .chatbotTurn:
             return ["Accept": "text/event-stream"]
+        case .starters:
+            return ["Accept": "application/json"]
         }
     }
 
@@ -37,6 +45,8 @@ public enum ChatEndpoint: Endpoint {
             // Omits `conversation_id` entirely when nil — the server distinguishes
             // an absent key (start new) from an explicit null.
             return request.jsonBody
+        case .starters:
+            return nil
         }
     }
 }

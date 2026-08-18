@@ -31,6 +31,49 @@ public struct TurnRequest: Equatable {
     }
 }
 
+// MARK: - Starters (GET /chatbot/starters)
+
+/// One pre-first-message chip. `label` is shown; `message` is what tapping it
+/// sends — kept separate so a chip can read "Book appointment" while sending a
+/// fuller prompt.
+public struct StarterChip: Codable, Equatable, Identifiable {
+    public let label: String
+    public let message: String
+
+    /// Chips have no server id and the label is unique within a row.
+    public var id: String { label }
+
+    public init(label: String, message: String) {
+        self.label = label
+        self.message = message
+    }
+}
+
+/// The chat screen's opening greeting and starter chips, served by the AI backend
+/// so copy changes ship without an App Store release.
+public struct ChatStarters: Codable, Equatable {
+    public let greeting: String
+    public let chips: [StarterChip]
+
+    public init(greeting: String, chips: [StarterChip]) {
+        self.greeting = greeting
+        self.chips = chips
+    }
+
+    /// Shown until the fetch lands, and kept if it fails. The screen renders the
+    /// instant it appears and must never open empty, so this stays in the bundle
+    /// even though the server normally supplies the same copy.
+    public static let bundledFallback = ChatStarters(
+        greeting: "Hi! I'm your health assistant. I can help you book appointments, set medication reminders, and answer general health questions.",
+        chips: [
+            StarterChip(label: "Book appointment", message: "Book appointment"),
+            StarterChip(label: "My appointments", message: "My appointments"),
+            StarterChip(label: "Set reminder", message: "Set reminder"),
+            StarterChip(label: "Health tips", message: "Health tips")
+        ]
+    )
+}
+
 // MARK: - Turn outcome enums (P1-02)
 
 /// `done.status`. Unknown strings decode to `.unknown` rather than throwing, so a
