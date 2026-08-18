@@ -389,25 +389,51 @@ public struct MedicationReminderPayload: Decodable, Equatable {
     public let status: String
 }
 
-/// `lookup_appointments`. The list may be empty.
+/// `lookup_appointments` — the two lists behind My Appointments' tabs, from the
+/// same `GET /bookings?type=active|past` route that screen calls. Either list
+/// may be empty; both empty is a normal answer, not a failure.
 public struct LookupAppointmentsPayload: Decodable, Equatable {
-    public let appointments: [ChatAppointment]
+    public let upcoming: [ChatAppointment]
+    public let history: [ChatAppointment]
+
+    /// Absent lists decode as empty — the server sends both today, but a card
+    /// missing one is still worth rendering rather than dropping entirely.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        upcoming = try container.decodeIfPresent([ChatAppointment].self, forKey: .upcoming) ?? []
+        history = try container.decodeIfPresent([ChatAppointment].self, forKey: .history) ?? []
+    }
+
+    public init(upcoming: [ChatAppointment], history: [ChatAppointment]) {
+        self.upcoming = upcoming
+        self.history = history
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case upcoming, history
+    }
 }
 
 public struct ChatAppointment: Decodable, Equatable {
+    /// The booking id — what a tapped row fetches and opens the detail screen with.
     public let id: Int
-    /// Free text, not an enum.
+    /// Service name (falling back to the department server-side). Free text.
     public let specialty: String
-    /// ⚠️ No timezone normalisation — **do not display this**. There is nothing in
-    /// the payload indicating its zone and Ireland observes DST, so rendering it
-    /// risks showing a wrong appointment time. Decoded only for completeness.
-    public let scheduledAt: String?
+    /// `yyyy-MM-dd`, and `HH:mm(:ss)` — **kept as Laravel's own strings, in the
+    /// clinic's timezone**. They are displayed as sent and never turned into a
+    /// `Date` in the device's zone: Ireland observes DST, and re-interpreting a
+    /// clinic-local time is how a patient gets told the wrong appointment time.
+    public let date: String?
+    public let time: String?
     /// Free text, not an enum.
     public let status: String
+    /// Nil until a doctor is assigned.
+    public let doctor: String?
+    public let bookingNumber: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, specialty, status
-        case scheduledAt = "scheduled_at"
+        case id, specialty, date, time, status, doctor
+        case bookingNumber = "booking_number"
     }
 }
 

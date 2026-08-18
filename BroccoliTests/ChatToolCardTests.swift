@@ -277,25 +277,89 @@ final class ChatToolCardTests: XCTestCase {
 
     // MARK: - P4-05 · Appointment payload
 
-    func testAppointmentsDecodeIncludingANullScheduledAt() throws {
+    func testAppointmentsDecodeIntoUpcomingAndHistory() throws {
         let payload = try decode(LookupAppointmentsPayload.self, """
         {
-          "appointments": [
-            { "id": 1, "specialty": "Cardiology", "scheduled_at": null, "status": "confirmed" },
-            { "id": 2, "specialty": "GP", "scheduled_at": "2026-08-01 09:30:00", "status": "pending" }
+          "upcoming": [
+            { "id": 1, "specialty": "Cardiology", "date": "2026-08-20", "time": "09:30",
+              "status": "confirmed", "doctor": "Dr Ryan", "booking_number": "BK-1" }
+          ],
+          "history": [
+            { "id": 2, "specialty": "GP", "date": "2026-07-15", "time": "14:00:00",
+              "status": "completed", "doctor": null, "booking_number": null }
           ]
         }
         """)
 
-        XCTAssertEqual(payload.appointments.count, 2)
-        XCTAssertNil(payload.appointments[0].scheduledAt)
-        // Decoded for completeness but never rendered — see ChatAppointmentCardView.
-        XCTAssertNotNil(payload.appointments[1].scheduledAt)
+        XCTAssertEqual(payload.upcoming.map(\.id), [1])
+        XCTAssertEqual(payload.history.map(\.id), [2])
+        XCTAssertEqual(payload.upcoming[0].doctor, "Dr Ryan")
+        XCTAssertNil(payload.history[0].doctor)
     }
 
-    func testEmptyAppointmentListDecodesRatherThanFailing() throws {
-        let payload = try decode(LookupAppointmentsPayload.self, #"{"appointments":[]}"#)
-        XCTAssertTrue(payload.appointments.isEmpty)
+    func testAppointmentScheduleIsRenderedFromLaravelsOwnStrings() throws {
+        let payload = try decode(LookupAppointmentsPayload.self, """
+        {
+          "upcoming": [
+            { "id": 1, "specialty": "Cardiology", "date": "2026-08-20", "time": "09:30",
+              "status": "confirmed" },
+            { "id": 2, "specialty": "GP", "date": "2026-07-15", "time": "14:00:00",
+              "status": "pending" }
+          ],
+          "history": []
+        }
+        """)
+
+        // Clinic-local strings, formatted for display only — never reinterpreted
+        // in the device's timezone.
+        XCTAssertEqual(payload.upcoming[0].formattedSchedule, "20 Aug 26, 09:30 AM")
+        // HH:mm:ss is accepted too; which one Laravel sends is not ours to assume.
+        XCTAssertEqual(payload.upcoming[1].formattedSchedule, "15 Jul 26, 02:00 PM")
+    }
+
+    func testUnparseableOrMissingDateFallsBackRatherThanDroppingTheRow() throws {
+        let payload = try decode(LookupAppointmentsPayload.self, """
+        {
+          "upcoming": [
+            { "id": 1, "specialty": "GP", "date": "not-a-date", "time": "whenever",
+              "status": "confirmed" },
+            { "id": 2, "specialty": "GP", "date": null, "time": null, "status": "pending" }
+          ],
+          "history": []
+        }
+        """)
+
+        XCTAssertEqual(payload.upcoming[0].formattedSchedule, "not-a-date, whenever")
+        XCTAssertNil(payload.upcoming[1].formattedSchedule)
+    }
+
+    func testAppointmentSubtitleAddsTheDoctorOnlyWhenAssigned() throws {
+        let payload = try decode(LookupAppointmentsPayload.self, """
+        {
+          "upcoming": [
+            { "id": 1, "specialty": "GP", "date": "2026-08-20", "time": "09:30",
+              "status": "confirmed", "doctor": "Dr Ryan" },
+            { "id": 2, "specialty": "GP", "date": "2026-08-21", "time": "09:30",
+              "status": "some_status_we_have_never_seen" }
+          ],
+          "history": []
+        }
+        """)
+
+        XCTAssertEqual(payload.upcoming[0].subtitle, "Confirmed · Dr Ryan")
+        // Status is free text, never an enum — an unseen value must still render.
+        XCTAssertEqual(payload.upcoming[1].subtitle, "Some_status_we_have_never_seen")
+    }
+
+    func testEmptyAppointmentListsDecodeRatherThanFailing() throws {
+        let payload = try decode(LookupAppointmentsPayload.self, #"{"upcoming":[],"history":[]}"#)
+        XCTAssertTrue(payload.upcoming.isEmpty)
+        XCTAssertTrue(payload.history.isEmpty)
+    }
+
+    func testAMissingListDecodesAsEmpty() throws {
+        let payload = try decode(LookupAppointmentsPayload.self, #"{"upcoming":[]}"#)
+        XCTAssertTrue(payload.history.isEmpty)
     }
 
     // MARK: - P4-01 · Unknown tools

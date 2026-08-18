@@ -77,7 +77,7 @@ final class ChatSSETests: XCTestCase {
     func testToolResultArrivesBeforeTokensAndKeepsRawData() {
         let events = parse([
             "event: tool_result",
-            #"data: {"tool": "lookup_appointments", "data": {"appointments": [{"id": 1, "specialty": "GP", "scheduled_at": "2026-08-01T09:00:00Z", "status": "confirmed"}]}}"#,
+            #"data: {"tool": "lookup_appointments", "data": {"upcoming": [{"id": 1, "specialty": "GP", "date": "2026-08-01", "time": "09:00", "status": "confirmed"}], "history": []}}"#,
             "",
             "event: token",
             #"data: {"text": "Here they are"}"#,
@@ -91,8 +91,9 @@ final class ChatSSETests: XCTestCase {
         XCTAssertEqual(tool, "lookup_appointments")
 
         let payload = try? JSONDecoder().decode(LookupAppointmentsPayload.self, from: data)
-        XCTAssertEqual(payload?.appointments.count, 1)
-        XCTAssertEqual(payload?.appointments.first?.specialty, "GP")
+        XCTAssertEqual(payload?.upcoming.count, 1)
+        XCTAssertEqual(payload?.upcoming.first?.specialty, "GP")
+        XCTAssertEqual(payload?.history.count, 0)
         XCTAssertEqual(events[1], .token("Here they are"))
     }
 
@@ -345,10 +346,11 @@ final class ChatSSETests: XCTestCase {
     }
 
     func testEmptyAppointmentListDecodes() {
-        let json = #"{"appointments": []}"#
+        let json = #"{"upcoming": [], "history": []}"#
         let payload = try? JSONDecoder().decode(LookupAppointmentsPayload.self, from: Data(json.utf8))
 
-        XCTAssertEqual(payload?.appointments.count, 0)
+        XCTAssertEqual(payload?.upcoming.count, 0)
+        XCTAssertEqual(payload?.history.count, 0)
     }
 
     func testMedicationReminderDecodesWithFreeTextStatus() {
