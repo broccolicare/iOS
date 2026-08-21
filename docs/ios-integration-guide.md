@@ -241,6 +241,7 @@ The `tool` field is the tool's internal name, streamed verbatim.
 | `tool` | `data` shape | Notes |
 |--------|--------------|-------|
 | `lookup_appointments` | `{"appointments": [{"id": int, "specialty": string, "scheduled_at": ISO-8601 string, "status": string}]}` | List may be empty. ⚠️ See the timezone warning below. |
+| `lookup_prescriptions` | `{"active": [Prescription], "history": [Prescription]}` — `Prescription` is `{"id": int, "treatment": string, "status": string, "payment_status": string\|null, "amount": string\|null, "ordered_on": string\|null, "valid_until": string\|null, "doctor": string\|null, "pharmacy": string\|null}` | The two lists behind My Prescriptions' tabs (`GET /prescriptions?type=active\|past`). Either may be empty. `status` is free text — keep a default branch. `amount` is money as a string; display it, never re-parse it. Dates are Laravel's own strings in the clinic's timezone. Read-only: no order/renew/cancel. Rendered by `ChatPrescriptionCardView`; rows tap through to My Prescriptions. |
 | `create_medication_reminder` | `{"id": int, "status": string}` | Confirmation of a created reminder. ⚠️ Create-only — see below. |
 | `prepare_booking` | See §4.1.1 | **Prefills our existing native booking flow.** Does not book. Stable — build against this. |
 | `offer_quick_replies` | `{"options": [string, …]}` | The booking flow's chips: care type, service, time of day, and the exact time. Identical shape to intake's — see §5. |

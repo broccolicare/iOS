@@ -334,10 +334,7 @@ struct AppointmentDetailForPatientView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     
-                    // Pre-appointment questionnaire, for appointments still to
-                    // happen. Hidden once the appointment is past: the summary is
-                    // read by the clinician *before* the call, so there is nothing
-                    // for a late intake to inform.
+                    // Pre-appointment questionnaire, for confirmed appointments.
                     if showsIntakeButton {
                         intakeButton
                             .padding(.horizontal, 20)
@@ -366,14 +363,17 @@ struct AppointmentDetailForPatientView: View {
     
     // MARK: - Pre-appointment intake
 
-    /// Offered while the appointment is still ahead and not cancelled.
+    /// Offered on confirmed appointments.
     ///
-    /// `pending` counts as well as `confirmed`: the questionnaire informs the
-    /// consultation rather than the payment, and a patient who fills it in early
-    /// is exactly the patient the module is for.
+    /// `pending` does not count: an unconfirmed booking may never happen, and an
+    /// intake answered against one produces a clinical summary no clinician will
+    /// ever read.
     private var showsIntakeButton: Bool {
-        guard booking.status == "confirmed" || booking.status == "pending" else { return false }
-        return !isPastAppointment
+        booking.status == "confirmed"
+        // Past appointments are not filtered out for now — re-enable once the
+        // server-supplied intake state lands:
+        // guard booking.status == "confirmed" else { return false }
+        // return !isPastAppointment
     }
 
     private var isPastAppointment: Bool {

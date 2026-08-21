@@ -182,6 +182,18 @@ final class ChatBookingCoordinator {
         )
     }
 
+    // MARK: - lookup_prescriptions tap-through
+
+    /// Opens the existing My Prescriptions screen.
+    ///
+    /// There is no per-order detail screen to push (`PrescriptionRowAPIView` is
+    /// not tappable there either), so every row lands on the same list — which
+    /// loads both tabs from `/prescriptions` itself, so the patient always reads
+    /// the live record rather than the transcript's snapshot.
+    func openPrescriptions() {
+        router.push(.myPrescriptions)
+    }
+
     // MARK: - Resolution
 
     /// `service_id` wins when present; otherwise match `service_hint` by name.
