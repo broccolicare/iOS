@@ -187,6 +187,9 @@ struct HealthAssistantView: View {
                 onOpenAppointment: { appointment in
                     Task { await coordinator.openAppointment(id: appointment.id) }
                 },
+                onOpenPrescription: { _ in
+                    coordinator.openPrescriptions()
+                },
                 // A tapped quick-reply chip is sent exactly like a typed message,
                 // reusing the same guard/trim path.
                 onSendMessage: { text in send(text) }

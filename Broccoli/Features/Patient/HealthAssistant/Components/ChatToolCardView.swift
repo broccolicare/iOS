@@ -24,6 +24,10 @@ struct ChatToolCardView: View {
     /// rather than the card body. Both land on the same form.
     let onOpenBooking: (PrepareBookingPayload, BookingSlot?) -> Void
     let onOpenAppointment: (ChatAppointment) -> Void
+    /// A tapped prescription row. There is no per-order detail screen, so this
+    /// opens the My Prescriptions list; the row is passed through anyway so a
+    /// future detail push has what it needs.
+    let onOpenPrescription: (ChatPrescription) -> Void
     /// Sends the given text as the next turn's `message` (a tapped quick-reply).
     let onSendMessage: (String) -> Void
 
@@ -62,6 +66,11 @@ struct ChatToolCardView: View {
         case "lookup_appointments":
             if let payload = decode(LookupAppointmentsPayload.self) {
                 ChatAppointmentCardView(payload: payload, onSelect: onOpenAppointment)
+            }
+
+        case "lookup_prescriptions":
+            if let payload = decode(LookupPrescriptionsPayload.self) {
+                ChatPrescriptionCardView(payload: payload, onSelect: onOpenPrescription)
             }
 
         default:

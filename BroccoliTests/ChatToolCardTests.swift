@@ -362,17 +362,77 @@ final class ChatToolCardTests: XCTestCase {
         XCTAssertTrue(payload.history.isEmpty)
     }
 
+    // MARK: - lookup_prescriptions
+
+    func testPrescriptionPayloadDecodesTheServersCardFields() throws {
+        let payload = try decode(LookupPrescriptionsPayload.self, """
+        {
+          "active": [
+            { "id": 10, "treatment": "Cold Sore Treatments", "status": "doctor_assigned",
+              "payment_status": "paid", "amount": "17.50",
+              "ordered_on": "2026-08-20 13:04:20", "valid_until": "2026-11-18",
+              "doctor": "Ragvendra Singh", "pharmacy": null }
+          ],
+          "history": []
+        }
+        """)
+
+        let order = payload.active[0]
+        XCTAssertEqual(order.id, 10)
+        XCTAssertEqual(order.treatment, "Cold Sore Treatments")
+        XCTAssertEqual(order.status, "doctor_assigned")
+        XCTAssertEqual(order.amount, "17.50")
+        XCTAssertEqual(order.validUntil, "2026-11-18")
+        XCTAssertNil(order.pharmacy)
+        // The order date is rendered from the server's own string, in the clinic's
+        // timezone, with no conversion (`created_at`'s `yyyy-MM-dd HH:mm:ss`).
+        XCTAssertEqual(order.subtitle, "Ordered 20 Aug 26 · Ragvendra Singh")
+    }
+
+    func testPrescriptionRowSurvivesMissingOptionalFields() throws {
+        let payload = try decode(LookupPrescriptionsPayload.self, """
+        { "active": [{ "id": 11, "treatment": "Prescription", "status": "pending" }],
+          "history": [] }
+        """)
+
+        // Nothing to put in the subtitle is a dropped line, not an empty one.
+        XCTAssertNil(payload.active[0].subtitle)
+        XCTAssertNil(payload.active[0].amount)
+    }
+
+    func testUnparseablePrescriptionDateFallsBackToTheRawString() {
+        XCTAssertEqual(ChatPrescription.formattedDay("not-a-date"), "not-a-date")
+        // `valid_until` is a bare day — the other shape the card has to render.
+        XCTAssertEqual(ChatPrescription.formattedDay("2026-11-18"), "18 Nov 26")
+        XCTAssertNil(ChatPrescription.formattedDay(nil))
+    }
+
+    func testEmptyPrescriptionListsDecodeRatherThanFailing() throws {
+        // The live `past` list is empty today — a normal answer, not a failure.
+        let payload = try decode(LookupPrescriptionsPayload.self, #"{"active":[],"history":[]}"#)
+        XCTAssertTrue(payload.active.isEmpty)
+        XCTAssertTrue(payload.history.isEmpty)
+    }
+
+    func testAMissingPrescriptionListDecodesAsEmpty() throws {
+        let payload = try decode(LookupPrescriptionsPayload.self, #"{"active":[]}"#)
+        XCTAssertTrue(payload.history.isEmpty)
+    }
+
     // MARK: - P4-01 · Unknown tools
 
     func testUnknownToolNamesAreNotAnyOfTheHandledCases() {
         // The router's `default` is a no-op; this guards the list it switches on so
         // a rename can't silently drop a card. `start_booking` is deliberately NOT
         // handled — it is deprecated and being removed (guide §4.1).
-        let handled = ["prepare_booking", "create_medication_reminder", "lookup_appointments"]
+        let handled = [
+            "prepare_booking", "create_medication_reminder",
+            "lookup_appointments", "lookup_prescriptions"
+        ]
 
         XCTAssertFalse(handled.contains("start_booking"))
         XCTAssertFalse(handled.contains("some_future_tool"))
-        XCTAssertEqual(handled.count, 3)
+        XCTAssertEqual(handled.count, 4)
     }
 
     // MARK: - P4-04 · Prefill mapping

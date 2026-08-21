@@ -68,6 +68,7 @@ public struct ChatStarters: Codable, Equatable {
         chips: [
             StarterChip(label: "Book appointment", message: "Book appointment"),
             StarterChip(label: "My appointments", message: "My appointments"),
+            StarterChip(label: "My prescriptions", message: "My prescriptions"),
             StarterChip(label: "Set reminder", message: "Set reminder"),
             StarterChip(label: "Health tips", message: "Health tips")
         ]
@@ -434,6 +435,63 @@ public struct ChatAppointment: Decodable, Equatable {
     enum CodingKeys: String, CodingKey {
         case id, specialty, date, time, status, doctor
         case bookingNumber = "booking_number"
+    }
+}
+
+/// `lookup_prescriptions`. The prescriptions twin of `LookupAppointmentsPayload`:
+/// the two lists behind My Prescriptions' tabs — `active` (orders still in
+/// flight) and `history`.
+public struct LookupPrescriptionsPayload: Decodable, Equatable {
+    public let active: [ChatPrescription]
+    public let history: [ChatPrescription]
+
+    /// Absent lists decode as empty — the server sends both today, but a card
+    /// missing one is still worth rendering rather than dropping entirely.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        active = try container.decodeIfPresent([ChatPrescription].self, forKey: .active) ?? []
+        history = try container.decodeIfPresent([ChatPrescription].self, forKey: .history) ?? []
+    }
+
+    public init(active: [ChatPrescription], history: [ChatPrescription]) {
+        self.active = active
+        self.history = history
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case active, history
+    }
+}
+
+public struct ChatPrescription: Decodable, Equatable {
+    /// The prescription order id. Nothing fetches by it today — the card taps
+    /// through to the My Prescriptions screen, which loads the lists itself —
+    /// but it is what keeps the rows uniquely identified.
+    public let id: Int
+    /// Treatment name (falling back to its category server-side). Free text.
+    public let treatment: String
+    /// Free text, not an enum: `pending`, `doctor_assigned`, `approved`, `sent`,
+    /// `completed`, `rejected`, … Rendered through `PrescriptionStatusBadge`,
+    /// which already has a `default` for anything it doesn't recognise.
+    public let status: String
+    public let paymentStatus: String?
+    /// Money as the server sent it — displayed, never parsed into a number.
+    public let amount: String?
+    /// `"yyyy-MM-dd HH:mm:ss"`, and `"yyyy-MM-dd"` — **kept as Laravel's own
+    /// strings, in the clinic's timezone**, for the same reason as
+    /// `ChatAppointment.date`: re-reading a clinic-local stamp in the device's
+    /// zone is how a patient gets told the wrong date.
+    public let orderedOn: String?
+    public let validUntil: String?
+    /// Nil until a doctor is assigned / a pharmacy is chosen.
+    public let doctor: String?
+    public let pharmacy: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, treatment, status, amount, doctor, pharmacy
+        case paymentStatus = "payment_status"
+        case orderedOn = "ordered_on"
+        case validUntil = "valid_until"
     }
 }
 
