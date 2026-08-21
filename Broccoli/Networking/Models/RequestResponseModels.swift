@@ -383,21 +383,24 @@ public struct PrescriptionsListResponse: Codable {
 
 public struct MyBookingsResponse: Codable {
     let success: Bool
-    let data: [BookingData]
-    let pagination: CursorPaginationInfo
+    let data: DoctorBookingsData
     let message: String?
 
     enum CodingKeys: String, CodingKey {
         case success
         case data
-        case pagination
         case message
     }
 
-    var bookingsList: [BookingData] { data }
-    var nextCursor: String? { pagination.nextCursor }
-    var hasMore: Bool { pagination.hasMore }
-    var perPage: Int { pagination.perPage }
+    struct DoctorBookingsData: Codable {
+        let data: [BookingData]
+        let pagination: CursorPaginationInfo
+    }
+
+    var bookingsList: [BookingData] { data.data }
+    var nextCursor: String? { data.pagination.nextCursor }
+    var hasMore: Bool { data.pagination.hasMore }
+    var perPage: Int { data.pagination.perPage }
 }
 
 public struct AcceptBookingResponse: Codable {

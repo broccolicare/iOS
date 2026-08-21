@@ -118,7 +118,7 @@ struct ChatBookingCardView: View {
                         .font(theme.typography.regular12)
                         .foregroundStyle(theme.colors.textSecondary)
 
-                    FlowLayout(spacing: 6) {
+                    ChipFlowLayout(spacing: 6) {
                         ForEach(group.slots) { slot in
                             slotChip(slot)
                         }
@@ -152,61 +152,6 @@ struct ChatBookingCardView: View {
         .buttonStyle(.plain)
         .accessibilityLabel("\(slot.displayDate) at \(slot.displayTime)")
         .accessibilityHint("Opens the booking form with this time selected")
-    }
-}
-
-/// Minimal wrapping HStack. `Layout` is iOS 16+, which the app already requires;
-/// this exists because SwiftUI still has no built-in wrapping stack.
-private struct FlowLayout: Layout {
-    var spacing: CGFloat = 6
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let rows = layout(subviews: subviews, width: proposal.width ?? .infinity)
-        let height = rows.last.map { $0.y + $0.height } ?? 0
-        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: height)
-    }
-
-    func placeSubviews(
-        in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()
-    ) {
-        for row in layout(subviews: subviews, width: bounds.width) {
-            var x = bounds.minX
-            for index in row.indices {
-                let size = subviews[index].sizeThatFits(.unspecified)
-                subviews[index].place(
-                    at: CGPoint(x: x, y: bounds.minY + row.y),
-                    proposal: ProposedViewSize(size)
-                )
-                x += size.width + spacing
-            }
-        }
-    }
-
-    private struct Row {
-        var indices: [Int] = []
-        var y: CGFloat = 0
-        var width: CGFloat = 0
-        var height: CGFloat = 0
-    }
-
-    private func layout(subviews: Subviews, width: CGFloat) -> [Row] {
-        var rows: [Row] = []
-        var current = Row()
-        for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(.unspecified)
-            let needed = current.indices.isEmpty ? size.width : current.width + spacing + size.width
-            if needed > width, !current.indices.isEmpty {
-                rows.append(current)
-                current = Row(y: current.y + current.height + spacing)
-                current.width = size.width
-            } else {
-                current.width = needed
-            }
-            current.indices.append(index)
-            current.height = max(current.height, size.height)
-        }
-        if !current.indices.isEmpty { rows.append(current) }
-        return rows
     }
 }
 

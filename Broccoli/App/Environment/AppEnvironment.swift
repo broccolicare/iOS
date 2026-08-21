@@ -38,7 +38,7 @@ public struct AppEnvironment {
     
     public static let development = AppEnvironment(
         apiBaseURL: "https://broccolicare.stagingdemo.tech/api",
-        aiBaseURL: "https://aiapp.broccolicare.ie",
+        aiBaseURL: "https://ai.stagingdemo.tech",
         isDebug: true,
         enableLogging: true,
         stripePublishableKey: "pk_test_51RLrz6PP2Ocb3YbLOlUl6nSIshmI0oFC2tJOXM2duC2EPMb4UwXpVq1hQMnlgNAnrJqjZyrxkpAOx3Abl52orNzT00gKilZf8i", // Replace with pk_test_ key from Stripe Dashboard
