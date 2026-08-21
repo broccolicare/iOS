@@ -7,8 +7,10 @@
 
 import SwiftUI
 
-/// The two lists behind My Appointments' tabs, summarised in the transcript:
-/// upcoming first, then a short history.
+/// One of the two lists behind My Appointments' tabs, summarised in the
+/// transcript: the upcoming appointments, or — only when the patient asked for
+/// them — the past ones. The server sends whichever it was asked for and says so
+/// in `scope`; the card never shows a history nobody asked about.
 ///
 /// Date and time **are** shown, and are safe to show: the server sends Laravel's
 /// own `date` / `time` strings from `GET /bookings`, in the clinic's timezone,
@@ -26,29 +28,36 @@ struct ChatAppointmentCardView: View {
     let payload: LookupAppointmentsPayload
     let onSelect: (ChatAppointment) -> Void
 
-    private var isEmpty: Bool {
-        payload.upcoming.isEmpty && payload.history.isEmpty
+    private var appointments: [ChatAppointment] {
+        payload.appointments
+    }
+
+    /// The heading names the list the patient asked for — "upcoming" and "past"
+    /// are different answers and must not read the same.
+    private var sectionTitle: String {
+        payload.scope == .history ? "Past appointments" : "Upcoming"
+    }
+
+    private var emptyMessage: String {
+        payload.scope == .history
+            ? "You have no past appointments."
+            : "You have no upcoming appointments."
     }
 
     var body: some View {
-        if isEmpty {
+        if appointments.isEmpty {
             emptyState
         } else {
             VStack(spacing: theme.spacing.md) {
-                if !payload.upcoming.isEmpty {
-                    section("Upcoming", payload.upcoming)
-                }
-                if !payload.history.isEmpty {
-                    section("Past appointments", payload.history)
-                }
+                section(sectionTitle, appointments)
             }
         }
     }
 
-    /// No appointments at all is a normal answer, not a broken card — say so in a
+    /// An empty list is a normal answer, not a broken card — say so in a
     /// sentence rather than rendering an empty container.
     private var emptyState: some View {
-        Text("You have no appointments yet.")
+        Text(emptyMessage)
             .font(theme.typography.regular12)
             .foregroundStyle(theme.colors.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -182,9 +191,10 @@ extension ChatAppointment {
     }
 }
 
-#Preview("With appointments") {
+#Preview("Upcoming") {
     ChatAppointmentCardView(
         payload: LookupAppointmentsPayload(
+            scope: .upcoming,
             upcoming: [
                 ChatAppointment(
                     id: 1,
@@ -195,7 +205,17 @@ extension ChatAppointment {
                     doctor: "Dr Ryan",
                     bookingNumber: "BK-1"
                 )
-            ],
+            ]
+        )
+    ) { _ in }
+    .padding()
+    .environment(\.appTheme, AppTheme.default)
+}
+
+#Preview("History") {
+    ChatAppointmentCardView(
+        payload: LookupAppointmentsPayload(
+            scope: .history,
             history: [
                 ChatAppointment(
                     id: 2,
@@ -215,7 +235,7 @@ extension ChatAppointment {
 
 #Preview("Empty") {
     ChatAppointmentCardView(
-        payload: LookupAppointmentsPayload(upcoming: [], history: [])
+        payload: LookupAppointmentsPayload(scope: .upcoming)
     ) { _ in }
     .padding()
     .environment(\.appTheme, AppTheme.default)

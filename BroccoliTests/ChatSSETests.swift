@@ -77,7 +77,7 @@ final class ChatSSETests: XCTestCase {
     func testToolResultArrivesBeforeTokensAndKeepsRawData() {
         let events = parse([
             "event: tool_result",
-            #"data: {"tool": "lookup_appointments", "data": {"upcoming": [{"id": 1, "specialty": "GP", "date": "2026-08-01", "time": "09:00", "status": "confirmed"}], "history": []}}"#,
+            #"data: {"tool": "lookup_appointments", "data": {"scope": "upcoming", "upcoming": [{"id": 1, "specialty": "GP", "date": "2026-08-01", "time": "09:00", "status": "confirmed"}]}}"#,
             "",
             "event: token",
             #"data: {"text": "Here they are"}"#,
@@ -91,8 +91,9 @@ final class ChatSSETests: XCTestCase {
         XCTAssertEqual(tool, "lookup_appointments")
 
         let payload = try? JSONDecoder().decode(LookupAppointmentsPayload.self, from: data)
-        XCTAssertEqual(payload?.upcoming.count, 1)
-        XCTAssertEqual(payload?.upcoming.first?.specialty, "GP")
+        XCTAssertEqual(payload?.scope, .upcoming)
+        XCTAssertEqual(payload?.appointments.count, 1)
+        XCTAssertEqual(payload?.appointments.first?.specialty, "GP")
         XCTAssertEqual(payload?.history.count, 0)
         XCTAssertEqual(events[1], .token("Here they are"))
     }
