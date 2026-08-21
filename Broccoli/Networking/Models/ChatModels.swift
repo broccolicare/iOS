@@ -390,28 +390,54 @@ public struct MedicationReminderPayload: Decodable, Equatable {
     public let status: String
 }
 
-/// `lookup_appointments` — the two lists behind My Appointments' tabs, from the
-/// same `GET /bookings?type=active|past` route that screen calls. Either list
-/// may be empty; both empty is a normal answer, not a failure.
+/// `lookup_appointments` — **one** of the two lists behind My Appointments' tabs,
+/// from the same `GET /bookings?type=active|past` route that screen calls.
+///
+/// The server answers the question that was asked and nothing more: `scope` is
+/// `.upcoming` unless the patient asked for their history, and only the matching
+/// list is sent. An empty list is a normal answer, not a failure — but *which*
+/// list it is matters, which is why `scope` is carried rather than inferred from
+/// whichever array happens to be non-empty.
 public struct LookupAppointmentsPayload: Decodable, Equatable {
+    /// Which list this card is showing. Older servers sent both lists and no
+    /// scope; those decode as `.upcoming`, which is what they led with.
+    public enum Scope: String, Equatable {
+        case upcoming
+        case history
+    }
+
+    public let scope: Scope
     public let upcoming: [ChatAppointment]
     public let history: [ChatAppointment]
 
-    /// Absent lists decode as empty — the server sends both today, but a card
-    /// missing one is still worth rendering rather than dropping entirely.
+    /// Absent lists decode as empty, and an absent/unrecognised scope as
+    /// `.upcoming` — a card missing a key is still worth rendering rather than
+    /// dropping the whole tool result.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rawScope = (try? container.decode(String.self, forKey: .scope)) ?? ""
+        scope = Scope(rawValue: rawScope) ?? .upcoming
         upcoming = try container.decodeIfPresent([ChatAppointment].self, forKey: .upcoming) ?? []
         history = try container.decodeIfPresent([ChatAppointment].self, forKey: .history) ?? []
     }
 
-    public init(upcoming: [ChatAppointment], history: [ChatAppointment]) {
+    public init(
+        scope: Scope = .upcoming,
+        upcoming: [ChatAppointment] = [],
+        history: [ChatAppointment] = []
+    ) {
+        self.scope = scope
         self.upcoming = upcoming
         self.history = history
     }
 
+    /// The rows to render — the ones for the scope that was asked for.
+    public var appointments: [ChatAppointment] {
+        scope == .history ? history : upcoming
+    }
+
     enum CodingKeys: String, CodingKey {
-        case upcoming, history
+        case scope, upcoming, history
     }
 }
 
@@ -438,28 +464,49 @@ public struct ChatAppointment: Decodable, Equatable {
     }
 }
 
-/// `lookup_prescriptions`. The prescriptions twin of `LookupAppointmentsPayload`:
-/// the two lists behind My Prescriptions' tabs — `active` (orders still in
-/// flight) and `history`.
+/// `lookup_prescriptions`. The prescriptions twin of `LookupAppointmentsPayload`,
+/// and it works the same way: one of the two lists behind My Prescriptions' tabs
+/// — `active` (orders still in flight) or `history` — with `scope` saying which
+/// one was asked for.
 public struct LookupPrescriptionsPayload: Decodable, Equatable {
+    /// Which list this card is showing. Older servers sent both lists and no
+    /// scope; those decode as `.active`, which is what they led with.
+    public enum Scope: String, Equatable {
+        case active
+        case history
+    }
+
+    public let scope: Scope
     public let active: [ChatPrescription]
     public let history: [ChatPrescription]
 
-    /// Absent lists decode as empty — the server sends both today, but a card
-    /// missing one is still worth rendering rather than dropping entirely.
+    /// Absent lists decode as empty, and an absent/unrecognised scope as
+    /// `.active`.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rawScope = (try? container.decode(String.self, forKey: .scope)) ?? ""
+        scope = Scope(rawValue: rawScope) ?? .active
         active = try container.decodeIfPresent([ChatPrescription].self, forKey: .active) ?? []
         history = try container.decodeIfPresent([ChatPrescription].self, forKey: .history) ?? []
     }
 
-    public init(active: [ChatPrescription], history: [ChatPrescription]) {
+    public init(
+        scope: Scope = .active,
+        active: [ChatPrescription] = [],
+        history: [ChatPrescription] = []
+    ) {
+        self.scope = scope
         self.active = active
         self.history = history
     }
 
+    /// The rows to render — the ones for the scope that was asked for.
+    public var prescriptions: [ChatPrescription] {
+        scope == .history ? history : active
+    }
+
     enum CodingKeys: String, CodingKey {
-        case active, history
+        case scope, active, history
     }
 }
 

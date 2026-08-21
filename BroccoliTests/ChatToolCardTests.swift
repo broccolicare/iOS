@@ -351,6 +351,51 @@ final class ChatToolCardTests: XCTestCase {
         XCTAssertEqual(payload.upcoming[1].subtitle, "Some_status_we_have_never_seen")
     }
 
+    func testAppointmentsDefaultToTheUpcomingScope() throws {
+        // A server that sends no scope — or an older one that sent both lists —
+        // is read as "upcoming", which is what it led with.
+        let payload = try decode(LookupAppointmentsPayload.self, """
+        {
+          "upcoming": [
+            { "id": 1, "specialty": "GP", "date": "2026-08-20", "time": "09:30",
+              "status": "confirmed" }
+          ]
+        }
+        """)
+
+        XCTAssertEqual(payload.scope, .upcoming)
+        XCTAssertEqual(payload.appointments.map(\.id), [1])
+    }
+
+    func testAppointmentHistoryScopeRendersTheHistoryList() throws {
+        let payload = try decode(LookupAppointmentsPayload.self, """
+        {
+          "scope": "history",
+          "history": [
+            { "id": 2, "specialty": "GP", "date": "2026-07-15", "time": "14:00",
+              "status": "completed" }
+          ]
+        }
+        """)
+
+        XCTAssertEqual(payload.scope, .history)
+        // The card renders the asked-for list, and only it.
+        XCTAssertEqual(payload.appointments.map(\.id), [2])
+        XCTAssertTrue(payload.upcoming.isEmpty)
+    }
+
+    func testUnknownAppointmentScopeFallsBackToUpcoming() throws {
+        // A scope this build has never heard of must not drop the whole card.
+        let payload = try decode(LookupAppointmentsPayload.self, """
+        { "scope": "everything", "upcoming": [
+            { "id": 1, "specialty": "GP", "date": "2026-08-20", "time": "09:30",
+              "status": "confirmed" } ] }
+        """)
+
+        XCTAssertEqual(payload.scope, .upcoming)
+        XCTAssertEqual(payload.appointments.map(\.id), [1])
+    }
+
     func testEmptyAppointmentListsDecodeRatherThanFailing() throws {
         let payload = try decode(LookupAppointmentsPayload.self, #"{"upcoming":[],"history":[]}"#)
         XCTAssertTrue(payload.upcoming.isEmpty)
@@ -407,8 +452,37 @@ final class ChatToolCardTests: XCTestCase {
         XCTAssertNil(ChatPrescription.formattedDay(nil))
     }
 
+    func testPrescriptionsDefaultToTheActiveScope() throws {
+        let payload = try decode(LookupPrescriptionsPayload.self, """
+        { "active": [{ "id": 10, "treatment": "Cold Sore Treatments", "status": "pending" }] }
+        """)
+
+        XCTAssertEqual(payload.scope, .active)
+        XCTAssertEqual(payload.prescriptions.map(\.id), [10])
+    }
+
+    func testPrescriptionHistoryScopeRendersTheHistoryList() throws {
+        let payload = try decode(LookupPrescriptionsPayload.self, """
+        { "scope": "history",
+          "history": [{ "id": 4, "treatment": "Hay Fever Treatments", "status": "completed" }] }
+        """)
+
+        XCTAssertEqual(payload.scope, .history)
+        XCTAssertEqual(payload.prescriptions.map(\.id), [4])
+        XCTAssertTrue(payload.active.isEmpty)
+    }
+
+    func testUnknownPrescriptionScopeFallsBackToActive() throws {
+        let payload = try decode(LookupPrescriptionsPayload.self, """
+        { "scope": "all", "active": [{ "id": 10, "treatment": "Cold Sore", "status": "pending" }] }
+        """)
+
+        XCTAssertEqual(payload.scope, .active)
+        XCTAssertEqual(payload.prescriptions.map(\.id), [10])
+    }
+
     func testEmptyPrescriptionListsDecodeRatherThanFailing() throws {
-        // The live `past` list is empty today — a normal answer, not a failure.
+        // An empty list is a normal answer, not a failure.
         let payload = try decode(LookupPrescriptionsPayload.self, #"{"active":[],"history":[]}"#)
         XCTAssertTrue(payload.active.isEmpty)
         XCTAssertTrue(payload.history.isEmpty)

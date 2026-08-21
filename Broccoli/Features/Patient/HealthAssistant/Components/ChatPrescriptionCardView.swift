@@ -8,8 +8,10 @@
 
 import SwiftUI
 
-/// The two lists behind My Prescriptions' tabs, summarised in the transcript:
-/// active orders first, then a short history.
+/// One of the two lists behind My Prescriptions' tabs, summarised in the
+/// transcript: the orders still in flight, or — only when the patient asked for
+/// them — the past ones. The server sends whichever it was asked for and says so
+/// in `scope`; the card never shows a history nobody asked about.
 ///
 /// Dates are rendered from the server's own strings without any timezone
 /// conversion — same rule as the appointment card, and for the same reason.
@@ -30,28 +32,35 @@ struct ChatPrescriptionCardView: View {
     let payload: LookupPrescriptionsPayload
     let onSelect: (ChatPrescription) -> Void
 
-    private var isEmpty: Bool {
-        payload.active.isEmpty && payload.history.isEmpty
+    private var prescriptions: [ChatPrescription] {
+        payload.prescriptions
+    }
+
+    /// The heading names the list the patient asked for — "in progress" and
+    /// "already ordered" are different answers and must not read the same.
+    private var sectionTitle: String {
+        payload.scope == .history ? "Prescription history" : "Active prescriptions"
+    }
+
+    private var emptyMessage: String {
+        payload.scope == .history
+            ? "You have no past prescriptions."
+            : "You have no prescriptions in progress."
     }
 
     var body: some View {
-        if isEmpty {
+        if prescriptions.isEmpty {
             emptyState
         } else {
             VStack(spacing: theme.spacing.md) {
-                if !payload.active.isEmpty {
-                    section("Active prescriptions", payload.active)
-                }
-                if !payload.history.isEmpty {
-                    section("Prescription history", payload.history)
-                }
+                section(sectionTitle, prescriptions)
             }
         }
     }
 
-    /// No prescriptions at all is a normal answer, not a broken card.
+    /// An empty list is a normal answer, not a broken card.
     private var emptyState: some View {
-        Text("You have no prescriptions yet.")
+        Text(emptyMessage)
             .font(theme.typography.regular12)
             .foregroundStyle(theme.colors.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -183,9 +192,10 @@ extension ChatPrescription {
     }
 }
 
-#Preview("With prescriptions") {
+#Preview("Active") {
     ChatPrescriptionCardView(
         payload: LookupPrescriptionsPayload(
+            scope: .active,
             active: [
                 ChatPrescription(
                     id: 10,
@@ -198,7 +208,17 @@ extension ChatPrescription {
                     doctor: "Dr Ragvendra Singh",
                     pharmacy: nil
                 )
-            ],
+            ]
+        )
+    ) { _ in }
+    .padding()
+    .environment(\.appTheme, AppTheme.default)
+}
+
+#Preview("History") {
+    ChatPrescriptionCardView(
+        payload: LookupPrescriptionsPayload(
+            scope: .history,
             history: [
                 ChatPrescription(
                     id: 4,
@@ -220,7 +240,7 @@ extension ChatPrescription {
 
 #Preview("Empty") {
     ChatPrescriptionCardView(
-        payload: LookupPrescriptionsPayload(active: [], history: [])
+        payload: LookupPrescriptionsPayload(scope: .active)
     ) { _ in }
     .padding()
     .environment(\.appTheme, AppTheme.default)
