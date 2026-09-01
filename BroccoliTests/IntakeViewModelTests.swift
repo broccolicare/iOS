@@ -226,7 +226,10 @@ final class IntakeViewModelTests: XCTestCase {
 
     // MARK: - Progress
 
-    func testProgressCardsDriveTheIndicatorAndStayOutOfTheTranscript() async {
+    func testProgressCardsAreDroppedRatherThanRenderedAsCards() async {
+        // There is no on-screen progress indicator (the questionnaire's length
+        // isn't something the patient is shown), so `advance_intake`'s card is
+        // simply discarded rather than appearing in the transcript.
         let service = StubIntakeService()
         service.script = [
             progressCard(position: 2),
@@ -238,36 +241,7 @@ final class IntakeViewModelTests: XCTestCase {
         vm.begin()
         await wait { !vm.isTurnInFlight }
 
-        XCTAssertEqual(vm.progress?.position, 2)
-        XCTAssertEqual(vm.progress?.total, 16)
-        XCTAssertFalse(vm.messages.contains { $0.isToolCard }, "the bar is chrome, not transcript")
-    }
-
-    func testProgressNeverRunsBackwards() async {
-        let service = StubIntakeService()
-        service.script = [
-            progressCard(position: 5),
-            progressCard(position: 3),
-            .done(TurnDone(status: .ok, conversationId: 34))
-        ]
-        let vm = makeVM(service)
-
-        vm.begin()
-        await wait { !vm.isTurnInFlight }
-
-        XCTAssertEqual(vm.progress?.position, 5)
-    }
-
-    func testProgressFractionIsClamped() {
-        let overshoot = IntakeProgressPayload(
-            questionId: "x", outcome: .answered, position: 99, total: 16
-        )
-        XCTAssertEqual(overshoot.fraction, 1)
-
-        let empty = IntakeProgressPayload(
-            questionId: "x", outcome: .answered, position: 1, total: 0
-        )
-        XCTAssertEqual(empty.fraction, 0)
+        XCTAssertFalse(vm.messages.contains { $0.isToolCard }, "the card must not reach the transcript")
     }
 
     // MARK: - Start-time failures
