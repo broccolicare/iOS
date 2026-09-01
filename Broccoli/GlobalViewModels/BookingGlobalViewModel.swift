@@ -127,7 +127,12 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var prescriptionHistoryHasMore: Bool = false
     @Published public var isUploadingPrescription: Bool = false
     @Published public var prescriptionUploadMessage: String?
-    
+
+    // Intake Summary
+    @Published public var intakeSummary: IntakeSummaryData? = nil
+    @Published public var isFetchingIntakeSummary: Bool = false
+    @Published public var intakeSummaryErrorMessage: String? = nil
+
     public init(bookingService: BookingServiceProtocol) {
         self.bookingService = bookingService
     }
@@ -1472,5 +1477,28 @@ public final class BookingGlobalViewModel: ObservableObject {
             prescriptionUploadMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             return false
         }
+    }
+
+    // MARK: - Intake Summary
+
+    /// Fetch the patient intake summary for a booking (doctor only)
+    public func fetchIntakeSummary(bookingId: Int) async {
+        isFetchingIntakeSummary = true
+        intakeSummaryErrorMessage = nil
+        intakeSummary = nil
+
+        do {
+            let response = try await bookingService.fetchIntakeSummary(bookingId: bookingId)
+
+            if response.success, let data = response.data {
+                intakeSummary = data
+            } else {
+                intakeSummaryErrorMessage = response.message ?? "Failed to fetch intake summary"
+            }
+        } catch {
+            intakeSummaryErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+
+        isFetchingIntakeSummary = false
     }
 }

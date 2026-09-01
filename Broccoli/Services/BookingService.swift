@@ -33,6 +33,7 @@ public protocol BookingServiceProtocol {
     func endConsultation(bookingId: Int, consultationNotes: String) async throws -> VideoCallStatusResponse
     func notifyJoined(bookingId: Int) async throws -> VideoCallStatusResponse
     func uploadPrescription(bookingId: Int, fileData: Data, fileName: String, mimeType: String) async throws -> UploadPrescriptionResponse
+    func fetchIntakeSummary(bookingId: Int) async throws -> IntakeSummaryResponse
 }
 
 public final class BookingService: BaseService, BookingServiceProtocol {
@@ -257,6 +258,14 @@ public final class BookingService: BaseService, BookingServiceProtocol {
                 mimeType: mimeType,
                 fieldName: "files[]"
             )
+        }
+    }
+
+    /// Fetch the patient intake summary for a booking (doctor only)
+    public func fetchIntakeSummary(bookingId: Int) async throws -> IntakeSummaryResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.intakeSummary(bookingId: bookingId)
+            return try await httpClient.request(endpoint)
         }
     }
 }

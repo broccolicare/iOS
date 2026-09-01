@@ -51,5 +51,6 @@ enum Route: Hashable {
     /// — the server re-checks that the appointment belongs to the caller, so the
     /// route is not a capability.
     case intake(appointmentId: Int, doctorName: String?)
+    case intakeSummary(booking: BookingData)
     // add routes as needed
 }

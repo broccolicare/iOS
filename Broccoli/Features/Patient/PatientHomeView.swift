@@ -129,25 +129,27 @@ struct PatientHomeView: View {
                             
                             // bottom tiles
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: theme.spacing.md) {
-                                Button(action: {
-                                    router.push(.medicalTourismForm)
-                                }) {
-                                    SmallActionTile(
-                                        title: "Medical Tourism",
-                                        backgroundImage: "medical-tourism"
-                                    )
-                                    .frame(height: 130)
-                                }.buttonStyle(.plain)
+                                // Commented out for now: Medical Tourism
+                                // Button(action: {
+                                //     router.push(.medicalTourismForm)
+                                // }) {
+                                //     SmallActionTile(
+                                //         title: "Medical Tourism",
+                                //         backgroundImage: "medical-tourism"
+                                //     )
+                                //     .frame(height: 130)
+                                // }.buttonStyle(.plain)
 
-                                Button(action: {
-                                    router.push(.cureFromDrugForm)
-                                }) {
-                                    SmallActionTile(
-                                        title: "Cure From Drug",
-                                        backgroundImage: "cure-from-drug"
-                                    )
-                                    .frame(height: 130)
-                                }.buttonStyle(.plain)
+                                // Commented out for now: Cure From Drug
+                                // Button(action: {
+                                //     router.push(.cureFromDrugForm)
+                                // }) {
+                                //     SmallActionTile(
+                                //         title: "Cure From Drug",
+                                //         backgroundImage: "cure-from-drug"
+                                //     )
+                                //     .frame(height: 130)
+                                // }.buttonStyle(.plain)
 
                                 Button(action: {
                                     router.push(.contactUs)

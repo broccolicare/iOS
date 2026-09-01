@@ -270,6 +270,23 @@ struct AppointmentDetailForDoctorView: View {
                                     .italic()
                             }
                         }
+
+                        // View Intake Summary
+                        Button(action: {
+                            router.push(.intakeSummary(booking: booking))
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "doc.text.magnifyingglass")
+                                    .font(.system(size: 16))
+                                Text("View Intake Summary")
+                                    .font(theme.typography.semiBold16)
+                            }
+                            .foregroundStyle(theme.colors.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(theme.colors.profileDetailSectionBackground)
+                            .cornerRadius(12)
+                        }
                     }
 
                     // Patient Documents

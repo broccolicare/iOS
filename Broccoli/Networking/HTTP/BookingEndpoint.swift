@@ -33,7 +33,8 @@ public enum BookingEndpoint: Endpoint {
     case endConsultation(bookingId: Int, consultationNotes: String)
     case consultationJoined(bookingId: Int)
     case uploadPrescription(bookingId: Int)
-    
+    case intakeSummary(bookingId: Int)
+
     public var path: String {
         switch self {
         case .availableTimeSlots:
@@ -84,12 +85,14 @@ public enum BookingEndpoint: Endpoint {
             return "/agora/joined"
         case .uploadPrescription(let bookingId):
             return "/doctor/bookings/\(bookingId)/upload-prescription"
+        case .intakeSummary(let bookingId):
+            return "/doctor/bookings/\(bookingId)/intake-summary"
         }
     }
-    
+
     public var method: HTTPMethod {
         switch self {
-        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .prescriptions, .doctorBookings:
+        case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .prescriptions, .doctorBookings, .intakeSummary:
             return .GET
         case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .validateCoupon, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .consultationJoined, .uploadPrescription:
             return .POST
