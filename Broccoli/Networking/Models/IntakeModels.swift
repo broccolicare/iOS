@@ -44,64 +44,10 @@ public struct IntakeTurnRequest: Equatable {
     }
 }
 
-// MARK: - Progress card (`advance_intake`)
+// MARK: - Progress marker (`advance_intake`)
 
-/// How one core question ended.
-///
-/// The distinction is clinical, not cosmetic: "they wouldn't say" and "it doesn't
-/// apply to them" are different statements about the patient, and the server
-/// records them separately in the summary the doctor reads. Unknown values degrade
-/// rather than throw, so a future outcome can't break an existing client.
-public enum IntakeQuestionOutcome: String, Decodable, Equatable {
-    case answered
-    case declined
-    case notApplicable = "not_applicable"
-    case unknown
-
-    public init(from decoder: Decoder) throws {
-        let raw = try decoder.singleValueContainer().decode(String.self)
-        self = IntakeQuestionOutcome(rawValue: raw) ?? .unknown
-    }
-}
-
-/// `advance_intake` — streamed as an ordinary `tool_result` each time the
-/// assistant finishes with a core question.
-///
-/// The intake asks a fixed, clinically approved set of questions, so unlike the
-/// chatbot it has a real end the patient can see coming. This card is what drives
-/// the "question N of M" indicator.
-///
-/// ⚠️ `position` can jump by more than one. The pain follow-ups are skipped
-/// wholesale when the patient reports no pain, and `total` stays the full question
-/// count rather than shrinking — a bar that leaps forward is honest, a denominator
-/// that changes under the user is not.
-public struct IntakeProgressPayload: Decodable, Equatable {
-    public let questionId: String
-    public let outcome: IntakeQuestionOutcome
-    public let position: Int
-    public let total: Int
-
-    enum CodingKeys: String, CodingKey {
-        case questionId = "question_id"
-        case outcome
-        case position
-        case total
-    }
-
-    public init(questionId: String, outcome: IntakeQuestionOutcome, position: Int, total: Int) {
-        self.questionId = questionId
-        self.outcome = outcome
-        self.position = position
-        self.total = total
-    }
-
-    /// Clamped so a malformed or out-of-range card can never drive the bar past
-    /// its end or below its start.
-    public var fraction: Double {
-        guard total > 0 else { return 0 }
-        return min(1, max(0, Double(position) / Double(total)))
-    }
-}
-
-/// The tool name carrying `IntakeProgressPayload`.
+/// `advance_intake` streams as an ordinary `tool_result` each time the assistant
+/// finishes with a core question, but there is no on-screen progress indicator —
+/// the questionnaire's length isn't shown to the patient — so the client drops
+/// this card rather than decoding or rendering it (see `IntakeViewModel`).
 public let intakeProgressToolName = "advance_intake"

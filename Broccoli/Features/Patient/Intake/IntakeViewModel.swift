@@ -50,9 +50,6 @@ final class IntakeViewModel: ObservableObject {
     /// disabled, counting down".
     @Published private(set) var retryCooldownRemaining: Int = 0
 
-    /// Latest `advance_intake` card — the "question N of M" indicator.
-    @Published private(set) var progress: IntakeProgressPayload?
-
     /// Terminal. Set from a `done` carrying `conversation_status: "completed"`, or
     /// on open if this appointment's intake finished in an earlier session. Once
     /// true the composer never comes back.
@@ -190,12 +187,10 @@ final class IntakeViewModel: ObservableObject {
                     appendToken(chunk, to: &assistantId)
 
                 case .toolResult(let tool, let data):
-                    // The progress card drives the indicator rather than the
-                    // transcript — it is chrome, not something the patient reads
-                    // inline. Everything else renders as a normal card.
-                    if tool == intakeProgressToolName {
-                        applyProgress(data)
-                    } else {
+                    // `advance_intake`'s card is chrome for a progress indicator
+                    // the patient never sees — drop it rather than rendering it as
+                    // a normal card. Everything else renders as a normal card.
+                    if tool != intakeProgressToolName {
                         pendingCards.append(ChatToolCard(tool: tool, data: data))
                     }
 
@@ -331,20 +326,6 @@ final class IntakeViewModel: ObservableObject {
     }
 
     // MARK: - Events
-
-    private func applyProgress(_ data: Data) {
-        guard let payload = try? JSONDecoder().decode(IntakeProgressPayload.self, from: data) else {
-            #if DEBUG
-            print("⚠️ [IntakeViewModel] could not decode \(intakeProgressToolName) card")
-            #endif
-            return
-        }
-        // Never let the indicator run backwards. Several cards can arrive in one
-        // turn, and a resumed session replays none of them, so the highest
-        // position seen is the truthful one.
-        if let current = progress, payload.position < current.position { return }
-        progress = payload
-    }
 
     /// Appends verbatim. No trimming or normalisation — the server chunks mid-word,
     /// so any cleanup here corrupts the reply.

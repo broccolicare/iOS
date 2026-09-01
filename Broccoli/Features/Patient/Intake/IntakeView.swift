@@ -12,9 +12,9 @@ import SwiftUI
 ///
 /// Reuses the Health Assistant's transcript components wholesale — same bubbles,
 /// same typing indicator, same quick-reply chips — because it is the same stream
-/// protocol. What differs is the frame around them: a progress bar, an intro that
-/// explains why the patient is being asked anything, and an ending. The chat has
-/// none of those because it never finishes.
+/// protocol. What differs is the frame around them: an intro that explains why the
+/// patient is being asked anything, and an ending. The chat has none of those
+/// because it never finishes.
 struct IntakeView: View {
     @Environment(\.appTheme) private var theme
     @EnvironmentObject private var router: Router
@@ -48,12 +48,6 @@ struct IntakeView: View {
 
             VStack(spacing: 0) {
                 header
-
-                if let progress = viewModel.progress, !viewModel.isComplete {
-                    IntakeProgressBarView(progress: progress)
-                        .padding(.horizontal, theme.spacing.lg)
-                        .padding(.bottom, theme.spacing.sm)
-                }
 
                 transcript
 
