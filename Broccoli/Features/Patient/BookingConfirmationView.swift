@@ -132,14 +132,17 @@ struct BookingConfirmationView: View {
 
                             // Promo Code Section
                             VStack(alignment: .leading, spacing: 8) {
-                                HStack(spacing: 12) {
+                                HStack(spacing: 8) {
                                     TextField("Enter promo code", text: $bookingViewModel.couponCode)
                                         .textInputAutocapitalization(.characters)
                                         .disableAutocorrection(true)
                                         .font(theme.typography.body)
                                         .foregroundStyle(theme.colors.textPrimary)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.85)
                                         .padding(.vertical, 14)
                                         .padding(.horizontal, 12)
+                                        .frame(maxWidth: .infinity)
                                         .background(Color.white)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: theme.cornerRadius)
@@ -171,7 +174,7 @@ struct BookingConfirmationView: View {
                                             }
                                         }
                                         .foregroundColor(.white)
-                                        .frame(width: 88, height: 48)
+                                        .frame(width: 76, height: 48)
                                     }
                                     .background(bookingViewModel.isCouponApplied ? theme.colors.textSecondary : theme.colors.primary)
                                     .cornerRadius(theme.cornerRadius)
