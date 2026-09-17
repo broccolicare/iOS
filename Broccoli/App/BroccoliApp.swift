@@ -171,6 +171,8 @@ struct BroccoliApp: App {
                             IntakeView(appointmentId: appointmentId, doctorName: doctorName)
                         case .intakeSummary(let booking):
                             IntakeSummaryView(booking: booking)
+                        case .followUpChat(let appointmentId):
+                            FollowUpView(appointmentId: appointmentId)
                         }
                     }
             }
@@ -188,6 +190,7 @@ struct BroccoliApp: App {
                     Task {
                         await appViewModel.registerDeviceToken()
                     }
+                    consumePendingFollowUpDeepLink()
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .fcmTokenRefreshed)) { _ in
@@ -196,6 +199,14 @@ struct BroccoliApp: App {
                 Task {
                     await appViewModel.registerDeviceToken()
                 }
+            }
+            // Fires both for a cold-start launch (set from launchOptions) and for a
+            // notification tapped while the app is already running.
+            .onChange(of: appDelegate.pendingFollowUpBookingId) { _, _ in
+                consumePendingFollowUpDeepLink()
+            }
+            .task {
+                consumePendingFollowUpDeepLink()
             }
             .onOpenURL { incomingURL in
                 // Handle Stripe redirect URLs
@@ -206,5 +217,15 @@ struct BroccoliApp: App {
                 }
             }
         }
+    }
+
+    /// Routes to the follow-up chat once both a pending booking id (from a tapped
+    /// `ai_followup_checkin` notification, warm or cold-start) and an authenticated
+    /// session are available — either can arrive first, so every entry point that
+    /// could complete the pair calls this.
+    private func consumePendingFollowUpDeepLink() {
+        guard authViewModel.isAuthenticated, let bookingId = appDelegate.pendingFollowUpBookingId else { return }
+        appDelegate.pendingFollowUpBookingId = nil
+        router.push(.followUpChat(appointmentId: bookingId))
     }
 }

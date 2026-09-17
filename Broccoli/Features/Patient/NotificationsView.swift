@@ -118,6 +118,13 @@ struct NotificationsView: View {
 
         let notificationType = notification.type?.lowercased() ?? ""
 
+        // Post-appointment follow-up check-in — routes straight to the chat, no
+        // booking-detail fetch needed since the screen only needs the id.
+        if notificationType == "ai_followup_checkin" {
+            router.push(.followUpChat(appointmentId: bookingId))
+            return
+        }
+
         // "new_booking" is a doctor-targeted notification
         if notificationType == "new_booking" {
             Task {
