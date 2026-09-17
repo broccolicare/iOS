@@ -52,5 +52,9 @@ enum Route: Hashable {
     /// route is not a capability.
     case intake(appointmentId: Int, doctorName: String?)
     case intakeSummary(booking: BookingData)
+    /// The post-appointment follow-up check-in for one booking. Carries the id only
+    /// — the server re-checks that the booking belongs to the caller, so the route
+    /// is not a capability.
+    case followUpChat(appointmentId: Int)
     // add routes as needed
 }
