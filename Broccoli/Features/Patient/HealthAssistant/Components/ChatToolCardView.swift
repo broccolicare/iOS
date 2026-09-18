@@ -24,6 +24,9 @@ struct ChatToolCardView: View {
     /// rather than the card body. Both land on the same form.
     let onOpenBooking: (PrepareBookingPayload, BookingSlot?) -> Void
     let onOpenAppointment: (ChatAppointment) -> Void
+    /// A tapped `open_appointment_action` card — hands off to the native
+    /// cancel/reschedule screen. Never executes the action itself.
+    let onOpenAppointmentAction: (OpenAppointmentActionPayload) -> Void
     /// A tapped prescription row. There is no per-order detail screen, so this
     /// opens the My Prescriptions list; the row is passed through anyway so a
     /// future detail push has what it needs.
@@ -66,6 +69,13 @@ struct ChatToolCardView: View {
         case "lookup_appointments":
             if let payload = decode(LookupAppointmentsPayload.self) {
                 ChatAppointmentCardView(payload: payload, onSelect: onOpenAppointment)
+            }
+
+        case "open_appointment_action":
+            if let payload = decode(OpenAppointmentActionPayload.self) {
+                ChatAppointmentActionCardView(payload: payload) {
+                    onOpenAppointmentAction(payload)
+                }
             }
 
         case "lookup_prescriptions":

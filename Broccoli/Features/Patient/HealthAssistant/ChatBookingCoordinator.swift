@@ -182,6 +182,20 @@ final class ChatBookingCoordinator {
         )
     }
 
+    // MARK: - open_appointment_action tap-through
+
+    /// Fetches the appointment by id and hands off to the screen that actually
+    /// performs the action — never performs it here.
+    ///
+    /// Reschedule opens `RescheduleBookingView` directly, since that is a
+    /// dedicated route. Cancel has no standalone route: the cancel sheet lives
+    /// on `AppointmentDetailForPatientView`, so cancel lands there, exactly
+    /// where tapping an appointment from `lookup_appointments` already does —
+    /// the "Cancel Booking" button is right there for the patient to tap next.
+    func openAppointmentAction(bookingId: Int, action: OpenAppointmentActionPayload.Action) async {
+        await bookingViewModel.navigateToAppointmentAction(bookingId: bookingId, action: action)
+    }
+
     // MARK: - lookup_prescriptions tap-through
 
     /// Opens the existing My Prescriptions screen.

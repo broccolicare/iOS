@@ -1514,6 +1514,43 @@ public final class BookingGlobalViewModel: ObservableObject {
         }
     }
 
+    /// Fetches the booking by id and hands off to whichever screen performs a
+    /// chat-requested cancel or reschedule — never performs it here itself.
+    ///
+    /// Reschedule pushes `RescheduleBookingView` directly (a dedicated route).
+    /// Cancel has no standalone route, so it pushes the appointment detail
+    /// screen, where the existing "Cancel Booking" button and sheet live —
+    /// same destination `navigateToBookingFromNotification` already uses.
+    public func navigateToAppointmentAction(
+        bookingId: Int,
+        action: OpenAppointmentActionPayload.Action
+    ) async {
+        isFetchingBookingDetail = true
+        errorMessage = nil
+
+        do {
+            let response = try await bookingService.fetchBookingDetails(bookingId: String(bookingId))
+            isFetchingBookingDetail = false
+
+            guard let booking = response.data else {
+                errorMessage = response.message ?? "Booking not found"
+                showErrorToast = true
+                return
+            }
+
+            switch action {
+            case .reschedule:
+                Router.shared.push(.rescheduleBooking(booking: booking))
+            case .cancel:
+                Router.shared.push(.appointmentDetailForPatient(booking: booking))
+            }
+        } catch {
+            isFetchingBookingDetail = false
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+    }
+
     // MARK: - Upload Prescription
 
     /// Upload a prescription document for a completed booking (doctor only)

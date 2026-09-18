@@ -501,12 +501,46 @@ final class ChatToolCardTests: XCTestCase {
         // handled — it is deprecated and being removed (guide §4.1).
         let handled = [
             "prepare_booking", "create_medication_reminder",
-            "lookup_appointments", "lookup_prescriptions"
+            "lookup_appointments", "open_appointment_action", "lookup_prescriptions"
         ]
 
         XCTAssertFalse(handled.contains("start_booking"))
         XCTAssertFalse(handled.contains("some_future_tool"))
-        XCTAssertEqual(handled.count, 4)
+        XCTAssertEqual(handled.count, 5)
+    }
+
+    // MARK: - open_appointment_action
+
+    func testOpenAppointmentActionDecodesCancel() throws {
+        let payload = try decode(OpenAppointmentActionPayload.self, """
+        {
+            "action": "cancel",
+            "appointment": {
+                "id": 1, "specialty": "GP Consultation", "date": "2026-08-20",
+                "time": "09:30", "status": "confirmed", "doctor": "Dr Ryan",
+                "booking_number": "BK-1"
+            }
+        }
+        """)
+
+        XCTAssertEqual(payload.action, .cancel)
+        XCTAssertEqual(payload.appointment.id, 1)
+    }
+
+    func testOpenAppointmentActionDecodesReschedule() throws {
+        let payload = try decode(OpenAppointmentActionPayload.self, """
+        {
+            "action": "reschedule",
+            "appointment": {
+                "id": 2, "specialty": "GP Consultation", "date": "2026-08-20",
+                "time": "09:30", "status": "confirmed", "doctor": null,
+                "booking_number": "BK-2"
+            }
+        }
+        """)
+
+        XCTAssertEqual(payload.action, .reschedule)
+        XCTAssertNil(payload.appointment.doctor)
     }
 
     // MARK: - P4-04 · Prefill mapping

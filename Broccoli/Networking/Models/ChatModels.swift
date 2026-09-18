@@ -69,8 +69,8 @@ public struct ChatStarters: Codable, Equatable {
             StarterChip(label: "Book appointment", message: "Book appointment"),
             StarterChip(label: "My appointments", message: "My appointments"),
             StarterChip(label: "My prescriptions", message: "My prescriptions"),
-            StarterChip(label: "Set reminder", message: "Set reminder"),
-            StarterChip(label: "Health tips", message: "Health tips")
+            StarterChip(label: "Reschedule appointment", message: "Reschedule appointment"),
+            StarterChip(label: "Cancel appointment", message: "Cancel appointment")
         ]
     )
 }
@@ -462,6 +462,23 @@ public struct ChatAppointment: Decodable, Equatable {
         case id, specialty, date, time, status, doctor
         case bookingNumber = "booking_number"
     }
+}
+
+/// `open_appointment_action` — a hand-off, not an execution. The server has
+/// confirmed the appointment is the patient's own and still upcoming; it never
+/// calls the cancel/reschedule endpoints itself. Tapping the card's button
+/// lands the patient on the same native screen (`AppointmentDetailForPatientView`
+/// / `RescheduleBookingView`) the My Appointments tab already uses, so every
+/// eligibility rule — lead time, refund window, one reschedule per booking —
+/// applies exactly as it does there. Never word this card as "done".
+public struct OpenAppointmentActionPayload: Decodable, Equatable {
+    public enum Action: String, Decodable, Equatable {
+        case cancel
+        case reschedule
+    }
+
+    public let action: Action
+    public let appointment: ChatAppointment
 }
 
 /// `lookup_prescriptions`. The prescriptions twin of `LookupAppointmentsPayload`,

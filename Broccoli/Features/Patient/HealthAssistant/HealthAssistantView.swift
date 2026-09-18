@@ -187,6 +187,14 @@ struct HealthAssistantView: View {
                 onOpenAppointment: { appointment in
                     Task { await coordinator.openAppointment(id: appointment.id) }
                 },
+                onOpenAppointmentAction: { payload in
+                    Task {
+                        await coordinator.openAppointmentAction(
+                            bookingId: payload.appointment.id,
+                            action: payload.action
+                        )
+                    }
+                },
                 onOpenPrescription: { _ in
                     coordinator.openPrescriptions()
                 },

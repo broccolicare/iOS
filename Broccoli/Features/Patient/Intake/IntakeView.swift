@@ -158,6 +158,7 @@ struct IntakeView: View {
                 card: card,
                 onOpenBooking: { _, _ in },
                 onOpenAppointment: { _ in },
+                onOpenAppointmentAction: { _ in },
                 onOpenPrescription: { _ in },
                 onSendMessage: { text in send(text) }
             )
