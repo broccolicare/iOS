@@ -69,9 +69,9 @@ public struct AppEnvironment {
         #if DEBUG
         return .development
         #elseif STAGING
-        return .staging
+        return .development
         #else
-        return .production
+        return .development
         #endif
     }()
 }

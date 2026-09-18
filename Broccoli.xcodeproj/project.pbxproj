@@ -428,7 +428,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Broccoli/Broccoli.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DYGMRKM7YF;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -436,8 +436,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Broccoli/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Broccolicare;
-				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to allow you to upload medical documents, prescriptions, and photos for your healthcare consultations.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to allow you to select and upload medical documents, prescriptions, and photos for your healthcare consultations.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Broccoli needs access to your camera for video consultations with doctors.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Broccoli needs access to your microphone for audio during video consultations.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Broccoli needs access to your photo library to upload documents for appointments.";
 				INFOPLIST_KEY_UIAppFonts = "Figtree-Regular.ttf Figtree-Medium.ttf Figtree-SemiBold.ttf Figtree-Bold.ttf Figtree-ExtraBold.ttf Figtree-Black.ttf Figtree-Light.ttf Figtree-Italic.ttf Figtree-MediumItalic.ttf Figtree-SemiBoldItalic.ttf Figtree-BoldItalic.ttf Figtree-ExtraBoldItalic.ttf Figtree-BlackItalic.ttf Figtree-LightItalic.ttf";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -450,6 +451,7 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
@@ -480,7 +482,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Broccoli/Broccoli.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = DYGMRKM7YF;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -488,8 +490,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Broccoli/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Broccolicare;
-				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to allow you to upload medical documents, prescriptions, and photos for your healthcare consultations.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to allow you to select and upload medical documents, prescriptions, and photos for your healthcare consultations.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Broccoli needs access to your camera for video consultations with doctors.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Broccoli needs access to your microphone for audio during video consultations.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Broccoli needs access to your photo library to upload documents for appointments.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -501,6 +504,7 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";

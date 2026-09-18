@@ -22,8 +22,7 @@ struct IntakeSummaryView: View {
                 // Header
                 HStack {
                     Button(action: { router.pop() }) {
-                        Image("back-icon-white")
-                            .font(.system(size: 16, weight: .semibold))
+                        Image("BackButton")
                             .foregroundStyle(theme.colors.primary)
                     }
 
@@ -35,7 +34,7 @@ struct IntakeSummaryView: View {
 
                     Spacer()
 
-                    Image("back-icon-white")
+                    Image("BackButton")
                         .opacity(0)
                 }
                 .padding(.horizontal, 20)

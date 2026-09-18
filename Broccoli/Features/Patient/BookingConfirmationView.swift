@@ -8,14 +8,22 @@
 import SwiftUI
 @_spi(CustomerSessionBetaAccess) import StripePaymentSheet
 
+private struct ClinicCardHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 280
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct BookingConfirmationView: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
     @EnvironmentObject private var userVM: UserGlobalViewModel
-    
+
     @State private var isShowingPaymentSheet = false
+    @State private var clinicCardHeight: CGFloat = 280
     
     // Computed properties from view models
     private var patientName: String {
@@ -128,7 +136,7 @@ struct BookingConfirmationView: View {
                     ZStack(alignment: .top) {
                         
                         VStack{
-                            Spacer().frame(height: 280)
+                            Spacer().frame(height: clinicCardHeight + 16)
 
                             // Promo Code Section
                             VStack(alignment: .leading, spacing: 8) {
@@ -321,9 +329,17 @@ struct BookingConfirmationView: View {
                                 .offset(y: 12),
                             alignment: .bottom
                         )
+                        .background(
+                            GeometryReader { geometry in
+                                Color.clear
+                                    .preference(key: ClinicCardHeightKey.self, value: geometry.size.height)
+                            }
+                        )
                     }
                     .cornerRadius(12)
-                    
+                    .onPreferenceChange(ClinicCardHeightKey.self) { newHeight in
+                        clinicCardHeight = newHeight
+                    }
                 }
                 .padding(.top, 20)
                 .padding(.horizontal, 20)
