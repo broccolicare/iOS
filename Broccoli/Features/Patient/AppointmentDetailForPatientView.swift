@@ -16,6 +16,13 @@ struct AppointmentDetailForPatientView: View {
     @State private var selectedAttachmentURL: URL? = nil
     @State private var selectedAttachmentName: String = ""
 
+    @State private var showCancelSheet = false
+    @State private var cancelReason: String = ""
+    @State private var isCancelling = false
+    @State private var showCancelResultAlert = false
+    @State private var cancelSucceeded = false
+    @State private var cancelResultMessage = ""
+
     /// Whether this appointment's intake has been started or finished. Read on
     /// appear rather than held live — nothing else on this screen changes it, and
     /// the intake screen writes it as the questionnaire progresses.
@@ -323,6 +330,15 @@ struct AppointmentDetailForPatientView: View {
                             .font(theme.typography.regular16)
                             .foregroundStyle(theme.colors.textPrimary)
                         Spacer()
+                        if booking.isRescheduled {
+                            Text("Rescheduled")
+                                .font(theme.typography.semiBold16)
+                                .foregroundStyle(Color.blue)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 6)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(8)
+                        }
                         Text(booking.status.replacingOccurrences(of: "_", with: " ").capitalized)
                             .font(theme.typography.semiBold16)
                             .foregroundStyle(statusColor(for: booking.status))
@@ -345,6 +361,44 @@ struct AppointmentDetailForPatientView: View {
                         VideoCallButton(booking: booking, role: .patient)
                             .padding(.horizontal, 20)
                     }
+
+                    // Reschedule / Cancel — only while more than 10 minutes remain
+                    // before the appointment, and only for bookings still awaiting
+                    // or confirmed for a future visit.
+                    if canManageBooking {
+                        if canReschedule {
+                            Button(action: {
+                                router.push(.rescheduleBooking(booking: booking))
+                            }) {
+                                Text("Reschedule Booking")
+                                    .font(theme.typography.medium16)
+                                    .foregroundStyle(theme.colors.primary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(
+                                        Capsule().stroke(theme.colors.primary, lineWidth: 1)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 20)
+                        }
+
+                        Button(action: {
+                            cancelReason = ""
+                            showCancelSheet = true
+                        }) {
+                            Text("Cancel Booking")
+                                .font(theme.typography.medium16)
+                                .foregroundStyle(Color.red)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(
+                                    Capsule().fill(Color.red.opacity(0.1))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 20)
+                    }
                 }
                 .padding(.bottom, 16)
                 .background(Color.white)
@@ -354,11 +408,70 @@ struct AppointmentDetailForPatientView: View {
         .sheet(item: $selectedAttachmentURL) { url in
             AttachmentViewer(url: url, fileName: selectedAttachmentName)
         }
+        .sheet(isPresented: $showCancelSheet) {
+            CancelBookingSheet(
+                isRefundEligible: isEligibleForRefund,
+                reason: $cancelReason,
+                isSubmitting: isCancelling,
+                onConfirm: { Task { await performCancel() } },
+                onDismiss: { showCancelSheet = false }
+            )
+        }
+        .alert(cancelSucceeded ? "Booking Cancelled" : "Cancellation Failed", isPresented: $showCancelResultAlert) {
+            Button("OK", role: .cancel) {
+                if cancelSucceeded {
+                    router.popTo(.myAppointments)
+                }
+            }
+        } message: {
+            Text(cancelResultMessage)
+        }
         .navigationBarHidden(true)
         .onAppear {
             print("Booking Detail: -- \(booking)")
             refreshIntakeState()
         }
+    }
+
+    // MARK: - Cancel / Reschedule eligibility
+
+    /// Cancel/Reschedule are only offered while the booking is still awaiting or
+    /// confirmed for a future visit, and more than 10 minutes remain before it.
+    private var canManageBooking: Bool {
+        guard !booking.isCancelled else { return false }
+        guard booking.status == "pending" || booking.status == "confirmed" else { return false }
+        return Date.hasLeadTime(minutes: 10, beforeAppointmentDate: booking.date, appointmentTime: booking.time)
+    }
+
+    /// A cancellation made more than 12 hours before the appointment is refunded;
+    /// after that it still goes through, just without a refund.
+    private var isEligibleForRefund: Bool {
+        Date.hasLeadTime(minutes: 12 * 60, beforeAppointmentDate: booking.date, appointmentTime: booking.time)
+    }
+
+    /// A booking can only be rescheduled once — `rescheduleCount` is nil until the
+    /// backend starts sending it, which is treated as "not yet rescheduled".
+    private var canReschedule: Bool {
+        canManageBooking && (booking.rescheduleCount ?? 0) == 0
+    }
+
+    private func performCancel() async {
+        isCancelling = true
+        let refund = isEligibleForRefund
+        let trimmedReason = cancelReason.trimmingCharacters(in: .whitespacesAndNewlines)
+        let success = await bookingVM.cancelBooking(bookingId: booking.id, reason: trimmedReason, refund: refund)
+        isCancelling = false
+        showCancelSheet = false
+        cancelSucceeded = success
+        cancelResultMessage = success
+            ? (refund
+                ? "Your booking has been cancelled and a refund will be processed."
+                : "Your booking has been cancelled. As this was within 12 hours of the appointment, no refund applies.")
+            : (bookingVM.errorMessage ?? "Failed to cancel booking. Please try again.")
+        if success {
+            await bookingVM.refreshAppointments()
+        }
+        showCancelResultAlert = true
     }
     
     // MARK: - Pre-appointment intake
@@ -451,7 +564,96 @@ struct AppointmentDetailForPatientView: View {
         default: return Color.gray
         }
     }
-    
+
+}
+
+// MARK: - Cancel Booking Sheet
+
+/// Confirmation sheet for cancelling a booking — collects a reason and makes the
+/// refund outcome explicit before the patient commits, since it can't be undone.
+private struct CancelBookingSheet: View {
+    @Environment(\.appTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var isReasonFocused: Bool
+
+    let isRefundEligible: Bool
+    @Binding var reason: String
+    let isSubmitting: Bool
+    let onConfirm: () -> Void
+    let onDismiss: () -> Void
+
+    private var canConfirm: Bool {
+        !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isSubmitting
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Cancel Booking")
+                .font(theme.typography.bold20)
+                .foregroundStyle(theme.colors.textPrimary)
+
+            Text(isRefundEligible
+                 ? "You're cancelling more than 12 hours before your appointment, so you'll receive a full refund."
+                 : "You're cancelling within 12 hours of your appointment, so no refund will be issued.")
+                .font(theme.typography.regular14)
+                .foregroundStyle(theme.colors.textSecondary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Reason for Cancellation")
+                    .font(theme.typography.semiBold16)
+                    .foregroundStyle(theme.colors.textPrimary)
+
+                TextEditor(text: $reason)
+                    .font(theme.typography.regular14)
+                    .foregroundStyle(theme.colors.textPrimary)
+                    .frame(height: 100)
+                    .padding(12)
+                    .focused($isReasonFocused)
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .cornerRadius(12)
+            }
+
+            HStack(spacing: 12) {
+                Button(action: {
+                    onDismiss()
+                    dismiss()
+                }) {
+                    Text("Keep Booking")
+                        .font(theme.typography.medium16)
+                        .foregroundStyle(theme.colors.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Capsule().stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onConfirm) {
+                    if isSubmitting {
+                        ProgressView().tint(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    } else {
+                        Text("Yes, Cancel")
+                            .font(theme.typography.medium16)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                }
+                .background(canConfirm ? Color.red : Color.red.opacity(0.4))
+                .cornerRadius(50)
+                .disabled(!canConfirm)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(20)
+        .presentationDetents([.medium])
+    }
 }
 
 // MARK: - Preview

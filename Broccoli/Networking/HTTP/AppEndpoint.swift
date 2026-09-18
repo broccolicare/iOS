@@ -19,6 +19,7 @@ public enum AppEndpoint: Endpoint {
     case recoveryDrugs
     case recoveryAddictionYears
     case allServices
+    case departments
     case contactUs([String: Any])
     case registerDeviceToken([String: Any])
     case notifications
@@ -42,6 +43,7 @@ public enum AppEndpoint: Endpoint {
         case .recoveryDrugs: return "/global/recovery-drugs"
         case .recoveryAddictionYears: return "/global/recovery-addiction-years"
         case .allServices: return "/global/services"
+        case .departments: return "/global/departments"
         case .contactUs: return "/contact-us"
         case .registerDeviceToken: return "/device-tokens"
         case .notifications: return "/notifications"
@@ -52,14 +54,14 @@ public enum AppEndpoint: Endpoint {
     
     public var method: HTTPMethod {
         switch self {
-        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices, .notifications: return .GET
+        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices, .departments, .notifications: return .GET
         case .contactUs, .registerDeviceToken, .markNotificationAsRead, .markAllNotificationsAsRead: return .POST
         }
     }
     
     public var body: [String: Any]? {
         switch self {
-        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices, .notifications, .markNotificationAsRead, .markAllNotificationsAsRead:
+        case .staticPages, .countrys, .specializations, .banners, .metaData, .medicalProcedures, .medicalDestinations, .recoveryDrugs, .recoveryAddictionYears, .allServices, .departments, .notifications, .markNotificationAsRead, .markAllNotificationsAsRead:
             return nil
         case .contactUs(let data):
             return data

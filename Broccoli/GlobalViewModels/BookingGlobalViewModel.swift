@@ -1313,6 +1313,65 @@ public final class BookingGlobalViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Cancel/Reschedule Bookings For Patient
+
+    /// Cancel a booking for the patient, optionally with a refund per the server's own
+    /// eligibility rules (the client only decides whether to show the option/copy).
+    public func cancelBooking(bookingId: Int, reason: String, refund: Bool) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let response = try await bookingService.cancelBooking(bookingId: "\(bookingId)", reason: reason, refund: refund)
+
+            if response.success {
+                showSuccessToast = true
+                isLoading = false
+                return true
+            } else {
+                errorMessage = response.message ?? "Failed to cancel booking"
+                showErrorToast = true
+                isLoading = false
+                return false
+            }
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            showErrorToast = true
+            isLoading = false
+            return false
+        }
+    }
+
+    /// Reschedule a booking to a new date/time slot for the patient.
+    public func rescheduleBooking(bookingId: Int, date: Date, timeSlot: String, time: String, reason: String) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateString = formatter.string(from: date)
+
+        do {
+            let response = try await bookingService.rescheduleBooking(bookingId: "\(bookingId)", date: dateString, timeSlot: timeSlot, time: time, reason: reason)
+
+            if response.success {
+                showSuccessToast = true
+                isLoading = false
+                return true
+            } else {
+                errorMessage = response.message ?? "Failed to reschedule booking"
+                showErrorToast = true
+                isLoading = false
+                return false
+            }
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            showErrorToast = true
+            isLoading = false
+            return false
+        }
+    }
+
     // MARK: - Video Call Methods
     
     /// Generate Agora token and start video call (for doctor)

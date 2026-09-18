@@ -422,14 +422,42 @@ public struct RejectBookingResponse: Codable {
     let success: Bool
     let data: BookingData?
     let message: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case success
         case data
         case message
     }
-    
+
     // Computed property for easy access
+    var booking: BookingData? { data }
+}
+
+public struct CancelBookingResponse: Codable {
+    let success: Bool
+    let data: BookingData?
+    let message: String?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case data
+        case message
+    }
+
+    var booking: BookingData? { data }
+}
+
+public struct RescheduleBookingResponse: Codable {
+    let success: Bool
+    let data: BookingData?
+    let message: String?
+
+    enum CodingKeys: String, CodingKey {
+        case success
+        case data
+        case message
+    }
+
     var booking: BookingData? { data }
 }
 
@@ -478,7 +506,65 @@ public struct BookingData: Codable, Hashable, Identifiable {
     let patient: UserData?
     let assignedDoctor: AssignedDoctorData?
     let attachments: [BookingAttachment]?
-    
+    /// How many times this booking has already been rescheduled. Not yet sent by
+    /// every endpoint — decodes to nil/0 until the backend backfills it everywhere,
+    /// which is treated as "not yet rescheduled".
+    let rescheduleCount: Int?
+    /// Authoritative reschedule/cancellation flags. `status` never takes on a
+    /// "rescheduled" value, so this is the only signal for that state; treat
+    /// missing values (older endpoints) as false.
+    let isRescheduled: Bool
+    let isCancelled: Bool
+
+    /// Default keeps this optional in the synthesized memberwise init, so existing
+    /// preview/test call sites that predate this field don't need updating.
+    public init(
+        id: Int, userId: Int?, departmentId: Int?, serviceId: Int?, assignedDoctorId: Int?,
+        date: String, time: String, timeSlot: String?, amount: String?, status: String,
+        paymentStatus: String?, paymentMethod: String?, stripePaymentIntentId: String?,
+        stripeCustomerId: String?, stripePaymentMethodId: String?, doctorStatus: String?,
+        doctorNotes: String?, doctorRespondedAt: String?, consultationNotes: String?,
+        consultationCompletedAt: String?, agoraSessionId: String?, bookingNumber: String?,
+        createdAt: String?, updatedAt: String?, service: ServiceData?, department: DepartmentData?,
+        user: UserData?, patient: UserData?, assignedDoctor: AssignedDoctorData?,
+        attachments: [BookingAttachment]?, rescheduleCount: Int? = nil,
+        isRescheduled: Bool = false, isCancelled: Bool = false
+    ) {
+        self.id = id
+        self.userId = userId
+        self.departmentId = departmentId
+        self.serviceId = serviceId
+        self.assignedDoctorId = assignedDoctorId
+        self.date = date
+        self.time = time
+        self.timeSlot = timeSlot
+        self.amount = amount
+        self.status = status
+        self.paymentStatus = paymentStatus
+        self.paymentMethod = paymentMethod
+        self.stripePaymentIntentId = stripePaymentIntentId
+        self.stripeCustomerId = stripeCustomerId
+        self.stripePaymentMethodId = stripePaymentMethodId
+        self.doctorStatus = doctorStatus
+        self.doctorNotes = doctorNotes
+        self.doctorRespondedAt = doctorRespondedAt
+        self.consultationNotes = consultationNotes
+        self.consultationCompletedAt = consultationCompletedAt
+        self.agoraSessionId = agoraSessionId
+        self.bookingNumber = bookingNumber
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.service = service
+        self.department = department
+        self.user = user
+        self.patient = patient
+        self.assignedDoctor = assignedDoctor
+        self.attachments = attachments
+        self.rescheduleCount = rescheduleCount
+        self.isRescheduled = isRescheduled
+        self.isCancelled = isCancelled
+    }
+
     enum CodingKeys: String, CodingKey {
         case id
         case userId = "user_id"
@@ -510,6 +596,9 @@ public struct BookingData: Codable, Hashable, Identifiable {
         case patient
         case assignedDoctor = "assigned_doctor"
         case attachments
+        case rescheduleCount = "reschedule_count"
+        case isRescheduled = "is_rescheduled"
+        case isCancelled = "is_cancelled"
     }
 }
 
@@ -566,6 +655,9 @@ extension BookingData {
         patient = try c.decodeIfPresent(UserData.self, forKey: .patient)
         assignedDoctor = try c.decodeIfPresent(AssignedDoctorData.self, forKey: .assignedDoctor)
         attachments = try c.decodeIfPresent([BookingAttachment].self, forKey: .attachments)
+        rescheduleCount = try c.decodeIfPresent(Int.self, forKey: .rescheduleCount)
+        isRescheduled = try c.decodeIfPresent(Bool.self, forKey: .isRescheduled) ?? false
+        isCancelled = try c.decodeIfPresent(Bool.self, forKey: .isCancelled) ?? false
     }
 }
 

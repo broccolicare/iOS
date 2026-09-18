@@ -105,6 +105,26 @@ extension Date {
         }
     }
     
+    /// Whether there is still more than `minutes` of lead time before an appointment,
+    /// measured against the device's local clock and timezone.
+    /// - Parameters:
+    ///   - appointmentDate: Date string in format "yyyy-MM-dd"
+    ///   - appointmentTime: Time string in format "HH:mm" or "HH:mm:ss" (24-hour)
+    ///   - minutes: The required lead time in minutes
+    /// - Returns: True if `now` is earlier than (appointment time − minutes); false if
+    ///   the date/time can't be parsed or the window has already passed.
+    static func hasLeadTime(
+        minutes: Int,
+        beforeAppointmentDate appointmentDate: String,
+        appointmentTime: String
+    ) -> Bool {
+        guard let appointmentDateTime = parseDateAndTime(date: appointmentDate, time: appointmentTime) else {
+            return false
+        }
+        let cutoff = appointmentDateTime.addingTimeInterval(TimeInterval(-minutes * 60))
+        return Date() < cutoff
+    }
+
     // MARK: - Private Helpers
 
     /// Returns true once the call window has opened (advanceMinutes before the appointment)

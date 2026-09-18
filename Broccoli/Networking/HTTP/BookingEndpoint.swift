@@ -12,7 +12,8 @@ public enum BookingEndpoint: Endpoint {
     case availableTimeSlots(date: Date, isGP: String?, departmentId: String?, serviceId: String?)
     case createBooking([String: Any])
     case bookingDetails(String)
-    case cancelBooking(String)
+    case cancelBooking(bookingId: String, reason: String, refund: Bool)
+    case rescheduleBooking(bookingId: String, date: String, timeSlot: String, time: String, reason: String)
     case uploadDocument(bookingId: String, documentData: Data, fileName: String)
     case paymentInitialize([String: Any])
     case paymentConfirm([String: Any])
@@ -43,8 +44,10 @@ public enum BookingEndpoint: Endpoint {
             return "/bookings"
         case .bookingDetails(let bookingId):
             return "/bookings/\(bookingId)"
-        case .cancelBooking(let bookingId):
-            return "/api/bookings/\(bookingId)/cancel"
+        case .cancelBooking(let bookingId, _, _):
+            return "/bookings/\(bookingId)/cancel"
+        case .rescheduleBooking(let bookingId, _, _, _, _):
+            return "/bookings/\(bookingId)/reschedule"
         case .uploadDocument(let bookingId, _, _):
             return "/api/bookings/\(bookingId)/documents"
         case .paymentInitialize:
@@ -94,11 +97,9 @@ public enum BookingEndpoint: Endpoint {
         switch self {
         case .availableTimeSlots, .bookingDetails, .activeTreatments, .treatmentDetails, .loadServices, .patientBookings, .prescriptions, .doctorBookings, .intakeSummary:
             return .GET
-        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .validateCoupon, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .consultationJoined, .uploadPrescription:
+        case .createBooking, .uploadDocument, .paymentInitialize, .paymentConfirm, .validateCoupon, .createPrescriptionOrder, .initialisePrescriptionPayment, .confirmPrescriptionPayment, .rejectBooking, .acceptBooking, .generateAgoraToken, .startVideoCall, .consultationJoined, .uploadPrescription, .cancelBooking, .rescheduleBooking:
             return .POST
         case .endConsultation:
-            return .PUT
-        case .cancelBooking:
             return .PUT
         }
     }
@@ -121,6 +122,18 @@ public enum BookingEndpoint: Endpoint {
             return data
         case .rejectBooking(_, let reason):
             return [
+                "reason": reason
+            ]
+        case .cancelBooking(_, let reason, let refund):
+            return [
+                "reason": reason,
+                "refund": refund
+            ]
+        case .rescheduleBooking(_, let date, let timeSlot, let time, let reason):
+            return [
+                "date": date,
+                "time_slot": timeSlot,
+                "time": time,
                 "reason": reason
             ]
         case .endConsultation(_, let consultationNotes):

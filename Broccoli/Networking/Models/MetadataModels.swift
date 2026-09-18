@@ -85,3 +85,32 @@ public struct SlidersResponse: Codable {
     public let success: Bool
     public let data: [Slider]
 }
+
+// MARK: - Department
+public struct Department: Codable, Identifiable, Hashable {
+    public let id: Int
+    public let name: String
+    public let slug: String
+    public let description: String?
+    public let icon: String?
+    public let color: String?
+    public let image: String?
+    public let imageUrl: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case slug
+        case description
+        case icon
+        case color
+        case image
+        case imageUrl = "image_url"
+    }
+}
+
+// MARK: - Departments Response
+public struct DepartmentsResponse: Codable {
+    public let success: Bool
+    public let data: [Department]
+}

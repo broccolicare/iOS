@@ -153,6 +153,8 @@ struct BroccoliApp: App {
                             AppointmentDetailForDoctorView(booking: booking)
                         case .appointmentDetailForPatient(let booking):
                             AppointmentDetailForPatientView(booking: booking)
+                        case .rescheduleBooking(let booking):
+                            RescheduleBookingView(booking: booking)
                         case .doctorAppointmentHistory:
                             DoctorAppointmentHistory()
                         case .videoCall(let booking, let token, let channelName, let uid):

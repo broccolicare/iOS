@@ -16,7 +16,8 @@ public protocol BookingServiceProtocol {
     func confirmPrescriptionPayment(prescriptionId: String) async throws -> PaymentConfirmResponse
     func createBooking(data: [String: Any]) async throws -> BookingResponse
     func fetchBookingDetails(bookingId: String) async throws -> BookingDetailResponse
-    func cancelBooking(bookingId: String) async throws -> BookingResponse
+    func cancelBooking(bookingId: String, reason: String, refund: Bool) async throws -> CancelBookingResponse
+    func rescheduleBooking(bookingId: String, date: String, timeSlot: String, time: String, reason: String) async throws -> RescheduleBookingResponse
     func uploadDocument(bookingId: String, documentData: Data, fileName: String) async throws -> DocumentUploadResponse
     func initializePayment(data: [String: Any]) async throws -> PaymentInitializeResponse
     func confirmPayment(data: [String: Any]) async throws -> PaymentConfirmResponse
@@ -111,9 +112,17 @@ public final class BookingService: BaseService, BookingServiceProtocol {
     }
     
     /// Cancel an existing booking
-    public func cancelBooking(bookingId: String) async throws -> BookingResponse {
+    public func cancelBooking(bookingId: String, reason: String, refund: Bool) async throws -> CancelBookingResponse {
         return try await handleServiceError {
-            let endpoint = BookingEndpoint.cancelBooking(bookingId)
+            let endpoint = BookingEndpoint.cancelBooking(bookingId: bookingId, reason: reason, refund: refund)
+            return try await httpClient.request(endpoint)
+        }
+    }
+
+    /// Reschedule an existing booking to a new date/time
+    public func rescheduleBooking(bookingId: String, date: String, timeSlot: String, time: String, reason: String) async throws -> RescheduleBookingResponse {
+        return try await handleServiceError {
+            let endpoint = BookingEndpoint.rescheduleBooking(bookingId: bookingId, date: date, timeSlot: timeSlot, time: time, reason: reason)
             return try await httpClient.request(endpoint)
         }
     }

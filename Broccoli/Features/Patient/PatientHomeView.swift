@@ -2,7 +2,6 @@ import SwiftUI
 
 // MARK: - Models (sample)
 struct Banner: Identifiable { let id = UUID(); let title: String; let subtitle: String; let imageName: String }
-struct ServiceItem: Identifiable { let id = UUID(); let title: String; let backgroundImage: String }
 // MARK: - Home View
 struct PatientHomeView: View {
     @Environment(\.appTheme) private var theme
@@ -14,13 +13,7 @@ struct PatientHomeView: View {
     
     // screen state
     @State private var searchText: String = ""
-    @State private var services: [ServiceItem] = [
-        ServiceItem(title: "GP Booking", backgroundImage: "gp-image"),
-        ServiceItem(title: "Specialist", backgroundImage: "specialist"),
-        ServiceItem(title: "Nutritionists", backgroundImage: "nutritionists"),
-        ServiceItem(title: "Blood Tests", backgroundImage: "blood-tests")
-    ]
-    
+
     // Convert API BookingData to UI Appointment model
     private var appointments: [BookingData] {
         bookingVM.upcomingAppointments
@@ -77,23 +70,16 @@ struct PatientHomeView: View {
                                     .padding(.horizontal, theme.spacing.lg)
                             }
                             
-                            // 2x2 service tiles
+                            // 2x2 department tiles (from API)
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: theme.spacing.md) {
-                                ForEach(services) { service in
+                                ForEach(appVM.departments) { department in
                                     Button {
-                                        if service.title == "GP Booking" {
-                                            router.push(.gPAppointBookingForm)
-                                        } else if service.title == "Specialist" {
-                                            router.push(.specialistList(departmentId: "2"))
-                                        } else if service.title == "Nutritionists" {
-                                            router.push(.specialistList(departmentId: "3"))
-                                        } else if service.title == "Blood Tests" {
-                                            router.push(.specialistList(departmentId: "4"))
-                                        }
+                                        navigate(to: department)
                                     } label: {
                                         SmallActionTile(
-                                            title: service.title,
-                                            backgroundImage: service.backgroundImage
+                                            title: department.name,
+                                            backgroundImage: "gp-image",
+                                            backgroundImageUrl: department.imageUrl
                                         )
                                         .frame(height: 140)
                                     }
@@ -101,7 +87,7 @@ struct PatientHomeView: View {
                                 }
                             }
                             .padding(.horizontal, theme.spacing.lg)
-                            
+
                             // Upcoming appointments section
                             if !appointments.isEmpty {
                                 VStack(alignment: .leading, spacing: theme.spacing.sm) {
@@ -168,6 +154,7 @@ struct PatientHomeView: View {
                     } // ScrollView
                         .refreshable {
                             await appVM.loadSlidersData()
+                            await appVM.loadDepartments()
                             await bookingVM.fetchUpcomingConfirmedAppointments()
                         }
                 } // VStack
@@ -181,6 +168,9 @@ struct PatientHomeView: View {
                 if appVM.slidersData.isEmpty {
                     await appVM.loadSlidersData()
                 }
+                if appVM.departments.isEmpty {
+                    await appVM.loadDepartments()
+                }
                 await bookingVM.fetchUpcomingConfirmedAppointments()
                 if userVM.profileData == nil {
                     await userVM.fetchProfileDetail()
@@ -188,6 +178,16 @@ struct PatientHomeView: View {
             }
     }
     
+    /// General Medicine routes to the GP booking form; every other department
+    /// routes to the specialist list, filtered by that department's id.
+    private func navigate(to department: Department) {
+        if department.slug == "general-medicine" {
+            router.push(.gPAppointBookingForm)
+        } else {
+            router.push(.specialistList(departmentId: "\(department.id)"))
+        }
+    }
+
     private func safeTop() -> CGFloat {
         let window = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }

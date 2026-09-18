@@ -18,6 +18,7 @@ public protocol AppServiceProtocol {
     func fetchRecoveryDrugs() async throws -> [RecoveryDrug]
     func fetchRecoveryAddictionYears() async throws -> [RecoveryAddictionYear]
     func fetchAllServices() async throws -> [Service]
+    func fetchDepartments() async throws -> [Department]
     func submitContactForm(name: String, email: String, phone: String?, subject: String, message: String) async throws -> ContactUsResponse
     func registerDeviceToken(token: String, deviceName: String, appVersion: String) async throws -> DeviceTokenResponse
     func fetchNotifications() async throws -> NotificationsResponse
@@ -107,6 +108,14 @@ public final class AppService: BaseService, AppServiceProtocol {
         }
     }
     
+    public func fetchDepartments() async throws -> [Department] {
+        return try await handleServiceError {
+            let endpoint = AppEndpoint.departments
+            let response: DepartmentsResponse = try await httpClient.request(endpoint)
+            return response.data
+        }
+    }
+
     public func submitContactForm(name: String, email: String, phone: String?, subject: String, message: String) async throws -> ContactUsResponse {
         return try await handleServiceError {
             var data: [String: Any] = [

@@ -26,6 +26,7 @@ public final class AppGlobalViewModel: ObservableObject {
     @Published var recoveryDrugs: [RecoveryDrug] = []
     @Published var recoveryAddictionYears: [RecoveryAddictionYear] = []
     @Published var allServices: [Service] = []
+    @Published var departments: [Department] = []
     
     // Metadata from API
     @Published public var bloodGroups: [BloodGroup] = []
@@ -231,6 +232,18 @@ public final class AppGlobalViewModel: ObservableObject {
         }
     }
     
+    public func loadDepartments() async {
+        do {
+            let departments = try await appService.fetchDepartments()
+            self.departments = departments
+            print("✅ Departments loaded successfully: \(departments.count) items")
+        } catch {
+            errorMessage = "Failed to load departments: \(error.localizedDescription)"
+            print("❌ Failed to load departments: \(error)")
+            departments = []
+        }
+    }
+
     // MARK: - Contact Us
     
     @Published public var isSubmittingContact: Bool = false

@@ -334,7 +334,7 @@ struct AppointmentListRow: View {
                     Spacer()
                     
                     if showStatus {
-                        StatusBadge(status: booking.status, theme: theme)
+                        StatusBadge(status: booking.status, isRescheduled: booking.isRescheduled, theme: theme)
                     }
                 }
                 
@@ -352,8 +352,9 @@ struct AppointmentListRow: View {
 // MARK: - Status Badge Component
 struct StatusBadge: View {
     let status: String
+    var isRescheduled: Bool = false
     let theme: AppThemeProtocol
-    
+
     var statusText: String {
         switch status.lowercased() {
         case "completed":
@@ -389,15 +390,28 @@ struct StatusBadge: View {
     }
     
     var body: some View {
-        Text(statusText)
-            .font(theme.typography.regular12)
-            .foregroundStyle(statusColor)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 2)
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .stroke(statusColor, lineWidth: 1)
-            )
+        HStack(spacing: 6) {
+            if isRescheduled {
+                Text("Rescheduled")
+                    .font(theme.typography.regular12)
+                    .foregroundStyle(Color.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.blue, lineWidth: 1)
+                    )
+            }
+            Text(statusText)
+                .font(theme.typography.regular12)
+                .foregroundStyle(statusColor)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(statusColor, lineWidth: 1)
+                )
+        }
     }
 }
 
