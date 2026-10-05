@@ -17,21 +17,18 @@ struct SmallActionTile: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             if let backgroundImageUrl, let url = URL(string: backgroundImageUrl) {
-                // Remote images (e.g. department cards from the API) are pre-designed
-                // full-bleed graphics that already include their own caption, so we
-                // don't overlay a second title on top of a successful load.
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
-                        // These are landscape (16:9) graphics with a left-aligned caption
-                        // baked in near the bottom. A centered scaledToFill crop would trim
-                        // the caption's left margin, so anchor the crop to .leading instead.
-                        GeometryReader { proxy in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .leading)
-                                .clipped()
+                        ZStack(alignment: .bottom) {
+                            GeometryReader { proxy in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .leading)
+                                    .clipped()
+                            }
+                            captionStrip
                         }
                     default:
                         ZStack(alignment: .bottom) {

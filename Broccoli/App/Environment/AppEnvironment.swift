@@ -71,7 +71,7 @@ public struct AppEnvironment {
         #elseif STAGING
         return .development
         #else
-        return .development
+        return .production
         #endif
     }()
 }

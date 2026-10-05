@@ -285,6 +285,15 @@ public final class AppGlobalViewModel: ObservableObject {
     /// handshake rather than reading the locally-cached `fcmToken` property (which is
     /// nil until the exchange has already completed).
     public func registerDeviceToken() async {
+        // `Messaging.token(completion:)` fails with "No APNS token specified" if the
+        // OS hasn't yet delivered the device token to `AppDelegate.didRegisterForRemoteNotificationsWithDeviceToken`
+        // (which sets `Messaging.messaging().apnsToken`). This can race with auth
+        // becoming true right after launch, so wait for it instead of failing outright.
+        guard await waitForAPNSToken() else {
+            print("❌ Skipped device token registration: APNS token not available")
+            return
+        }
+
         do {
             let fcmToken: String = try await withCheckedThrowingContinuation { continuation in
                 Messaging.messaging().token { token, error in
@@ -314,6 +323,17 @@ public final class AppGlobalViewModel: ObservableObject {
         } catch {
             print("❌ Failed to register device token: \(error)")
         }
+    }
+
+    /// Polls `Messaging.messaging().apnsToken` until it's set or `timeout` elapses.
+    /// Returns `false` on timeout (e.g. push permission denied, or no push entitlement
+    /// such as on a Simulator) so callers can skip the FCM fetch instead of erroring.
+    private func waitForAPNSToken(timeout: TimeInterval = 10) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Messaging.messaging().apnsToken == nil && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+        }
+        return Messaging.messaging().apnsToken != nil
     }
     
     // MARK: - Notifications

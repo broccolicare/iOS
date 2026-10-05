@@ -45,7 +45,7 @@ public enum StaticPageType: String {
         case .privacy:
             return URL(string: "https://broccolicare.ie/privacy-policy/")
         case .terms:
-            return URL(string: "https://broccolicare.ie/terms-conditions/")
+            return URL(string: "https://broccolicare.ie/terms-and-conditions/")
         }
     }
 }

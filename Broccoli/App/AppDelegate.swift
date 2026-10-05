@@ -55,6 +55,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         Messaging.messaging().apnsToken = deviceToken
     }
 
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("❌ Failed to register for remote notifications (APNS): \(error)")
+    }
+
     /// Payload shape isn't pinned down on the client side (Laravel owns the FCM
     /// send), so this checks both a flat key and a nested `data` dict, and both
     /// `type` and `notification_type` as the type-marker key.

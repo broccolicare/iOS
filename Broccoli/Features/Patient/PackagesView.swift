@@ -248,7 +248,7 @@ struct PackagesView: View {
     private func isPackageActive(_ package: Package) -> Bool {
         guard let active = userViewModel.activePackage,
               active.subscriptionStatus == "active" else { return false }
-        return active.stripePriceId == package.stripePriceId
+        return active.id == package.id
     }
     
     // Maps billingPeriod string to a tier integer for comparison
