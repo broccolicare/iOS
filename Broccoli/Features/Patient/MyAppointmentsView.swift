@@ -13,7 +13,7 @@ struct MyAppointmentsView: View {
     @EnvironmentObject private var router: Router
     @EnvironmentObject private var bookingViewModel: BookingGlobalViewModel
     
-    @State private var selectedTab: AppointmentTab = .upcoming
+    @State private var selectedTab: AppointmentTab = .pending
     @State private var isRefreshing: Bool = false
     
     var body: some View {
@@ -56,7 +56,57 @@ struct MyAppointmentsView: View {
                 
                 // Content based on selected tab
                 List {
-                    if selectedTab == .upcoming {
+                    if selectedTab == .pending {
+                        // Loading state
+                        if bookingViewModel.isLoadingPatientPending && bookingViewModel.patientPendingAppointments.isEmpty {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                Spacer()
+                            }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                        }
+                        // Empty state
+                        else if bookingViewModel.patientPendingAppointments.isEmpty && !bookingViewModel.isLoadingPatientPending {
+                            EmptyAppointmentsView(
+                                title: "No Pending Appointments",
+                                message: "You don't have any appointments awaiting doctor acceptance."
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                        }
+                        // Pending list
+                        else {
+                            ForEach(bookingViewModel.patientPendingAppointments) { appointment in
+                                AppointmentListRow(
+                                    booking: appointment,
+                                    showStatus: true
+                                )
+                                .onTapGesture {
+                                    router.push(.appointmentDetailForPatient(booking: appointment))
+                                }
+                                .listRowSeparator(.visible)
+                                .listRowBackground(Color.clear)
+                            }
+
+                            // Load more indicator
+                            if bookingViewModel.patientPendingHasMore {
+                                HStack {
+                                    Spacer()
+                                    ProgressView()
+                                    Spacer()
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .onAppear {
+                                    Task {
+                                        await bookingViewModel.loadMorePatientPendingAppointments()
+                                    }
+                                }
+                            }
+                        }
+                    } else if selectedTab == .upcoming {
                         // Loading state
                         if bookingViewModel.isLoadingAppointments && bookingViewModel.upcomingAppointments.isEmpty {
                             HStack {
@@ -170,16 +220,21 @@ struct MyAppointmentsView: View {
         }
         .navigationBarHidden(true)
         .task {
-            // Load appointments when view appears
-            if bookingViewModel.upcomingAppointments.isEmpty {
-                await bookingViewModel.fetchUpcomingAppointments()
-            }
+            // Pending is the first tab; always refresh it when the view appears
+            await bookingViewModel.fetchPatientPendingAppointments()
         }
         .onChange(of: selectedTab) { _, newTab in
-            // Load past appointments when history tab is selected
-            if newTab == .history && bookingViewModel.pastAppointments.isEmpty {
-                Task {
-                    await bookingViewModel.fetchPastBookings()
+            // Lazily load the other tabs on first selection
+            switch newTab {
+            case .pending:
+                break
+            case .upcoming:
+                if bookingViewModel.upcomingAppointments.isEmpty {
+                    Task { await bookingViewModel.fetchUpcomingAppointments() }
+                }
+            case .history:
+                if bookingViewModel.pastAppointments.isEmpty {
+                    Task { await bookingViewModel.fetchPastBookings() }
                 }
             }
         }
@@ -189,9 +244,12 @@ struct MyAppointmentsView: View {
     
     private func handleRefresh() async {
         isRefreshing = true
-        if selectedTab == .upcoming {
+        switch selectedTab {
+        case .pending:
+            await bookingViewModel.refreshPatientPendingAppointments()
+        case .upcoming:
             await bookingViewModel.refreshAppointments()
-        } else {
+        case .history:
             await bookingViewModel.refreshPastAppointments()
         }
         isRefreshing = false
@@ -200,6 +258,7 @@ struct MyAppointmentsView: View {
 
 // MARK: - Models
 enum AppointmentTab {
+    case pending
     case upcoming
     case history
 }
@@ -212,6 +271,29 @@ struct SegmentedControl: View {
     
     var body: some View {
         HStack(spacing: 0) {
+            // Pending Tab
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = .pending
+                }
+            }) {
+                Text("Pending")
+                    .font(theme.typography.medium14)
+                    .foregroundStyle(selectedTab == .pending ? .white : theme.colors.textPrimary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(
+                        ZStack {
+                            if selectedTab == .pending {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(theme.colors.primary)
+                                    .matchedGeometryEffect(id: "TAB", in: animation)
+                            }
+                        }
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+
             // Upcoming Tab
             Button(action: {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {

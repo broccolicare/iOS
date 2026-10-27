@@ -93,6 +93,12 @@ public final class BookingGlobalViewModel: ObservableObject {
     @Published public var upcomingHasMore: Bool = false
     @Published public var isLoadingAppointments: Bool = false
     
+    // Pending appointments (patient, awaiting doctor acceptance)
+    @Published public var patientPendingAppointments: [BookingData] = []
+    @Published public var patientPendingNextCursor: String? = nil
+    @Published public var patientPendingHasMore: Bool = false
+    @Published public var isLoadingPatientPending: Bool = false
+
     // Past appointments
     @Published public var pastAppointments: [BookingData] = []
     @Published public var pastNextCursor: String? = nil
@@ -1080,8 +1086,47 @@ public final class BookingGlobalViewModel: ObservableObject {
         await fetchUpcomingConfirmedAppointments(cursor: nil, loadMore: false)
     }
     
+    // MARK: - Pending Appointments (Patient)
+
+    /// Fetch the patient's pending bookings (type=pending, awaiting doctor acceptance)
+    public func fetchPatientPendingAppointments(perPage: Int = 10, cursor: String? = nil, loadMore: Bool = false) async {
+        isLoadingPatientPending = true
+        errorMessage = nil
+
+        do {
+            let response = try await bookingService.fetchPatientBookings(type: "pending", status: nil, perPage: perPage, cursor: cursor)
+
+            if loadMore {
+                self.patientPendingAppointments.append(contentsOf: response.bookings)
+            } else {
+                self.patientPendingAppointments = response.bookings
+            }
+
+            self.patientPendingNextCursor = response.nextCursor
+            self.patientPendingHasMore = response.hasMore
+
+        } catch {
+            errorMessage = error.localizedDescription
+            showErrorToast = true
+        }
+
+        isLoadingPatientPending = false
+    }
+
+    /// Load next page of pending appointments
+    public func loadMorePatientPendingAppointments() async {
+        guard patientPendingHasMore, !isLoadingPatientPending else { return }
+        await fetchPatientPendingAppointments(cursor: patientPendingNextCursor, loadMore: true)
+    }
+
+    /// Refresh pending appointments (reset to first page)
+    public func refreshPatientPendingAppointments() async {
+        patientPendingNextCursor = nil
+        await fetchPatientPendingAppointments(cursor: nil, loadMore: false)
+    }
+
     // MARK: - Past Appointments
-    
+
     /// Fetch past bookings (completed + cancelled, all dates)
     public func fetchPastBookings(perPage: Int = 10, cursor: String? = nil, loadMore: Bool = false) async {
         isLoadingPastAppointments = true

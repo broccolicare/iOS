@@ -47,10 +47,12 @@ struct PatientHomeView: View {
                                 Image("notification-icon").frame(width: 40, height: 40)
                                 
                                 // Notification badge
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 10, y: -10)
+                                if appVM.unreadNotificationsCount > 0 {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 8, height: 8)
+                                        .offset(x: 10, y: -10)
+                                }
                             }
                         }
                     }
@@ -63,6 +65,17 @@ struct PatientHomeView: View {
                             SearchBar(text: $searchText)
                                 .padding(.horizontal, theme.spacing.lg)
                             
+                            // Unread intake / follow-up notification highlight
+                            if let latest = appVM.highlightedNotifications.first {
+                                NotificationHighlightBanner(
+                                    notification: latest,
+                                    count: appVM.highlightedNotifications.count
+                                ) {
+                                    openHighlighted(latest)
+                                }
+                                .padding(.horizontal, theme.spacing.lg)
+                            }
+
                             // Banners carousel
                             if !appVM.slidersData.isEmpty {
                                 BannerCarousel(sliders: appVM.slidersData)
@@ -156,6 +169,7 @@ struct PatientHomeView: View {
                             await appVM.loadSlidersData()
                             await appVM.loadDepartments()
                             await bookingVM.fetchUpcomingConfirmedAppointments()
+                            await appVM.fetchNotifications()
                         }
                 } // VStack
             }
@@ -172,12 +186,24 @@ struct PatientHomeView: View {
                     await appVM.loadDepartments()
                 }
                 await bookingVM.fetchUpcomingConfirmedAppointments()
+                await appVM.fetchNotifications()
                 if userVM.profileData == nil {
                     await userVM.fetchProfileDetail()
                 }
             }
     }
-    
+
+    /// Marks the notification read (which removes it from the banner) and opens its target.
+    private func openHighlighted(_ notification: AppNotification) {
+        Task { await appVM.markNotificationAsRead(notificationId: notification.id) }
+        guard let bookingId = notification.data?.bookingId else { return }
+        if notification.type?.lowercased() == AppGlobalViewModel.intakeNotificationType {
+            router.push(.intake(appointmentId: bookingId, doctorName: notification.data?.doctorName))
+        } else {
+            router.push(.followUpChat(appointmentId: bookingId))
+        }
+    }
+
     /// General Medicine routes to the GP booking form; every other department
     /// routes to the specialist list, filtered by that department's id.
     private func navigate(to department: Department) {
@@ -229,6 +255,63 @@ private struct SearchBar: View {
             .background(theme.colors.surface)
             .cornerRadius(12)
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.colors.border))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct NotificationHighlightBanner: View {
+    @Environment(\.appTheme) private var theme
+    let notification: AppNotification
+    let count: Int
+    let onTap: () -> Void
+
+    private var isIntake: Bool {
+        notification.type?.lowercased() == AppGlobalViewModel.intakeNotificationType
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                ZStack(alignment: .topTrailing) {
+                    Image("notification-icon")
+                        .frame(width: 44, height: 44)
+                        .background(theme.colors.primary.opacity(0.12))
+                        .clipShape(Circle())
+
+                    if count > 1 {
+                        Text("\(count)")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .frame(minWidth: 18, minHeight: 18)
+                            .background(Color.red)
+                            .clipShape(Capsule())
+                            .offset(x: 6, y: -6)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(notification.title ?? (isIntake ? "Complete your intake" : "Follow-up check-in"))
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.colors.textPrimary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let message = notification.message {
+                        Text(message)
+                            .font(.system(size: 15))
+                            .foregroundStyle(theme.colors.textSecondary)
+                            .lineLimit(2)
+                    }
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+            .padding(12)
+            .background(theme.colors.surface)
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.colors.primary.opacity(0.4)))
         }
         .buttonStyle(.plain)
     }

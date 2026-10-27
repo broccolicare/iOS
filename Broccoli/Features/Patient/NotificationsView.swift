@@ -125,6 +125,11 @@ struct NotificationsView: View {
             return
         }
 
+        if notificationType == AppGlobalViewModel.intakeNotificationType {
+            router.push(.intake(appointmentId: bookingId, doctorName: notification.data?.doctorName))
+            return
+        }
+
         // "new_booking" is a doctor-targeted notification
         if notificationType == "new_booking" {
             Task {

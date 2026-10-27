@@ -350,7 +350,7 @@ struct AppointmentDetailForPatientView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     
-                    // Pre-appointment questionnaire, for confirmed appointments.
+                    // Pre-appointment questionnaire, for pending and confirmed appointments.
                     if showsIntakeButton {
                         intakeButton
                             .padding(.horizontal, 20)
@@ -476,16 +476,19 @@ struct AppointmentDetailForPatientView: View {
     
     // MARK: - Pre-appointment intake
 
-    /// Offered on confirmed appointments.
-    ///
-    /// `pending` does not count: an unconfirmed booking may never happen, and an
-    /// intake answered against one produces a clinical summary no clinician will
-    /// ever read.
+    /// Offered as soon as the booking is made (pending or confirmed), so the
+    /// patient can complete intake without waiting for the doctor to accept.
+    /// Cancelled bookings and finished consultations are excluded.
     private var showsIntakeButton: Bool {
-        booking.status == "confirmed"
+        guard !booking.isCancelled else { return false }
+        switch booking.status.lowercased() {
+        case "pending", "confirmed":
+            return true
+        default:
+            return false
+        }
         // Past appointments are not filtered out for now — re-enable once the
         // server-supplied intake state lands:
-        // guard booking.status == "confirmed" else { return false }
         // return !isPastAppointment
     }
 

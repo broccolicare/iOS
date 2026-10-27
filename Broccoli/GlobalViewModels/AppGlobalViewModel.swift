@@ -342,6 +342,20 @@ public final class AppGlobalViewModel: ObservableObject {
     @Published public var unreadNotificationsCount: Int = 0
     @Published public var isLoadingNotifications: Bool = false
     
+    public static let followUpNotificationType = "ai_followup_checkin"
+    public static let intakeNotificationType = "ai_intake_required"
+
+    /// Unread intake / follow-up notifications, newest first. Drives the Home banner.
+    public var highlightedNotifications: [AppNotification] {
+        notifications
+            .filter { n in
+                let type = n.type?.lowercased() ?? ""
+                return !n.isRead && n.data?.bookingId != nil
+                    && (type == Self.followUpNotificationType || type == Self.intakeNotificationType)
+            }
+            .sorted { $0.id > $1.id }
+    }
+
     public func fetchNotifications() async {
         isLoadingNotifications = true
         do {
